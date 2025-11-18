@@ -4,6 +4,7 @@ import { STORAGE_KEYS } from '@/constants';
 
 import { authAPI, APIError } from '@/services/api';
 import { wukongimWebSocketService } from '@/services/wukongimWebSocket';
+import { useChatStore } from './chatStore';
 import type { LoginFormData, RegisterFormData } from '@/types';
 
 
@@ -184,8 +185,6 @@ export const useAuthStore = create<AuthState>()(
           // 2. Clear chat store data
           console.log('🔐 Auth Store: Clearing chat store data');
           try {
-            // Import chatStore dynamically to avoid circular dependency
-            const { useChatStore } = await import('./chatStore');
             const clearChatStore = useChatStore.getState().clearStore;
             clearChatStore();
           } catch (error) {

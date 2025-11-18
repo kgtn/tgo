@@ -4,7 +4,7 @@ import Icon from '../ui/Icon';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 import { getTagClasses } from '@/utils/tagColors';
-import { KNOWLEDGE_BASE_STATUS } from '@/data/mockKnowledgeBase';
+import { KNOWLEDGE_BASE_STATUS } from '@/constants/knowledgeBase';
 import type { KnowledgeBaseItem } from '@/types';
 
 interface KnowledgeBaseRowProps {

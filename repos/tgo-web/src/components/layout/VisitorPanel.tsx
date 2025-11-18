@@ -235,7 +235,7 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
 
     try {
       // 准备API请求数据（同时携带当前自定义属性，确保同一请求体包含基础信息+自定义属性）
-      const customAttributesForApi = (visitor.basicInfo.customAttributes || []).reduce((acc, attr) => {
+      const customAttributesForApi = (visitor.basicInfo.customAttributes || []).reduce((acc: Record<string, string | null>, attr: CustomAttribute) => {
         acc[attr.key] = attr.value;
         return acc;
       }, {} as Record<string, string | null>);
@@ -256,7 +256,7 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
       // 更新本地状态（字段名与本地basicInfo的映射）
       const localKey = field === 'phone' ? 'phone' : field; // 其余字段直接对应
 
-      setVisitor(prev => prev ? {
+      setVisitor((prev: ExtendedVisitor | null) => prev ? {
         ...prev,
         basicInfo: {
           ...prev.basicInfo,
@@ -319,7 +319,7 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
       }
 
       // 更新本地状态
-      setVisitor(prev => prev ? {
+      setVisitor((prev: ExtendedVisitor | null) => prev ? {
         ...prev,
         basicInfo: {
           ...prev.basicInfo,
@@ -345,15 +345,15 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
 
     try {
       // 更新本地属性数组
-      const updatedAttributes = visitor.basicInfo.customAttributes?.map(attr =>
+      const updatedAttributes = visitor.basicInfo.customAttributes?.map((attr: CustomAttribute) =>
         attr.id === id ? { ...attr, key, value } : attr
       ) || [];
 
       // 转换为API格式
-      const customAttributesForApi = updatedAttributes.reduce((acc, attr) => {
+      const customAttributesForApi = updatedAttributes.reduce((acc: Record<string, string | null>, attr: CustomAttribute) => {
         acc[attr.key] = attr.value;
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, string | null>);
 
       // 调用API更新
       await visitorApiService.updateVisitorAttributes(visitor.id, {
