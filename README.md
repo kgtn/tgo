@@ -1,0 +1,82 @@
+# tgo-deploy 部署指南
+
+本仓库提供一套基于 Docker Compose 的一键部署方案，编排并启动：
+- 依赖：Postgres(pgvector)、Redis、Kafka(+UI)、WuKongIM
+- 应用：tgo-api、tgo-ai、tgo-platform、tgo-rag(+worker/beat/flower)、tgo-web、tgo-widget-app
+
+> 说明：本仓库默认使用当前项目的 `repos/` 目录中的各子项目源码，不再在部署时自动克隆。
+
+## 前置条件
+- Docker (建议 24+)、Docker Compose 插件
+- Bash 环境（macOS / Linux / WSL2 均可）
+
+## 快速开始
+1) 克隆并进入仓库
+- git clone <this-repo>
+- cd tgo-deploy
+
+2) 准备配置
+- 首次运行 `bash deploy.sh` 会自动：
+  - 如无 `.env`，从 `.env.example` 复制生成
+  - 如无 `envs/`，从 `envs.docker/` 复制生成
+  - 如 `envs/tgo-api.env` 中 `SECRET_KEY` 缺失/占位，将自动生成安全随机值
+- 如需自定义，先编辑 `.env`（端口、数据库 DSN、API_BASE_URL 等），以及 `envs/<service>.env`
+
+3) 启动
+- bash deploy.sh
+- 首次会完成镜像构建并以后台方式启动全部服务
+
+## deploy.sh 会做什么
+- 确保 `.env` 存在（从 `.env.example` 复制）
+- 确保 `envs/` 存在（从 `envs.docker/` 初始复制）
+- 生成/修复 `envs/tgo-api.env` 的 `SECRET_KEY`（仅缺失或占位时生成）
+- 执行 `docker compose up -d --build`
+
+## 目录结构与持久化数据
+- `docker-compose.yml`：服务编排
+- `envs.docker/`：服务环境变量模板（首次会复制为 `envs/`）
+- `envs/`：运行时服务环境。已被 `.gitignore` 忽略
+- `repos/`：各子项目源码（本仓库默认已存在/自行放置；`.gitignore` 忽略）
+- `data/`：统一的持久化数据目录（`.gitignore` 忽略）
+  - `data/postgres` → /var/lib/postgresql/data
+  - `data/redis` → /data
+  - `data/kafka/data` → /var/lib/kafka/data
+  - `data/wukongim` → /root/wukongim
+  - `data/tgo-rag/uploads` → /app/uploads
+
+## 配置说明与覆盖规则
+- 全局配置：根目录 `.env`
+  - 数据库 DSN：`DATABASE_URL`、`TGO_PG_DSN`
+  - 端口：`API_PORT`、`AI_PORT`、`PLATFORM_PORT`、`RAG_PORT`、`WEB_PORT` 等
+  - API 基础地址：`API_BASE_URL`（默认见 `.env.example`）
+- 服务专属配置：`envs/<service>.env`
+  - 仅放与该服务强相关的配置
+- env_file 加载顺序与覆盖：
+  - tgo-api：先加载 `envs/tgo-api.env`，再加载 `.env` → 允许用根目录 `.env` 覆盖 `API_BASE_URL`
+  - 其他服务：先加载 `.env`，再加载 `envs/<service>.env` → 服务专属 env 可覆盖全局配置
+
+## 访问入口（默认端口）
+- API: http://localhost:8000
+- AI: http://localhost:8002
+- Platform: http://localhost:8003
+- RAG: http://localhost:8082
+- Web: http://localhost:3000
+- Widget: http://localhost:3001
+- Adminer: http://localhost:8888
+- Kafka UI: http://localhost:8088
+- WuKongIM: 5001(HTTP) / 5100(TCP) / 5200(WS) / 5300(Admin) / 5172(Demo) / 11110(Cluster)
+
+## 常用命令
+- 查看状态：`docker compose ps`
+- 查看日志：`docker compose logs -f tgo-api`（替换为具体服务名）
+- 停止：`docker compose down`
+- 重新构建：`docker compose build --no-cache <service>`
+- 清理数据（危险）：`docker compose down -v` 然后手动删除 `data/`
+
+## 故障排查
+- 子项目是否存在：`repos/` 下应包含 `tgo-api`、`tgo-ai`、`tgo-platform`、`tgo-rag`、`tgo-web`、`tgo-widget-app`
+- 端口冲突：如被占用，请修改 `.env` 中相应端口后重启
+- 权限问题：确保当前用户对 `data/` 具有读写权限
+- 构建失败：检查对应子项目 Dockerfile 是否存在且可用
+
+> 可选：如需“远程一条命令”引导，可将仓库内 `bootstrap.sh` 托管到稳定 URL，然后：`curl -fsSL <bootstrap.sh-URL> | bash`。
