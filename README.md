@@ -79,4 +79,30 @@
 - 权限问题：确保当前用户对 `data/` 具有读写权限
 - 构建失败：检查对应子项目 Dockerfile 是否存在且可用
 
-> 可选：如需“远程一条命令”引导，可将仓库内 `bootstrap.sh` 托管到稳定 URL，然后：`curl -fsSL <bootstrap.sh-URL> | bash`。
+## 一键远程部署（bootstrap.sh）
+
+适用场景：在一台干净机器上一条命令完成检查、克隆并运行 deploy.sh。
+脚本行为概览：
+- 检查 git、docker、docker compose
+- 如当前目录已存在 deploy.sh 和 docker-compose.yml，直接运行 deploy.sh
+- 否则克隆 REPO 到 DIR（默认 https://github.com/tgoai/tgo.git → ./tgo），可选切换到 REF（分支/Tag/提交）
+- 在 DIR 中执行 deploy.sh
+
+推荐用法（GitHub Raw 示例）：
+- 最新主分支：`curl -fsSL https://raw.githubusercontent.com/tgoai/tgo/main/bootstrap.sh | bash`
+- 指定版本/分支：`REF=v1.0.0 curl -fsSL https://raw.githubusercontent.com/tgoai/tgo/main/bootstrap.sh | bash`
+- 自定义仓库/目录：`REPO=https://gitee.com/your/tgo.git DIR=tgo curl -fsSL https://raw.githubusercontent.com/tgoai/tgo/main/bootstrap.sh | bash`
+
+通过 SSH 在远程服务器一键执行：
+- `ssh user@server 'curl -fsSL https://raw.githubusercontent.com/tgoai/tgo/main/bootstrap.sh | bash'`
+- 指定版本：`ssh user@server 'REF=v1.0.0 curl -fsSL https://raw.githubusercontent.com/tgoai/tgo/main/bootstrap.sh | bash'`
+
+本地运行（已在仓库内）：
+- `bash ./bootstrap.sh`
+
+可配置项（环境变量）：
+- REPO：仓库地址（默认 https://github.com/tgoai/tgo.git）
+- DIR：克隆目录名（默认 tgo）
+- REF：可选分支/Tag/提交（为空则使用默认分支）
+
+注意：如果你将 bootstrap.sh 托管到自有域名，请把上述 URL 替换为你的地址即可。

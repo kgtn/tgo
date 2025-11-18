@@ -6,8 +6,8 @@
 set -euo pipefail
 
 # ---------- Configuration (overridable via env) ----------
-REPO="${REPO:-https://github.com/tgoai/tgo-deploy.git}"
-DIR="${DIR:-tgo-deploy}"
+REPO="${REPO:-https://github.com/tgoai/tgo.git}"
+DIR="${DIR:-tgo}"
 REF="${REF:-}"
 
 # ---------- Notifications ----------
