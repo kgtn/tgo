@@ -4,7 +4,8 @@ set -euo pipefail
 # Move to repo root
 cd "$(dirname "$0")"
 
-MAIN_COMPOSE="docker-compose.yml"
+MAIN_COMPOSE_IMAGE="docker-compose.yml"
+MAIN_COMPOSE_SOURCE="docker-compose.source.yml"
 TOOLS_COMPOSE="docker-compose.tools.yml"
 ENV_FILE=".env"
 
@@ -13,15 +14,17 @@ usage() {
 Usage: ./tgo.sh <command> [options]
 
 Commands:
-  help                    Show this help message
-  install                 Deploy all services (build, migrate, start)
-  uninstall               Stop and remove all services (prompts for data deletion)
-  service start           Start all core services
-  service stop            Stop all core services
-  service remove          Stop services and remove images
-  tools start             Start debug tools (kafka-ui, adminer)
-  tools stop              Stop debug tools
-  build <service>         Rebuild specific service (api|rag|ai|platform|web|widget|all)
+  help                          Show this help message
+  install [--source]            Deploy all services (migrate, start; default: use pre-built images)
+  uninstall [--source]          Stop and remove all services (prompts for data deletion)
+  service <start|stop|remove> [--source]
+                                Start/stop/remove core services
+  tools <start|stop>            Start/stop debug tools (kafka-ui, adminer)
+  build [--source] <service>    Rebuild specific service from source (api|rag|ai|platform|web|widget|all)
+
+Notes:
+  - By default, commands use image-based deployment (docker-compose.yml, images from GHCR).
+  - Pass --source to build and run services from local source (docker-compose.yml + docker-compose.source.yml).
 EOF
 }
 
@@ -73,12 +76,13 @@ PY
 }
 
 wait_for_postgres() {
+  local compose_file_args=${1:-"-f $MAIN_COMPOSE_IMAGE"}
   echo "[INFO] Waiting for Postgres to be ready..."
   local retries=60
   local user="${POSTGRES_USER:-tgo}"
   local db="${POSTGRES_DB:-tgo}"
   for _ in $(seq 1 "$retries"); do
-    if docker compose --env-file "$ENV_FILE" exec -T postgres pg_isready -U "$user" -d "$db" >/dev/null 2>&1; then
+    if docker compose --env-file "$ENV_FILE" $compose_file_args exec -T postgres pg_isready -U "$user" -d "$db" >/dev/null 2>&1; then
       echo "[INFO] Postgres is ready."
       return 0
     fi
@@ -89,42 +93,95 @@ wait_for_postgres() {
 }
 
 cmd_install() {
+  local mode="image"
+  if [ "${1-}" = "--source" ]; then
+    mode="source"
+    shift || true
+  fi
+
+  if [ -n "${1-:-}" ]; then
+    echo "[ERROR] Unknown argument to install: $1" >&2
+    usage
+    exit 1
+  fi
+
   ensure_env_files
   ensure_api_secret_key
 
-  echo "[INFO] Building application images..."
-  docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" build
+  local compose_file_args="-f $MAIN_COMPOSE_IMAGE"
+  if [ "$mode" = "source" ]; then
+    if [ ! -f "$MAIN_COMPOSE_SOURCE" ]; then
+      echo "[ERROR] $MAIN_COMPOSE_SOURCE not found. Cannot run in --source mode." >&2
+      exit 1
+    fi
+    compose_file_args="-f $MAIN_COMPOSE_IMAGE -f $MAIN_COMPOSE_SOURCE"
+    echo "[INFO] Deployment mode: SOURCE (building images from local repos)."
+  else
+    echo "[INFO] Deployment mode: IMAGE (using pre-built images from GHCR)."
+  fi
+
+  if [ "$mode" = "source" ]; then
+    echo "[INFO] Building application images from source..."
+    docker compose --env-file "$ENV_FILE" $compose_file_args build
+  else
+    echo "[INFO] Skipping local image build; Docker will pull images as needed."
+  fi
 
   echo "[INFO] Starting core infrastructure (postgres, redis, kafka, wukongim)..."
-  docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" up -d postgres redis kafka wukongim
+  docker compose --env-file "$ENV_FILE" $compose_file_args up -d postgres redis kafka wukongim
 
-  wait_for_postgres
+  wait_for_postgres "$compose_file_args"
 
   echo "[INFO] Running Alembic migrations for tgo-rag..."
-  docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" run --rm tgo-rag poetry run alembic upgrade head
+  docker compose --env-file "$ENV_FILE" $compose_file_args run --rm tgo-rag poetry run alembic upgrade head
 
   echo "[INFO] Running Alembic migrations for tgo-ai..."
-  docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" run --rm tgo-ai poetry run alembic upgrade head
+  docker compose --env-file "$ENV_FILE" $compose_file_args run --rm tgo-ai poetry run alembic upgrade head
 
   echo "[INFO] Running Alembic migrations for tgo-api..."
-  docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" run --rm tgo-api poetry run alembic upgrade head
+  docker compose --env-file "$ENV_FILE" $compose_file_args run --rm tgo-api poetry run alembic upgrade head
 
   echo "[INFO] Running Alembic migrations for tgo-platform..."
-  docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" run --rm -e PYTHONPATH=. tgo-platform poetry run alembic upgrade head
+  docker compose --env-file "$ENV_FILE" $compose_file_args run --rm -e PYTHONPATH=. tgo-platform poetry run alembic upgrade head
 
   echo "[INFO] Starting all core services..."
-  docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" up -d
+  docker compose --env-file "$ENV_FILE" $compose_file_args up -d
   echo "[INFO] All services are starting. Use 'docker compose ps' to inspect status."
 }
 
 cmd_uninstall() {
+  local mode="image"
+  if [ "${1-}" = "--source" ]; then
+    mode="source"
+    shift || true
+  fi
+
+  if [ -n "${1-:-}" ]; then
+    echo "[ERROR] Unknown argument to uninstall: $1" >&2
+    usage
+    exit 1
+  fi
+
   ensure_env_files
+
+  local compose_file_args="-f $MAIN_COMPOSE_IMAGE"
+  if [ "$mode" = "source" ]; then
+    if [ ! -f "$MAIN_COMPOSE_SOURCE" ]; then
+      echo "[ERROR] $MAIN_COMPOSE_SOURCE not found. Cannot run uninstall in --source mode." >&2
+      exit 1
+    fi
+    compose_file_args="-f $MAIN_COMPOSE_IMAGE -f $MAIN_COMPOSE_SOURCE"
+    echo "[INFO] Uninstalling services in SOURCE mode."
+  else
+    echo "[INFO] Uninstalling services in IMAGE mode."
+  fi
+
   echo "Do you want to delete all data (./data/ directory)? [y/N]"
   read -r answer
   case "$answer" in
     y|Y|yes|YES)
       echo "[INFO] Stopping services and removing images and volumes..."
-      docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" down --rmi local -v || true
+      docker compose --env-file "$ENV_FILE" $compose_file_args down --rmi local -v || true
       if [ -d "data" ]; then
         echo "[INFO] Removing ./data directory..."
         rm -rf data
@@ -132,28 +189,51 @@ cmd_uninstall() {
       ;;
     *)
       echo "[INFO] Stopping services and removing images (preserving data)..."
-      docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" down --rmi local || true
+      docker compose --env-file "$ENV_FILE" $compose_file_args down --rmi local || true
       ;;
   esac
 }
 
 cmd_service() {
   local sub=${1:-}
+  shift || true
+
+  local mode="image"
+  if [ "${1-}" = "--source" ]; then
+    mode="source"
+    shift || true
+  fi
+
+  if [ -n "${1-:-}" ]; then
+    echo "[ERROR] Unknown argument to service: $1" >&2
+    usage
+    exit 1
+  fi
+
+  local compose_file_args="-f $MAIN_COMPOSE_IMAGE"
+  if [ "$mode" = "source" ]; then
+    if [ ! -f "$MAIN_COMPOSE_SOURCE" ]; then
+      echo "[ERROR] $MAIN_COMPOSE_SOURCE not found. Cannot run service in --source mode." >&2
+      exit 1
+    fi
+    compose_file_args="-f $MAIN_COMPOSE_IMAGE -f $MAIN_COMPOSE_SOURCE"
+  fi
+
   case "$sub" in
     start)
       ensure_env_files
-      echo "[INFO] Starting all core services..."
-      docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" up -d
+      echo "[INFO] Starting all core services (mode: $mode)..."
+      docker compose --env-file "$ENV_FILE" $compose_file_args up -d
       ;;
     stop)
       ensure_env_files
-      echo "[INFO] Stopping all core services..."
-      docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" down
+      echo "[INFO] Stopping all core services (mode: $mode)..."
+      docker compose --env-file "$ENV_FILE" $compose_file_args down
       ;;
     remove)
       ensure_env_files
-      echo "[INFO] Stopping services and removing images..."
-      docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" down --rmi local
+      echo "[INFO] Stopping services and removing images (mode: $mode)..."
+      docker compose --env-file "$ENV_FILE" $compose_file_args down --rmi local
       ;;
     *)
       echo "[ERROR] Unknown service subcommand: $sub" >&2
@@ -188,16 +268,36 @@ cmd_tools() {
 
 cmd_build() {
   ensure_env_files
+
+  local mode="image"
+  if [ "${1-}" = "--source" ]; then
+    mode="source"
+    shift || true
+  fi
+
+  if [ "$mode" != "source" ]; then
+    echo "[ERROR] build is only supported in --source mode (local builds)." >&2
+    echo "Usage: ./tgo.sh build --source <service>" >&2
+    exit 1
+  fi
+
   local target=${1:-}
   if [ -z "$target" ]; then
     echo "[ERROR] Missing service name for build." >&2
     usage
     exit 1
   fi
+  shift || true
+
+  if [ -n "${1-:-}" ]; then
+    echo "[ERROR] Too many arguments for build." >&2
+    usage
+    exit 1
+  fi
 
   case "$target" in
     api) services=(tgo-api) ;;
-    rag) services=(tgo-rag) ;;
+    rag) services=(tgo-rag tgo-rag-worker tgo-rag-beat tgo-rag-flower) ;;
     ai) services=(tgo-ai) ;;
     platform) services=(tgo-platform) ;;
     web) services=(tgo-web) ;;
@@ -210,14 +310,21 @@ cmd_build() {
       ;;
   esac
 
+  if [ ! -f "$MAIN_COMPOSE_SOURCE" ]; then
+    echo "[ERROR] $MAIN_COMPOSE_SOURCE not found. Cannot build from source." >&2
+    exit 1
+  fi
+
+  local compose_file_args="-f $MAIN_COMPOSE_IMAGE -f $MAIN_COMPOSE_SOURCE"
+
   if [ "${#services[@]}" -eq 0 ]; then
-    echo "[INFO] Rebuilding all services..."
-    docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" build
-    docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" up -d
+    echo "[INFO] Rebuilding all services from source..."
+    docker compose --env-file "$ENV_FILE" $compose_file_args build
+    docker compose --env-file "$ENV_FILE" $compose_file_args up -d
   else
-    echo "[INFO] Rebuilding services: ${services[*]}..."
-    docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" build "${services[@]}"
-    docker compose --env-file "$ENV_FILE" -f "$MAIN_COMPOSE" up -d "${services[@]}"
+    echo "[INFO] Rebuilding services from source: ${services[*]}..."
+    docker compose --env-file "$ENV_FILE" $compose_file_args build "${services[@]}"
+    docker compose --env-file "$ENV_FILE" $compose_file_args up -d "${services[@]}"
   fi
 }
 
@@ -226,8 +333,8 @@ main() {
   shift || true
   case "$cmd" in
     help|-h|--help) usage ;;
-    install) cmd_install ;;
-    uninstall) cmd_uninstall ;;
+    install) cmd_install "$@" ;;
+    uninstall) cmd_uninstall "$@" ;;
     service) cmd_service "$@" ;;
     tools) cmd_tools "$@" ;;
     build) cmd_build "$@" ;;

@@ -84,15 +84,13 @@ services:
 
   # RAG Celery worker
   tgo-rag-worker:
-    build:
-      context: ./repos/tgo-rag
+    image: ghcr.io/tgoai/tgo/tgo-rag:latest
     container_name: tgo-rag-worker
     env_file:
       - ./.env
       - ./envs/tgo-rag.env
     volumes:
       - ./data/tgo-rag/uploads:/app/uploads
-
     depends_on:
       postgres:
         condition: service_healthy
@@ -106,8 +104,7 @@ services:
 
   # RAG Celery beat (scheduler)
   tgo-rag-beat:
-    build:
-      context: ./repos/tgo-rag
+    image: ghcr.io/tgoai/tgo/tgo-rag:latest
     container_name: tgo-rag-beat
     env_file:
       - ./.env
@@ -125,8 +122,7 @@ services:
 
   # RAG Flower (Celery monitoring UI)
   tgo-rag-flower:
-    build:
-      context: ./repos/tgo-rag
+    image: ghcr.io/tgoai/tgo/tgo-rag:latest
     container_name: tgo-rag-flower
     env_file:
       - ./.env
@@ -142,8 +138,7 @@ services:
 
   # RAG service
   tgo-rag:
-    build:
-      context: ./repos/tgo-rag
+    image: ghcr.io/tgoai/tgo/tgo-rag:latest
     container_name: tgo-rag
     env_file:
       - ./.env
@@ -153,14 +148,12 @@ services:
       - redis
     volumes:
       - ./data/tgo-rag/uploads:/app/uploads
-
     restart: unless-stopped
 
 
   # AI service
   tgo-ai:
-    build:
-      context: ./repos/tgo-ai
+    image: ghcr.io/tgoai/tgo/tgo-ai:latest
     container_name: tgo-ai
     env_file:
       - ./.env
@@ -178,8 +171,7 @@ services:
 
   # API service
   tgo-api:
-    build:
-      context: ./repos/tgo-api
+    image: ghcr.io/tgoai/tgo/tgo-api:latest
     container_name: tgo-api
     env_file:
       - ./envs/tgo-api.env
@@ -198,8 +190,7 @@ services:
 
   # Platform service
   tgo-platform:
-    build:
-      context: ./repos/tgo-platform
+    image: ghcr.io/tgoai/tgo/tgo-platform:latest
     container_name: tgo-platform
     env_file:
       - ./.env
@@ -213,10 +204,7 @@ services:
 
   # Customer service web (React build -> nginx)
   tgo-web:
-    build:
-      context: ./repos/tgo-web
-      args:
-        VITE_WIDGET_PREVIEW_URL: ${VITE_WIDGET_PREVIEW_URL:-http://localhost:${WIDGET_PORT:-3001}}
+    image: ghcr.io/tgoai/tgo/tgo-web:latest
     container_name: tgo-web
     env_file:
       - ./envs/tgo-web.env
@@ -226,10 +214,7 @@ services:
 
   # Widget app (React build -> nginx)
   tgo-widget-app:
-    build:
-      context: ./repos/tgo-widget-app
-      args:
-        VITE_API_BASE: ${VITE_API_BASE:-http://localhost:${API_PORT:-8000}}
+    image: ghcr.io/tgoai/tgo/tgo-widget-app:latest
     container_name: tgo-widget-app
     env_file:
       - ./envs/tgo-widget-app.env
