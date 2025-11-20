@@ -34,7 +34,22 @@ COPY pyproject.toml ./
 COPY poetry.lock* ./
 
 # Install only production dependencies into .venv
-RUN poetry install --only=main --no-root && rm -rf "$POETRY_CACHE_DIR"
+RUN poetry install --only=main --no-root && rm -rf "$POETRY_CACHE_DIR" && \
+    find /app/.venv -type d -name "tests" -exec rm -rf {} + && \
+    find /app/.venv -type d -name "test" -exec rm -rf {} + && \
+    find /app/.venv -type d -name "__pycache__" -exec rm -rf {} + && \
+    find /app/.venv -type f -name "*.pyc" -delete && \
+    find /app/.venv -type f -name "*.pyo" -delete && \
+    find /app/.venv -type d -name "*.dist-info" -exec rm -rf {} + && \
+    find /app/.venv -type d -name "*.egg-info" -exec rm -rf {} + && \
+    find /app/.venv -type d -name "doc" -exec rm -rf {} + && \
+    find /app/.venv -type d -name "docs" -exec rm -rf {} + && \
+    find /app/.venv -type f -name "*.txt" -delete && \
+    find /app/.venv -type f -name "*.md" -delete && \
+    find /app/.venv -type f -name "*.rst" -delete && \
+    find /app/.venv -type d -name "cache" -exec rm -rf {} + && \
+    find /app/.venv -type d -name "caches" -exec rm -rf {} + && \
+    echo "Cleanup completed."
 
 # Copy source code (for any build-time hooks)
 COPY . .
@@ -60,7 +75,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libmagic1 \
     poppler-utils \
     tesseract-ocr \
-    libreoffice \
+    libreoffice-core \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Poetry
@@ -105,28 +120,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     libpq-dev \
     libmagic1 \
-    poppler-utils \
-    tesseract-ocr \
-    libreoffice \
-    && rm -rf /var/lib/apt/lists/*
+    libreoffice-core \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean \
+    && rm -rf /var/cache/apt/*
 
 # Set home and cache directories for non-root user and ensure writable
 ENV HOME=/home/rag XDG_CACHE_HOME=/home/rag/.cache
 
 # Create non-root user
 RUN groupadd -r rag && useradd -r -g rag rag && \
-    mkdir -p /home/rag/.cache && chown -R rag:rag /home/rag
+    mkdir -p /home/rag/.cache /app/uploads /app/logs && \
+    chown -R rag:rag /home/rag /app
 
 # Set work directory
 WORKDIR /app
 
-# Copy virtualenv from builder (keep same path to preserve shebang)
-COPY --from=builder /app/.venv /app/.venv
-ENV PATH="/app/.venv/bin:$PATH"
+# Copy virtualenv from builder
+COPY --from=builder --chown=rag:rag /app/.venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
 
 # Create necessary directories and fix ownership
-RUN mkdir -p /app/uploads /app/logs && \
-    chown -R rag:rag /app
+# RUN mkdir -p /app/uploads /app/logs && \
+#     chown -R rag:rag /app /opt/venv
 
 # Copy source code as non-root owner
 COPY --chown=rag:rag . .
