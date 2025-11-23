@@ -64,17 +64,13 @@ const config: Config = {
       logo: {
         alt: 'Tgo 文档',
         src: 'img/logo.svg',
-        href: 'https://docs.tgo.ai/',
-        target: '_self',
       },
       items: [
         {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',
-          label: '文档',
-          href: 'https://docs.tgo.ai/',
-          target: '_self',
+          label: '文档'
         },
         {
           href: 'https://github.com/tgoai/tgo',
