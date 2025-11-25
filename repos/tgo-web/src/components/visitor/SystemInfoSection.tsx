@@ -48,24 +48,24 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({
 
   return (
     <div className={`pt-4 space-y-3 ${className}`}>
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('chat.visitor.sections.systemInfo', '\u7cfb\u7edf\u4fe1\u606f')}</h4>
+      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('chat.visitor.sections.systemInfo', '\u7cfb\u7edf\u4fe1\u606f')}</h4>
       {systemInfo ? (
         <div className="space-y-1.5 text-[13px] leading-5">
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.platform', '\u5e73\u53f0')}</span>
-            <span className="text-gray-800 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={platform}>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.platform', '\u5e73\u53f0')}</span>
+            <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={platform}>
               {platform}
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.sourcePage', '\u6765\u6e90\u9875\u9762')}</span>
-            <span className="text-gray-800 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2">
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.sourcePage', '\u6765\u6e90\u9875\u9762')}</span>
+            <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2">
               {isUrl(systemInfo.source_detail) ? (
                 <a
                   href={systemInfo.source_detail as string}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-blue-600 hover:underline underline-offset-2 break-all"
+                  className="text-blue-600 dark:text-blue-400 hover:underline underline-offset-2 break-all"
                   title={systemInfo.source_detail as string}
                 >
                   {systemInfo.source_detail}
@@ -76,26 +76,26 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.browser', '\u6d4f\u89c8\u5668')}</span>
-            <span className="text-gray-800 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={browser}>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.browser', '\u6d4f\u89c8\u5668')}</span>
+            <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={browser}>
               {browser}
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.os', '\u64cd\u4f5c\u7cfb\u7edf')}</span>
-            <span className="text-gray-800 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={os}>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.os', '\u64cd\u4f5c\u7cfb\u7edf')}</span>
+            <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={os}>
               {os}
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.firstSeen', '\u9996\u6b21\u8bbf\u95ee')}</span>
-            <span className="text-gray-800 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={firstSeen}>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.firstSeen', '\u9996\u6b21\u8bbf\u95ee')}</span>
+            <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={firstSeen}>
               {firstSeen}
             </span>
           </div>
         </div>
       ) : (
-        <div className="text-xs text-gray-400">{t('chat.visitor.system.empty', '\u6682\u65e0\u7cfb\u7edf\u4fe1\u606f')}</div>
+        <div className="text-xs text-gray-400 dark:text-gray-500">{t('chat.visitor.system.empty', '\u6682\u65e0\u7cfb\u7edf\u4fe1\u606f')}</div>
       )}
     </div>
   );

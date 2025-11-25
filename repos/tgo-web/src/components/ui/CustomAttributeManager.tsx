@@ -131,7 +131,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
                   onChange={(e) => setEditKey(e.target.value)}
                   onKeyDown={(e) => handleKeyDown(e, 'edit')}
                   placeholder={t('chat.visitor.customAttr.namePlaceholder', '属性名')}
-                  className="w-16 px-2 py-1.5 text-[13px] leading-5 text-gray-800 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-16 px-2 py-1.5 text-[13px] leading-5 text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
                 />
                 <input
                   type="text"
@@ -139,25 +139,25 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
                   onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={(e) => handleKeyDown(e, 'edit')}
                   placeholder={t('chat.visitor.customAttr.valuePlaceholder', '属性值')}
-                  className="flex-1 min-w-0 max-w-[100px] px-2 py-1.5 text-[13px] leading-5 text-gray-800 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="flex-1 min-w-0 max-w-[100px] px-2 py-1.5 text-[13px] leading-5 text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
                 />
                 <button
                   onClick={handleSaveEdit}
-                  className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors flex-shrink-0"
+                  className="p-1.5 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-colors flex-shrink-0"
                   title={t('common.save', '保存')}
                 >
                   <Check className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="p-1.5 text-gray-500 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors flex-shrink-0"
+                  className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors flex-shrink-0"
                   title={t('common.cancel', '取消')}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => handleDeleteInEdit(editingId!)}
-                  className="p-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors flex-shrink-0"
+                  className="p-1.5 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-md transition-colors flex-shrink-0"
                   title={t('common.delete', '删除')}
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -166,10 +166,10 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
             </div>
           ) : (
             <>
-              <span className="text-gray-500 text-[13px] leading-5 flex-shrink-0 pt-0.5">{attr.key}:</span>
+              <span className="text-gray-500 dark:text-gray-400 text-[13px] leading-5 flex-shrink-0 pt-0.5">{attr.key}:</span>
               <div className="flex items-start space-x-1.5 flex-1 min-w-0 ml-2">
                 <span
-                  className="text-gray-800 font-medium text-[13px] leading-5 cursor-pointer hover:text-gray-900 flex-1 min-w-0 text-right line-clamp-2"
+                  className="text-gray-800 dark:text-gray-200 font-medium text-[13px] leading-5 cursor-pointer hover:text-gray-900 dark:hover:text-gray-100 flex-1 min-w-0 text-right line-clamp-2"
                   onClick={() => handleStartEdit(attr)}
                   title={attr.value}
                   style={{
@@ -184,7 +184,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
                 </span>
                 <button
                   onClick={() => handleStartEdit(attr)}
-                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded transition-all flex-shrink-0 mt-0.5"
+                  className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-all flex-shrink-0 mt-0.5"
                   title={t('common.edit', '编辑')}
                 >
                   <Edit3 className="w-3 h-3" />
@@ -197,7 +197,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
 
       {/* Add new attribute */}
       {isAdding ? (
-        <div className="space-y-2.5 pt-2.5 border-t border-gray-100">
+        <div className="space-y-2.5 pt-2.5 border-t border-gray-100 dark:border-gray-700">
           <div className="flex items-center space-x-1.5">
             <input
               type="text"
@@ -205,7 +205,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
               onChange={(e) => setNewKey(e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, 'add')}
               placeholder={t('chat.visitor.customAttr.namePlaceholder', '属性名')}
-              className="w-16 px-2 py-1.5 text-[13px] leading-5 text-gray-800 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="w-16 px-2 py-1.5 text-[13px] leading-5 text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
             />
             <input
               type="text"
@@ -213,19 +213,19 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
               onChange={(e) => setNewValue(e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, 'add')}
               placeholder={t('chat.visitor.customAttr.valuePlaceholder', '属性值')}
-              className="flex-1 min-w-0 max-w-[100px] px-2 py-1.5 text-[13px] leading-5 text-gray-800 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className="flex-1 min-w-0 max-w-[100px] px-2 py-1.5 text-[13px] leading-5 text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
             />
             <button
               onClick={handleSaveAdd}
               disabled={!newKey.trim() || !newValue.trim()}
-              className="p-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+              className="p-1.5 text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
               title={t('common.save', '保存')}
             >
               <Check className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleCancelAdd}
-              className="p-1.5 text-gray-500 hover:text-gray-600 hover:bg-gray-50 rounded-md transition-colors flex-shrink-0"
+              className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-md transition-colors flex-shrink-0"
               title={t('common.cancel', '取消')}
             >
               <X className="w-3.5 h-3.5" />
@@ -242,7 +242,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
                 <button
                   key={template}
                   onClick={() => handleTemplateSelect(template)}
-                  className="px-2 py-1 text-[11px] leading-tight bg-blue-50 text-blue-700 border border-blue-200 rounded-full hover:bg-blue-100 transition-colors font-medium"
+                  className="px-2 py-1 text-[11px] leading-tight bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors font-medium"
                 >
                   {template}
                 </button>
@@ -253,7 +253,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
       ) : (
         <button
           onClick={handleStartAdd}
-          className="flex items-center space-x-1.5 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2.5 py-1.5 rounded-md transition-colors mt-2 font-medium"
+          className="flex items-center space-x-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 px-2.5 py-1.5 rounded-md transition-colors mt-2 font-medium"
         >
           <Plus className="w-3 h-3" />
           <span>{t('chat.visitor.customAttr.addButton', '添加自定义属性')}</span>

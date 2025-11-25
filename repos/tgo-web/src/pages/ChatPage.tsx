@@ -69,7 +69,7 @@ const ChatPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full bg-gray-50 dark:bg-gray-900">
       {/* Chat List */}
       <ChatList
         activeChat={activeChat}

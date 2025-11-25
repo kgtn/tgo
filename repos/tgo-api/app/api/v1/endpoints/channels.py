@@ -329,7 +329,8 @@ async def get_channel_info(
             localize_visitor_response_intent(visitor_payload, accept_language)
 
             name = visitor.name or visitor.nickname or "Unknown Visitor"
-            avatar = visitor.avatar_url or ""
+            # Use avatar_url from VisitorResponse (already resolved to full URL)
+            avatar = visitor_payload.avatar_url or ""
             return ChannelInfoResponse(
                 name=name,
                 avatar=avatar,
@@ -446,7 +447,8 @@ async def get_channel_info(
             localize_visitor_response_intent(visitor_payload, accept_language)
 
             name = visitor.name or visitor.nickname or "Unknown Visitor"
-            avatar = visitor.avatar_url or ""
+            # Use avatar_url from VisitorResponse (already resolved to full URL)
+            avatar = visitor_payload.avatar_url or ""
             return ChannelInfoResponse(
                 name=name,
                 avatar=avatar,

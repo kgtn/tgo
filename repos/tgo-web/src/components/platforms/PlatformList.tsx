@@ -53,18 +53,18 @@ const PlatformListItem: React.FC<PlatformListItemProps> = ({ platform }) => {
   if (!isSupported) {
     return (
       <div
-        className="flex items-center p-3 rounded-lg opacity-60 cursor-not-allowed bg-gray-50"
+        className="flex items-center p-3 rounded-lg opacity-60 cursor-not-allowed bg-gray-50 dark:bg-gray-800"
       >
-        <div className="text-gray-500">
+        <div className="text-gray-500 dark:text-gray-400">
           {renderIcon()}
         </div>
         <div className="flex-grow overflow-hidden">
-          <p className="text-sm font-medium truncate text-gray-500">
+          <p className="text-sm font-medium truncate text-gray-500 dark:text-gray-400">
             {displayName}
           </p>
           <div className="flex items-center mt-1">
             <span className={`w-2 h-2 ${statusConfig.color} rounded-full mr-1.5 flex-shrink-0 opacity-50`}></span>
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 dark:text-gray-500">
               {t('platforms.list.status.unsupported', '平台类型暂不支持')}
             </span>
           </div>
@@ -79,25 +79,25 @@ const PlatformListItem: React.FC<PlatformListItemProps> = ({ platform }) => {
       className={({ isActive }) => `
         flex items-center p-3 rounded-lg transition-colors duration-150
         ${isActive
-          ? 'bg-blue-50 hover:bg-blue-100/70 border border-blue-200/80'
-          : 'hover:bg-gray-100/70'
+          ? 'bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100/70 dark:hover:bg-blue-900/40 border border-blue-200/80 dark:border-blue-700/80'
+          : 'hover:bg-gray-100/70 dark:hover:bg-gray-700/50'
         }
       `}
     >
       {({ isActive }) => (
         <>
-          <div className="text-gray-700">
+          <div className="text-gray-700 dark:text-gray-300">
             {renderIcon()}
           </div>
           <div className="flex-grow overflow-hidden">
             <p className={`text-sm font-medium truncate ${
-              isActive ? 'text-blue-800' : 'text-gray-800'
+              isActive ? 'text-blue-800 dark:text-blue-300' : 'text-gray-800 dark:text-gray-200'
             }`}>
               {displayName}
             </p>
             <div className="flex items-center mt-1">
               <span className={`w-2 h-2 ${statusConfig.color} rounded-full mr-1.5 flex-shrink-0`}></span>
-              <span className={`text-xs ${statusConfig.textColor}`}>
+              <span className={`text-xs ${statusConfig.textColor} dark:text-gray-400`}>
                 {statusConfig.text}
               </span>
             </div>
@@ -165,14 +165,14 @@ const PlatformList: React.FC = () => {
 
   return (
     <>
-      <aside className="w-72 bg-white/90 backdrop-blur-lg border-r border-gray-200/60 flex flex-col shrink-0">
+      <aside className="w-72 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg border-r border-gray-200/60 dark:border-gray-700/60 flex flex-col shrink-0">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200/60 sticky top-0 bg-white/90 backdrop-blur-lg z-10 flex justify-between items-center">
-        <h3 className="text-md font-semibold text-gray-800">
+      <div className="p-4 border-b border-gray-200/60 dark:border-gray-700/60 sticky top-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg z-10 flex justify-between items-center">
+        <h3 className="text-md font-semibold text-gray-800 dark:text-gray-200">
           {t('platforms.list.title', '接入平台')}
         </h3>
         <button
-          className="p-1.5 text-blue-600 hover:bg-blue-100/70 rounded-md transition-colors duration-200"
+          className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100/70 dark:hover:bg-blue-900/30 rounded-md transition-colors duration-200"
           title={t('platforms.list.addPlatform', '添加平台')}
           onClick={handleAddPlatform}
         >
@@ -183,21 +183,21 @@ const PlatformList: React.FC = () => {
       {/* Platform List */}
       <nav className="flex-grow overflow-y-auto p-3 space-y-1">
         {isLoading && (
-          <div className="text-center text-gray-500 py-8 animate-pulse">
-            <Inbox className="mx-auto mb-4 w-12 h-12 text-gray-300" />
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8 animate-pulse">
+            <Inbox className="mx-auto mb-4 w-12 h-12 text-gray-300 dark:text-gray-600" />
             <p className="text-sm">{t('platforms.list.loading', '正在加载平台列表…')}</p>
           </div>
         )}
 
         {!isLoading && loadError && (
-          <div className="text-center text-red-600 py-8 px-4">
-            <Inbox className="mx-auto mb-4 w-12 h-12 text-red-300" />
+          <div className="text-center text-red-600 dark:text-red-400 py-8 px-4">
+            <Inbox className="mx-auto mb-4 w-12 h-12 text-red-300 dark:text-red-500" />
             <p className="text-sm font-medium">{t('platforms.list.loadFailedTitle', '加载失败')}</p>
-            <p className="text-xs mt-1 text-red-500">{loadError}</p>
+            <p className="text-xs mt-1 text-red-500 dark:text-red-400">{loadError}</p>
             <button
               onClick={handleRetry}
               disabled={isRetrying}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2 mx-auto"
+              className="mt-4 px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2 mx-auto"
             >
               <RefreshCw className={`w-4 h-4 ${isRetrying ? 'animate-spin' : ''}`} />
               {isRetrying ? t('platforms.list.retrying', '重试中...') : t('platforms.list.retry', '重试')}
@@ -213,8 +213,8 @@ const PlatformList: React.FC = () => {
         ))}
 
         {!isLoading && !loadError && platforms.length === 0 && (
-          <div className="text-center text-gray-500 py-8">
-            <Inbox className="mx-auto mb-4 w-12 h-12 text-gray-300" />
+          <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+            <Inbox className="mx-auto mb-4 w-12 h-12 text-gray-300 dark:text-gray-600" />
             <p className="text-sm">{t('platforms.list.emptyTitle', '暂无平台')}</p>
             <p className="text-xs mt-1">{t('platforms.list.emptyDescription', '点击上方按钮添加平台')}</p>
           </div>

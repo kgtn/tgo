@@ -125,7 +125,6 @@ class APIClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,

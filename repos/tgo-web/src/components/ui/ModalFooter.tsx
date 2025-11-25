@@ -10,7 +10,7 @@ interface ModalFooterProps {
  */
 const ModalFooter: React.FC<ModalFooterProps> = ({ className = '', children }) => {
   return (
-    <div className={`flex items-center justify-end gap-3 border-t border-gray-200 bg-white px-6 py-3 ${className}`}>
+    <div className={`flex items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-6 py-3 ${className}`}>
       {children}
     </div>
   );

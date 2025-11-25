@@ -148,9 +148,9 @@ export const TagInput: React.FC<TagInputProps> = ({
       <div
         className={`min-h-[40px] w-full px-3 py-2 border rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-colors cursor-text ${
           disabled 
-            ? 'bg-gray-100 border-gray-300 cursor-not-allowed' 
-            : 'bg-white border-gray-300 hover:border-gray-400'
-        } ${error ? 'border-red-300 focus-within:ring-red-500 focus-within:border-red-500' : ''}`}
+            ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600 cursor-not-allowed' 
+            : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+        } ${error ? 'border-red-300 dark:border-red-600 focus-within:ring-red-500 focus-within:border-red-500' : ''}`}
         onClick={handleContainerClick}
       >
         <div className="flex flex-wrap gap-1.5 items-center">
@@ -173,7 +173,7 @@ export const TagInput: React.FC<TagInputProps> = ({
                     e.stopPropagation();
                     removeTag(index);
                   }}
-                  className="flex-shrink-0 hover:bg-black/10 rounded-full p-0.5 transition-colors"
+                  className="flex-shrink-0 hover:bg-black/10 dark:hover:bg-white/10 rounded-full p-0.5 transition-colors"
                   title="删除标签"
                 >
                   <X className="w-3 h-3" />
@@ -192,7 +192,7 @@ export const TagInput: React.FC<TagInputProps> = ({
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
               placeholder={tags.length === 0 ? placeholder : ''}
-              className="flex-1 min-w-[120px] outline-none bg-transparent text-sm"
+              className="flex-1 min-w-[120px] outline-none bg-transparent text-sm dark:text-gray-100 dark:placeholder-gray-400"
               disabled={disabled}
             />
           )}
@@ -201,9 +201,9 @@ export const TagInput: React.FC<TagInputProps> = ({
 
       {/* Helper Text and Error */}
       <div className="mt-1 flex justify-between items-center text-xs">
-        <div className="text-gray-500">
+        <div className="text-gray-500 dark:text-gray-400">
           {error ? (
-            <span className="text-red-600">{error}</span>
+            <span className="text-red-600 dark:text-red-400">{error}</span>
           ) : (
             <span>
               {tags.length}/{maxTags} 个标签
@@ -213,7 +213,7 @@ export const TagInput: React.FC<TagInputProps> = ({
         </div>
         
         {!disabled && (
-          <div className="text-gray-400">
+          <div className="text-gray-400 dark:text-gray-500">
             回车或逗号添加标签
           </div>
         )}

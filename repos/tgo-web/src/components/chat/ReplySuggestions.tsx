@@ -18,12 +18,12 @@ const ReplySuggestions: React.FC<ReplySuggestionsProps> = ({ suggestions, onSugg
   };
 
   return (
-    <div className="mt-2 ml-10 pl-2 flex items-center gap-2 border-l border-dashed border-gray-300">
-      <span className="text-xs text-gray-400">{t('chat.suggestions.label', '✨ Suggestions:')}</span>
+    <div className="mt-2 ml-10 pl-2 flex items-center gap-2 border-l border-dashed border-gray-300 dark:border-gray-600">
+      <span className="text-xs text-gray-400 dark:text-gray-500">{t('chat.suggestions.label', '✨ Suggestions:')}</span>
       {suggestions.map((suggestion, index) => (
         <button
           key={index}
-          className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded-full border border-gray-200 transition-colors"
+          className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 px-2 py-1 rounded-full border border-gray-200 dark:border-gray-600 transition-colors"
           onClick={() => handleSuggestionClick(suggestion)}
         >
           {suggestion}

@@ -8,7 +8,7 @@ import OnboardingChecklist from '@/components/onboarding/OnboardingChecklist';
  */
 const Layout: React.FC = () => {
   return (
-    <div className="bg-gray-100 h-screen overflow-hidden font-sans antialiased">
+    <div className="bg-gray-100 dark:bg-gray-900 h-screen overflow-hidden font-sans antialiased">
       <div className="flex h-full w-full">
         {/* Sidebar Navigation */}
         <Sidebar />

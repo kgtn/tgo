@@ -395,7 +395,7 @@ const MessagesListComponent: React.FC<MessagesListProps> = ({
           <>
             {/* Date Separator - show if we have any messages */}
             {historicalMessages.length > 0 && (
-              <div className="text-center text-xs text-gray-400">
+              <div className="text-center text-xs text-gray-400 dark:text-gray-500">
                 {(() => {
                   const timestamp = historicalMessages[0].timestamp;
                   const date = new Date(timestamp * 1000);
@@ -432,7 +432,7 @@ const MessagesListComponent: React.FC<MessagesListProps> = ({
             ))}
 
             {isLoadingMoreNewer ? (
-              <div className="text-center py-2 text-gray-400 text-xs">{t('chat.history.loadingNewer', '加载中...')}</div>
+              <div className="text-center py-2 text-gray-400 dark:text-gray-500 text-xs">{t('chat.history.loadingNewer', '加载中...')}</div>
             ) : null}
             <div ref={messagesEndRef} />
           </>

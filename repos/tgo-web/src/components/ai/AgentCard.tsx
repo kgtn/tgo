@@ -82,7 +82,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
   const statusIndicator = getStatusIndicator(agent.status);
 
   return (
-    <div className="bg-white/80 backdrop-blur-md rounded-lg p-5 flex flex-col justify-between shadow-sm border border-gray-200/60">
+    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-lg p-5 flex flex-col justify-between shadow-sm border border-gray-200/60 dark:border-gray-700">
       <div>
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center space-x-3">
@@ -91,7 +91,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
                 <img
                   src={agent.avatar}
                   alt={agent.name}
-                  className="w-10 h-10 rounded-md object-cover flex-shrink-0 border border-gray-200"
+                  className="w-10 h-10 rounded-md object-cover flex-shrink-0 border border-gray-200 dark:border-gray-600"
                   onError={(e) => {
                     // If image fails to load, hide it and show default avatar
                     e.currentTarget.style.display = 'none';
@@ -105,7 +105,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
 
               {/* Default avatar - shown when no valid avatar or image load fails */}
               <div
-                className={`w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-sm border border-gray-200 ${
+                className={`w-10 h-10 rounded-md flex items-center justify-center text-white font-bold text-sm border border-gray-200 dark:border-gray-600 ${
                   hasValidAvatarUrl ? 'hidden' : ''
                 } ${defaultAvatar?.colorClass || 'bg-gradient-to-br from-gray-400 to-gray-500'}`}
                 style={{ display: hasValidAvatarUrl ? 'none' : 'flex' }}
@@ -114,8 +114,8 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
               </div>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-800">{agent.name}</h3>
-              <p className="text-xs text-gray-500">{agent.role || t('agents.card.defaultRole', '智能体')}</p>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-100">{agent.name}</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{agent.role || t('agents.card.defaultRole', '智能体')}</p>
             </div>
           </div>
           <div className="flex items-center">
@@ -126,12 +126,12 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
           </div>
         </div>
 
-        <p className="text-sm text-gray-600 leading-relaxed mb-3 h-16 overflow-hidden text-ellipsis">
+        <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-3 h-16 overflow-hidden text-ellipsis">
           {agent.description}
         </p>
 
-        <div className="text-xs text-gray-500 mb-3">
-          <p>{t('agents.card.llmLabel', 'LLM')}: <span className="font-mono text-gray-700">{agent.llmModel || 'gemini-1.5-pro'}</span></p>
+        <div className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+          <p>{t('agents.card.llmLabel', 'LLM')}: <span className="font-mono text-gray-700 dark:text-gray-200">{agent.llmModel || 'gemini-1.5-pro'}</span></p>
         </div>
 
         {/* 工具显示（紧凑，可展开） */}
@@ -153,7 +153,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
               {agent.tools.length > 3 && (
                 <button
                   onClick={() => setShowAllTools(!showAllTools)}
-                  className="inline-flex items-center rounded-md border bg-blue-50 text-blue-600 border-blue-200 px-1.5 py-0.5 text-[11px] hover:bg-blue-100 transition-colors"
+                  className="inline-flex items-center rounded-md border bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-1.5 py-0.5 text-[11px] hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                 >
                   {showAllTools ? (
                     <>
@@ -170,7 +170,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
               )}
             </div>
           ) : (
-            <div className="flex items-center text-gray-400">
+            <div className="flex items-center text-gray-400 dark:text-gray-500">
               <Wrench className="w-4 h-4 mr-2 opacity-50" />
               <span className="text-[12px]">{t('agents.card.noTools', '未关联工具')}</span>
             </div>
@@ -201,7 +201,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
               {agent.collections.length > 5 && (
                 <button
                   onClick={() => setShowAllCollections(!showAllCollections)}
-                  className="inline-flex items-center rounded-md border bg-blue-50 text-blue-600 border-blue-200 px-1.5 py-0.5 text-[11px] hover:bg-blue-100 transition-colors"
+                  className="inline-flex items-center rounded-md border bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 border-blue-200 dark:border-blue-700 px-1.5 py-0.5 text-[11px] hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                 >
                   {showAllCollections ? (
                     <>
@@ -218,21 +218,21 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
               )}
             </div>
           ) : (
-            <div className="text-[12px] text-gray-400">{t('agents.card.noKnowledgeBases', '未关联知识库')}</div>
+            <div className="text-[12px] text-gray-400 dark:text-gray-500">{t('agents.card.noKnowledgeBases', '未关联知识库')}</div>
           )}
         </div>
       </div>
 
-      <div className="mt-4 pt-3 border-t border-gray-200/60 flex justify-end space-x-3">
+      <div className="mt-4 pt-3 border-t border-gray-200/60 dark:border-gray-700 flex justify-end space-x-3">
         <button
-          className="text-gray-500 hover:text-green-600 transition-colors duration-200 p-1 rounded hover:bg-green-50"
+          className="text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 transition-colors duration-200 p-1 rounded hover:bg-green-50 dark:hover:bg-green-900/30"
           title={t('agents.card.editTooltip', '编辑智能体')}
           onClick={() => handleAction('edit')}
         >
           <Pencil className="w-4 h-4" />
         </button>
         <button
-          className="transition-colors duration-200 p-1 rounded  text-gray-500 hover:text-red-600 hover:bg-red-50"
+          className="transition-colors duration-200 p-1 rounded text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
           onClick={() => handleAction('delete')}
         >
           <Trash2 className="w-4 h-4" />

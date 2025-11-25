@@ -4,6 +4,7 @@
  */
 
 import { BaseApiService } from './base/BaseApiService';
+import { apiClient } from './api';
 import type { Visitor, ChannelAIInsights } from '@/types';
 
 // API Request/Response Types based on OpenAPI specification
@@ -79,6 +80,16 @@ export interface VisitorByChannelParams {
   channel_type: number; // 1 for personal; 251 for customer service
 }
 
+// Response for POST /v1/visitors/{visitor_id}/avatar
+export interface VisitorAvatarUploadResponse {
+  visitor_id: string;
+  avatar_url: string;
+  file_name: string;
+  file_size: number;
+  file_type: string;
+  uploaded_at: string;
+}
+
 
 /**
  * Visitor API Service Class
@@ -88,6 +99,7 @@ class VisitorApiService extends BaseApiService {
     visitors: '/v1/visitors',
     visitorById: (id: string) => `/v1/visitors/${id}`,
     visitorAttributes: (id: string) => `/v1/visitors/${id}/attributes`,
+    visitorAvatar: (id: string) => `/v1/visitors/${id}/avatar`,
     visitorByChannel: '/v1/visitors/by-channel',
     enableAI: (id: string) => `/v1/visitors/${id}/enable-ai`,
     disableAI: (id: string) => `/v1/visitors/${id}/disable-ai`,
@@ -138,6 +150,24 @@ class VisitorApiService extends BaseApiService {
   async disableAI(visitorId: string): Promise<VisitorResponse> {
     const endpoint = (this.endpoints.disableAI as (id: string) => string)(visitorId);
     return this.post<VisitorResponse>(endpoint, {});
+  }
+
+  /**
+   * Upload visitor avatar using POST /v1/visitors/{visitor_id}/avatar
+   * @param visitorId - The visitor's UUID
+   * @param file - The image file to upload (JPEG, PNG, GIF, WebP; max 5MB)
+   */
+  async uploadAvatar(visitorId: string, file: File): Promise<VisitorAvatarUploadResponse> {
+    const endpoint = (this.endpoints.visitorAvatar as (id: string) => string)(visitorId);
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      return await apiClient.postFormData<VisitorAvatarUploadResponse>(endpoint, formData);
+    } catch (error) {
+      console.error('Upload visitor avatar failed:', error);
+      throw new Error(this.handleApiError(error));
+    }
   }
 
   /**

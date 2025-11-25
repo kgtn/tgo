@@ -182,29 +182,29 @@ const RichTextMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) 
   const renderRichFile = () => {
     if (!richFile) return null;
     const boxClass = isStaff
-      ? 'flex items-center space-x-3 rounded-md border border-blue-200 bg-white px-3 py-2 max-w-xs self-end'
-      : 'mt-2 flex items-center space-x-3 rounded-md border border-gray-200 bg-white px-3 py-2 max-w-xs';
+      ? 'flex items-center space-x-3 rounded-md border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 px-3 py-2 max-w-xs self-end'
+      : 'mt-2 flex items-center space-x-3 rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 max-w-xs';
     return (
       <div className={boxClass}>
         {getFileIcon(richFile.name, 'w-5 h-5 flex-shrink-0')}
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-800 truncate">{richFile.name}</p>
-          {richFile.size && <p className="text-xs text-gray-500">{formatBytes(richFile.size)}</p>}
+          <p className="text-sm text-gray-800 dark:text-gray-200 truncate">{richFile.name}</p>
+          {richFile.size && <p className="text-xs text-gray-500 dark:text-gray-400">{formatBytes(richFile.size)}</p>}
         </div>
         {richFile.upload_status === 'uploading' && (
-          <span className="text-xs text-gray-500 flex-shrink-0">
+          <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
             {typeof richFile.upload_progress === 'number' ? `${richFile.upload_progress}%` : '上传中'}
           </span>
         )}
         {richFile.upload_status === 'error' && (
-          <span className="text-xs text-red-500 flex-shrink-0">上传失败</span>
+          <span className="text-xs text-red-500 dark:text-red-400 flex-shrink-0">上传失败</span>
         )}
         {richFile.url && richFile.upload_status !== 'uploading' && (
           <a
             href={richFile.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-blue-500 hover:text-blue-600 flex-shrink-0"
+            className="text-xs text-blue-500 dark:text-blue-400 hover:text-blue-600 dark:hover:text-blue-300 flex-shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
             打开
@@ -218,7 +218,7 @@ const RichTextMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) 
   const shouldRenderMarkdown = hasStreamData;
 
   const textBubble = isStaff ? (
-    <div ref={rtTextRef} className="inline-block bg-blue-500 text-white p-3 rounded-lg rounded-tr-none shadow-sm">
+    <div ref={rtTextRef} className="inline-block bg-blue-500 dark:bg-blue-600 text-white p-3 rounded-lg rounded-tr-none shadow-sm">
       {shouldRenderMarkdown ? (
         <MarkdownContent content={richContent} className="text-sm markdown-white" />
       ) : (
@@ -226,11 +226,11 @@ const RichTextMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) 
       )}
     </div>
   ) : (
-    <div ref={rtTextRef} className="inline-block bg-white p-3 rounded-lg rounded-tl-none shadow-sm border border-gray-100">
+    <div ref={rtTextRef} className="inline-block bg-white dark:bg-gray-700 p-3 rounded-lg rounded-tl-none shadow-sm border border-gray-100 dark:border-gray-600">
       {shouldRenderMarkdown ? (
-        <MarkdownContent content={richContent} className="text-sm" />
+        <MarkdownContent content={richContent} className="text-sm dark:text-gray-200" />
       ) : (
-        <p className="text-sm text-gray-800 whitespace-pre-wrap">{richContent}</p>
+        <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{richContent}</p>
       )}
     </div>
   );
@@ -248,8 +248,8 @@ const RichTextMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) 
                 key={idx}
                 className={
                   (isStaff
-                    ? 'relative rounded-md overflow-hidden border border-blue-200 bg-white '
-                    : 'relative rounded-md overflow-hidden border border-gray-100 bg-white '
+                    ? 'relative rounded-md overflow-hidden border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-800 '
+                    : 'relative rounded-md overflow-hidden border border-gray-100 dark:border-gray-600 bg-white dark:bg-gray-800 '
                   ) +
                   (im.upload_status === 'error'
                     ? 'cursor-pointer hover:opacity-95'

@@ -1911,6 +1911,115 @@
         }
       }
     },
+    "/v1/visitors/{visitor_id}/avatar": {
+      "post": {
+        "tags": [
+          "Visitors",
+          "Visitors"
+        ],
+        "summary": "Upload visitor avatar",
+        "description": "Upload an avatar image for a visitor.\n\n    **Authentication**: JWT (Staff) authentication required.\n    - Use `Authorization: Bearer \u003Ctoken\u003E` header\n\n    **File Requirements**:\n    - Allowed formats: JPEG, PNG, GIF, WebP\n    - Maximum size: 5MB\n\n    **Storage**:\n    - Files are stored locally on the server\n    - The `avatar_url` field is updated with a relative path (e.g., `/v1/visitors/{visitor_id}/avatar`)",
+        "operationId": "upload_visitor_avatar_v1_visitors__visitor_id__avatar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "visitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visitor Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_visitor_avatar_v1_visitors__visitor_id__avatar_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorAvatarUploadResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Visitors",
+          "Visitors"
+        ],
+        "summary": "Get visitor avatar",
+        "description": "Retrieve the avatar image for a visitor.\n\n    **Public Access**: This endpoint allows public access to serve avatar images.\n    If the visitor has no avatar or an external URL, returns 404.",
+        "operationId": "get_visitor_avatar_v1_visitors__visitor_id__avatar_get",
+        "parameters": [
+          {
+            "name": "visitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visitor Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Avatar image file",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              },
+              "image/*": {
+
+              }
+            }
+          },
+          "404": {
+            "description": "Avatar not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/assignments": {
       "get": {
         "tags": [
@@ -10463,6 +10572,21 @@
         ],
         "title": "Body_upload_platform_logo_v1_platforms__platform_id__logo_post"
       },
+      "Body_upload_visitor_avatar_v1_visitors__visitor_id__avatar_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File",
+            "description": "Avatar image file"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_visitor_avatar_v1_visitors__visitor_id__avatar_post"
+      },
       "CancelByClientNoRequest": {
         "properties": {
           "platform_api_key": {
@@ -12749,6 +12873,12 @@
             "title": "Chat Url",
             "description": "Chat completion URL for custom platforms.\n\nConstructed as: {API_BASE_URL}/v1/chat/completions\nOnly returned for platforms with type='custom'.",
             "readOnly": true
+          },
+          "callback_url": {
+            "type": "string",
+            "title": "Callback Url",
+            "description": "Webhook callback URL for this platform.\n\nConstructed as: {API_BASE_URL}/v1/platforms/callback/{platform_api_key}",
+            "readOnly": true
           }
         },
         "type": "object",
@@ -12759,7 +12889,8 @@
           "id",
           "project_id",
           "logo_url",
-          "chat_url"
+          "chat_url",
+          "callback_url"
         ],
         "title": "PlatformResponse",
         "description": "Schema for platform detail response (with all fields including sensitive data)."
@@ -15537,6 +15668,53 @@
         "type": "object",
         "title": "VisitorAttributesUpdate",
         "description": "Schema for updating visitor profile attributes."
+      },
+      "VisitorAvatarUploadResponse": {
+        "properties": {
+          "visitor_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Visitor Id",
+            "description": "Visitor ID"
+          },
+          "avatar_url": {
+            "type": "string",
+            "title": "Avatar Url",
+            "description": "Avatar URL (relative path for local storage)"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name",
+            "description": "Original file name"
+          },
+          "file_size": {
+            "type": "integer",
+            "title": "File Size",
+            "description": "File size in bytes"
+          },
+          "file_type": {
+            "type": "string",
+            "title": "File Type",
+            "description": "MIME type of the file"
+          },
+          "uploaded_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Uploaded At",
+            "description": "Upload timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "visitor_id",
+          "avatar_url",
+          "file_name",
+          "file_size",
+          "file_type",
+          "uploaded_at"
+        ],
+        "title": "VisitorAvatarUploadResponse",
+        "description": "Response schema for visitor avatar upload."
       },
       "VisitorBasicResponse": {
         "properties": {

@@ -432,16 +432,16 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col min-h-0">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col min-h-0">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
-              <Bot className="w-6 h-6 text-blue-600" />
-              <h2 className="text-xl font-semibold text-gray-900">{t('agents.modal.edit.title', '编辑智能体')}</h2>
+              <Bot className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('agents.modal.edit.title', '编辑智能体')}</h2>
             </div>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
               disabled={isUpdating || isLoadingAgent}
             >
               <X className="w-6 h-6" />
@@ -452,8 +452,8 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
           {isLoadingAgent && (
             <div className="flex items-center justify-center py-12">
               <div className="flex items-center space-x-3">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                <span className="text-gray-600">{t('agents.edit.loading', '加载智能体详情...')}</span>
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
+                <span className="text-gray-600 dark:text-gray-300">{t('agents.edit.loading', '加载智能体详情...')}</span>
               </div>
             </div>
           )}
@@ -461,14 +461,14 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
           {/* Error State */}
           {agentError && !isLoadingAgent && (
             <div className="flex flex-col items-center justify-center py-12 px-6">
-              <div className="text-red-500 mb-4">
+              <div className="text-red-500 dark:text-red-400 mb-4">
                 <XCircle className="w-12 h-12" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">{t('common.loadFailed', '加载失败')}</h3>
-              <p className="text-gray-600 text-center mb-4">{agentError}</p>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-2">{t('common.loadFailed', '加载失败')}</h3>
+              <p className="text-gray-600 dark:text-gray-300 text-center mb-4">{agentError}</p>
               <button
                 onClick={() => agentId && fetchAgent(agentId)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors"
               >
                 {t('common.retry', '重试')}
               </button>
@@ -478,7 +478,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
           {/* Form Content - Only show when agent is loaded */}
           {agent && !isLoadingAgent && !agentError && (
             <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-              <div className="flex-1 overflow-y-auto min-h-0">
+              <div className="flex-1 overflow-y-auto min-h-0 dark:bg-gray-900">
                 <div className="p-6 space-y-6">
           {/* 基本信息 */}
           <SectionCard variant="blue">
@@ -487,15 +487,15 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* 智能体名称 */}
               <div>
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                  <User className="w-4 h-4 text-gray-500" />
+                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   <span>{t('agents.form.name', '智能体名称')}</span>
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:hover:border-gray-500"
                   placeholder={t('agents.create.placeholders.name', '请输入智能体名称')}
                   required
                   disabled={isUpdating}
@@ -504,15 +504,15 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
 
               {/* 职业/角色 */}
               <div>
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                  <Briefcase className="w-4 h-4 text-gray-500" />
+                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <Briefcase className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                   <span>{t('agents.form.profession', '职业/角色')}</span>
                 </label>
                 <input
                   type="text"
                   value={formData.profession}
                   onChange={(e) => handleInputChange('profession', e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 hover:border-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:hover:border-gray-500"
                   placeholder={t('agents.create.placeholders.profession', '例如：客服专员、技术支持、销售顾问')}
                   required
                   disabled={isUpdating}
@@ -526,13 +526,13 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
             <SectionHeader icon={<Bot className="w-5 h-5 text-purple-600" />} title={t('agents.create.sections.modelConfig', '模型配置')} />
 
             <div>
-              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 <span>{t('agents.form.llmModel', 'LLM模型')}</span>
               </label>
               <select
                 value={resolvedLlmModel}
                 onChange={(e) => handleInputChange('llmModel', e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 hover:border-gray-400"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 hover:border-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:hover:border-gray-500"
                 disabled={isUpdating || llmLoading}
               >
                 {llmLoading ? (
@@ -561,7 +561,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
                 )}
               </select>
               {llmError && (
-                <p className="mt-1 text-sm text-red-500 flex items-center space-x-1">
+                <p className="mt-1 text-sm text-red-500 dark:text-red-400 flex items-center space-x-1">
                   <XCircle className="w-4 h-4" />
                   <span>{t('agents.create.models.loadFailedInline', '模型加载失败: {{error}}', { error: llmError })}</span>
                 </p>
@@ -575,14 +575,14 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
             <SectionHeader icon={<FolderOpen className="w-5 h-5 text-green-600" />} title={t('agents.create.sections.description', '智能体描述')} />
 
             <div>
-              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
+              <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 <span>{t('agents.form.detailedDescription', '详细描述')}</span>
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => handleInputChange('description', e.target.value)}
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 resize-none hover:border-gray-400"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 resize-none hover:border-gray-400 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:hover:border-gray-500"
                 placeholder={t('agents.create.placeholders.description', '请详细描述智能体的功能、职责和特点，例如：负责处理客户咨询，提供产品信息和技术支持...')}
                 required
                 disabled={isUpdating}
@@ -623,7 +623,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="inline-flex h-9 items-center px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              className="inline-flex h-9 items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-colors"
               disabled={isUpdating}
             >
               {t('common.cancel', '取消')}
@@ -631,7 +631,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
             <button
               type="button"
               onClick={handleReset}
-              className="inline-flex h-9 items-center px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+              className="inline-flex h-9 items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-colors"
               disabled={isUpdating}
             >
               <RotateCcw className="w-4 h-4 mr-2" />
@@ -639,7 +639,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
             </button>
             <button
               type="submit"
-              className="inline-flex h-9 items-center px-5 text-sm font-medium bg-blue-600 text-white border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex h-9 items-center px-5 text-sm font-medium bg-blue-600 dark:bg-blue-700 text-white border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={isUpdating}
             >
               {isUpdating ? (

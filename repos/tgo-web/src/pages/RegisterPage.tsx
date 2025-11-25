@@ -115,29 +115,29 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-green-50/50 flex items-center justify-center min-h-screen font-sans antialiased">
-      <div className="w-full max-w-md px-8 py-10 bg-white/80 backdrop-blur-lg rounded-xl shadow-lg border border-gray-200/60">
+    <div className="bg-gradient-to-br from-gray-50 to-green-50/50 dark:from-gray-900 dark:to-green-900/20 flex items-center justify-center min-h-screen font-sans antialiased">
+      <div className="w-full max-w-md px-8 py-10 bg-white/80 dark:bg-gray-800/90 backdrop-blur-lg rounded-xl shadow-lg border border-gray-200/60 dark:border-gray-700/60">
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link to="/" className="flex items-center space-x-2">
             <img src="/logo.svg" alt="Tgo CS Logo" className="w-10 h-10" />
-            <span className="font-semibold text-2xl text-gray-800">{t('brand.name')}</span>
+            <span className="font-semibold text-2xl text-gray-800 dark:text-gray-200">{t('brand.name')}</span>
           </Link>
         </div>
 
-        <h2 className="text-2xl font-semibold text-center text-gray-700 mb-6">{t('auth.register.title')}</h2>
+        <h2 className="text-2xl font-semibold text-center text-gray-700 dark:text-gray-200 mb-6">{t('auth.register.title')}</h2>
 
         {/* General Error Message */}
         {errors.general && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600">{errors.general}</p>
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 rounded-md">
+            <p className="text-sm text-red-600 dark:text-red-400">{errors.general}</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit}>
           {/* Email Field */}
           <div className="mb-4">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-600 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               {t('auth.register.email')}
             </label>
             <input
@@ -147,20 +147,20 @@ const RegisterPage: React.FC = () => {
               required
               value={formData.email}
               onChange={handleInputChange}
-              className={`w-full px-4 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/90 transition-colors ${
-                errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300/80'
+              className={`w-full px-4 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white/90 dark:bg-gray-700/50 dark:text-gray-200 transition-colors ${
+                errors.email ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30' : 'border-gray-300/80 dark:border-gray-600/80'
               }`}
               placeholder={t('auth.register.emailPlaceholder')}
               disabled={isLoading}
             />
             {errors.email && (
-              <p className="mt-1 text-xs text-red-600">{errors.email}</p>
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.email}</p>
             )}
           </div>
 
           {/* Password Field */}
           <div className="mb-4">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-600 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               {t('auth.register.password')}
             </label>
             <input
@@ -170,20 +170,20 @@ const RegisterPage: React.FC = () => {
               required
               value={formData.password}
               onChange={handleInputChange}
-              className={`w-full px-4 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/90 transition-colors ${
-                errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300/80'
+              className={`w-full px-4 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white/90 dark:bg-gray-700/50 dark:text-gray-200 transition-colors ${
+                errors.password ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30' : 'border-gray-300/80 dark:border-gray-600/80'
               }`}
               placeholder={t('auth.register.passwordPlaceholder')}
               disabled={isLoading}
             />
             {errors.password && (
-              <p className="mt-1 text-xs text-red-600">{errors.password}</p>
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.password}</p>
             )}
           </div>
 
           {/* Password Confirmation Field */}
           <div className="mb-6">
-            <label htmlFor="passwordConfirmation" className="block text-sm font-medium text-gray-600 mb-1">
+            <label htmlFor="passwordConfirmation" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               {t('auth.register.passwordConfirmation')}
             </label>
             <input
@@ -193,14 +193,14 @@ const RegisterPage: React.FC = () => {
               required
               value={formData.passwordConfirmation}
               onChange={handleInputChange}
-              className={`w-full px-4 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/90 transition-colors ${
-                errors.passwordConfirmation ? 'border-red-300 bg-red-50' : 'border-gray-300/80'
+              className={`w-full px-4 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white/90 dark:bg-gray-700/50 dark:text-gray-200 transition-colors ${
+                errors.passwordConfirmation ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/30' : 'border-gray-300/80 dark:border-gray-600/80'
               }`}
               placeholder={t('auth.register.passwordConfirmationPlaceholder')}
               disabled={isLoading}
             />
             {errors.passwordConfirmation && (
-              <p className="mt-1 text-xs text-red-600">{errors.passwordConfirmation}</p>
+              <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.passwordConfirmation}</p>
             )}
           </div>
 
@@ -209,7 +209,7 @@ const RegisterPage: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-2.5 bg-blue-600 dark:bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -224,15 +224,15 @@ const RegisterPage: React.FC = () => {
         </form>
 
         {/* Login Link */}
-        <p className="mt-8 text-xs text-center text-gray-500">
+        <p className="mt-8 text-xs text-center text-gray-500 dark:text-gray-400">
           {t('auth.register.hasAccount')}
-          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-700">
+          <Link to="/login" className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
             {t('auth.register.loginLink')}
           </Link>
         </p>
 
         {/* Footer Copyright */}
-        <p className="mt-10 text-center text-xs text-gray-400">
+        <p className="mt-10 text-center text-xs text-gray-400 dark:text-gray-500">
           {t('footer.copyright')}
         </p>
       </div>

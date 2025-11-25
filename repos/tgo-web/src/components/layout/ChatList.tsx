@@ -71,7 +71,7 @@ const ChatListComponent: React.FC<ChatListProps> = ({ activeChat, onChatSelect }
 
 
   return (
-    <div className="w-72 bg-white/90 backdrop-blur-lg border-r border-gray-200/60 flex flex-col">
+    <div className="w-72 bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg border-r border-gray-200/60 dark:border-gray-700/60 flex flex-col">
       {/* Header with search */}
       <ChatListHeader
         searchQuery={searchQuery}

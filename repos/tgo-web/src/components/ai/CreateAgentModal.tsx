@@ -299,16 +299,16 @@ const CreateAgentModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col min-h-0">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col min-h-0">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
-            <Bot className="w-6 h-6 text-blue-600" />
-            <h2 className="text-xl font-semibold text-gray-800">{t('agents.modal.create.title', '创建智能体')}</h2>
+            <Bot className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">{t('agents.modal.create.title', '创建智能体')}</h2>
           </div>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             disabled={isCreatingAgent}
           >
             <X className="w-6 h-6" />
@@ -317,7 +317,7 @@ const CreateAgentModal: React.FC = () => {
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="flex-1 overflow-y-auto min-h-0 dark:bg-gray-900">
             <div className="p-6 space-y-6">
             {/* 基本信息 */}
             <SectionCard variant="blue">
@@ -326,23 +326,23 @@ const CreateAgentModal: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* 智能体名称 */}
                 <div>
-                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                    <User className="w-4 h-4 text-gray-500" />
-                    <span>{t('agents.form.name', '智能体名称')} <span className="text-red-500">*</span></span>
+                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <span>{t('agents.form.name', '智能体名称')} <span className="text-red-500 dark:text-red-400">*</span></span>
                   </label>
                   <input
                     ref={nameInputRef}
                     type="text"
                     value={createAgentFormData.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
-                      createAgentErrors.name ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 dark:bg-gray-700 dark:text-gray-100 ${
+                      createAgentErrors.name ? 'border-red-500 bg-red-50 dark:bg-red-950 dark:border-red-700' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                     }`}
                     placeholder={t('agents.create.placeholders.name', '请输入智能体名称')}
                     disabled={isCreatingAgent}
                   />
                   {createAgentErrors.name && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center space-x-1">
+                    <p className="mt-1 text-sm text-red-500 dark:text-red-400 flex items-center space-x-1">
                       <XCircle className="w-4 h-4" />
                       <span>{createAgentErrors.name}</span>
                     </p>
@@ -351,23 +351,23 @@ const CreateAgentModal: React.FC = () => {
 
                 {/* 职业/角色 */}
                 <div>
-                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                    <Briefcase className="w-4 h-4 text-gray-500" />
-                    <span>{t('agents.form.profession', '职业/角色')} <span className="text-red-500">*</span></span>
+                  <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    <Briefcase className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                    <span>{t('agents.form.profession', '职业/角色')} <span className="text-red-500 dark:text-red-400">*</span></span>
                   </label>
                   <input
                     ref={professionInputRef}
                     type="text"
                     value={createAgentFormData.profession}
                     onChange={(e) => handleInputChange('profession', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 ${
-                      createAgentErrors.profession ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200 dark:bg-gray-700 dark:text-gray-100 ${
+                      createAgentErrors.profession ? 'border-red-500 bg-red-50 dark:bg-red-950 dark:border-red-700' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                     }`}
                     placeholder={t('agents.create.placeholders.profession', '例如：客服专员、技术支持、销售顾问')}
                     disabled={isCreatingAgent}
                   />
                   {createAgentErrors.profession && (
-                    <p className="mt-1 text-sm text-red-500 flex items-center space-x-1">
+                    <p className="mt-1 text-sm text-red-500 dark:text-red-400 flex items-center space-x-1">
                       <XCircle className="w-4 h-4" />
                       <span>{createAgentErrors.profession}</span>
                     </p>
@@ -381,15 +381,15 @@ const CreateAgentModal: React.FC = () => {
               <SectionHeader icon={<Bot className="w-5 h-5 text-purple-600" />} title={t('agents.create.sections.modelConfig', '模型配置')} />
 
               <div>
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                  <span>{t('agents.form.llmModel', 'LLM模型')} <span className="text-red-500">*</span></span>
+                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <span>{t('agents.form.llmModel', 'LLM模型')} <span className="text-red-500 dark:text-red-400">*</span></span>
                 </label>
                 <select
                   ref={llmSelectRef}
                   value={createAgentFormData.llmModel}
                   onChange={(e) => handleInputChange('llmModel', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 ${
-                    createAgentErrors.llmModel ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-200 dark:bg-gray-700 dark:text-gray-100 ${
+                    createAgentErrors.llmModel ? 'border-red-500 bg-red-50 dark:bg-red-950 dark:border-red-700' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                   }`}
                   disabled={isCreatingAgent || llmLoading}
                 >
@@ -413,13 +413,13 @@ const CreateAgentModal: React.FC = () => {
                   )}
                 </select>
                 {createAgentErrors.llmModel && (
-                  <p className="mt-1 text-sm text-red-500 flex items-center space-x-1">
+                  <p className="mt-1 text-sm text-red-500 dark:text-red-400 flex items-center space-x-1">
                     <XCircle className="w-4 h-4" />
                     <span>{createAgentErrors.llmModel}</span>
                   </p>
                 )}
                 {llmError && (
-                  <p className="mt-1 text-sm text-red-500 flex items-center space-x-1">
+                  <p className="mt-1 text-sm text-red-500 dark:text-red-400 flex items-center space-x-1">
                     <XCircle className="w-4 h-4" />
                     <span>{t('agents.create.models.loadFailedInline', '模型加载失败: {{error}}', { error: llmError })}</span>
                   </p>
@@ -432,22 +432,22 @@ const CreateAgentModal: React.FC = () => {
               <SectionHeader icon={<FolderOpen className="w-5 h-5 text-green-600" />} title={t('agents.create.sections.description', '智能体描述')} />
 
               <div>
-                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 mb-2">
-                  <span>{t('agents.form.detailedDescription', '详细描述')} <span className="text-red-500">*</span></span>
+                <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  <span>{t('agents.form.detailedDescription', '详细描述')} <span className="text-red-500 dark:text-red-400">*</span></span>
                 </label>
                 <textarea
                   ref={descriptionTextareaRef}
                   value={createAgentFormData.description}
                   onChange={(e) => handleInputChange('description', e.target.value)}
                   rows={4}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 resize-none ${
-                    createAgentErrors.description ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-200 resize-none dark:bg-gray-700 dark:text-gray-100 ${
+                    createAgentErrors.description ? 'border-red-500 bg-red-50 dark:bg-red-950 dark:border-red-700' : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                   }`}
                   placeholder={t('agents.create.placeholders.description', '请详细描述智能体的功能、职责和特点，例如：负责处理客户咨询，提供产品信息和技术支持...')}
                   disabled={isCreatingAgent}
                 />
                 {createAgentErrors.description && (
-                  <p className="mt-1 text-sm text-red-500 flex items-center space-x-1">
+                  <p className="mt-1 text-sm text-red-500 dark:text-red-400 flex items-center space-x-1">
                     <XCircle className="w-4 h-4" />
                     <span>{createAgentErrors.description}</span>
                   </p>
@@ -488,7 +488,7 @@ const CreateAgentModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleClose}
-                className="inline-flex h-9 items-center px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="inline-flex h-9 items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-colors"
                 disabled={isCreatingAgent}
               >
                 {t('common.cancel', '取消')}
@@ -496,7 +496,7 @@ const CreateAgentModal: React.FC = () => {
               <button
                 type="button"
                 onClick={resetCreateAgentForm}
-                className="inline-flex h-9 items-center px-4 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                className="inline-flex h-9 items-center px-4 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-colors"
                 disabled={isCreatingAgent}
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
@@ -504,7 +504,7 @@ const CreateAgentModal: React.FC = () => {
               </button>
               <button
                 type="submit"
-                className="inline-flex h-9 items-center px-5 text-sm font-medium bg-blue-600 text-white border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex h-9 items-center px-5 text-sm font-medium bg-blue-600 dark:bg-blue-700 text-white border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isCreatingAgent}
               >
                 {isCreatingAgent ? (

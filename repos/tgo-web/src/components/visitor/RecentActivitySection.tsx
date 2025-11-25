@@ -69,13 +69,13 @@ function getActivityIconAndColor(type: string) {
   );
   switch (type) {
     case 'session_start':
-      return wrap(<LogIn className="w-3.5 h-3.5" />, 'bg-emerald-50', 'text-emerald-600');
+      return wrap(<LogIn className="w-3.5 h-3.5" />, 'bg-emerald-50 dark:bg-emerald-900/30', 'text-emerald-600 dark:text-emerald-400');
     case 'session_end':
-      return wrap(<LogOut className="w-3.5 h-3.5" />, 'bg-gray-50', 'text-gray-500');
+      return wrap(<LogOut className="w-3.5 h-3.5" />, 'bg-gray-50 dark:bg-gray-700', 'text-gray-500 dark:text-gray-400');
     case 'page_view':
-      return wrap(<Eye className="w-3.5 h-3.5" />, 'bg-blue-50', 'text-blue-600');
+      return wrap(<Eye className="w-3.5 h-3.5" />, 'bg-blue-50 dark:bg-blue-900/30', 'text-blue-600 dark:text-blue-400');
     default:
-      return wrap(<ActivityIcon className="w-3.5 h-3.5" />, 'bg-gray-50', 'text-gray-500');
+      return wrap(<ActivityIcon className="w-3.5 h-3.5" />, 'bg-gray-50 dark:bg-gray-700', 'text-gray-500 dark:text-gray-400');
   }
 }
 
@@ -92,19 +92,19 @@ const RecentActivitySection: React.FC<RecentActivitySectionProps> = ({ activitie
 
   return (
     <div className={`pt-4 space-y-3 ${className}`}>
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('chat.visitor.sections.recentActivity', '\u6700\u8fd1\u6d3b\u52a8')}</h4>
-      <ul className="space-y-2.5 text-gray-700 text-[13px] leading-5">
+      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('chat.visitor.sections.recentActivity', '\u6700\u8fd1\u6d3b\u52a8')}</h4>
+      <ul className="space-y-2.5 text-gray-700 dark:text-gray-300 text-[13px] leading-5">
         {list.map((act) => {
           const durationText = formatDuration(act.duration_seconds, t);
           const pageUrl = act.context?.page_url;
           return (
-            <li key={act.id} className="flex items-start gap-3 px-2 py-2 rounded-md hover:bg-gray-50 border border-transparent hover:border-gray-200 transition">
+            <li key={act.id} className="flex items-start gap-3 px-2 py-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 transition">
               {getActivityIconAndColor(act.activity_type)}
               <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-medium text-gray-800 truncate" title={act.title || act.activity_type}>
+                <div className="text-[13px] font-medium text-gray-800 dark:text-gray-200 truncate" title={act.title || act.activity_type}>
                   {act.title || act.activity_type}
                 </div>
-                <div className="mt-0.5 text-[11px] text-gray-500 flex items-center gap-2 flex-wrap">
+                <div className="mt-0.5 text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-2 flex-wrap">
                   <span>{formatRelativeTime(act.occurred_at, t)}</span>
                   {durationText && <span>· {durationText}</span>}
                 </div>
@@ -113,14 +113,14 @@ const RecentActivitySection: React.FC<RecentActivitySectionProps> = ({ activitie
                     href={pageUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="mt-0.5 inline-block text-xs text-blue-600 hover:underline underline-offset-2 max-w-[240px] truncate"
+                    className="mt-0.5 inline-block text-xs text-blue-600 dark:text-blue-400 hover:underline underline-offset-2 max-w-[240px] truncate"
                     title={pageUrl}
                   >
                     {pageUrl}
                   </a>
                 )}
                 {act.description && (
-                  <div className="text-xs text-gray-500 mt-1 line-clamp-2">{act.description}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">{act.description}</div>
                 )}
               </div>
             </li>
@@ -128,9 +128,9 @@ const RecentActivitySection: React.FC<RecentActivitySectionProps> = ({ activitie
         })}
         {list.length === 0 && (
           <li>
-            <div className="px-3 py-6 rounded-md border border-gray-200/60 bg-white/50 text-center">
-              <History className="w-5 h-5 mx-auto mb-1.5 text-gray-300" />
-              <div className="text-xs text-gray-400">{t('chat.visitor.activity.noActivity', '\u6682\u65e0\u6d3b\u52a8\u8bb0\u5f55')}</div>
+            <div className="px-3 py-6 rounded-md border border-gray-200/60 dark:border-gray-700/60 bg-white/50 dark:bg-gray-800/50 text-center">
+              <History className="w-5 h-5 mx-auto mb-1.5 text-gray-300 dark:text-gray-600" />
+              <div className="text-xs text-gray-400 dark:text-gray-500">{t('chat.visitor.activity.noActivity', '\u6682\u65e0\u6d3b\u52a8\u8bb0\u5f55')}</div>
             </div>
           </li>
         )}

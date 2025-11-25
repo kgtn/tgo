@@ -7,6 +7,7 @@ interface ImageCropModalProps {
   imageSrc: string; // object URL or data URL
   aspect?: number; // default 1
   mimeType?: string; // default 'image/png'
+  title?: string; // modal title, default '裁剪图片'
   onCancel: () => void;
   onConfirm: (blob: Blob, dataUrl: string) => void;
 }
@@ -59,6 +60,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
   imageSrc,
   aspect = 1,
   mimeType = 'image/png',
+  title = '裁剪图片',
   onCancel,
   onConfirm,
 }) => {
@@ -110,16 +112,16 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
   return createPortal(
     <div className="fixed inset-0 z-[10000] bg-black/50 flex items-center justify-center p-4" onClick={onCancel}>
       <div
-        className="bg-white w-full max-w-2xl rounded-lg shadow-xl overflow-hidden"
+        className="bg-white dark:bg-gray-800 w-full max-w-2xl rounded-lg shadow-xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-4 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-800">裁剪 Logo</h3>
-          <button onClick={onCancel} className="text-gray-500 hover:text-gray-700 text-sm">取消</button>
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
+          <h3 className="text-base font-semibold text-gray-800 dark:text-gray-100">{title}</h3>
+          <button onClick={onCancel} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-sm">取消</button>
         </div>
 
         <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4" style={{ minHeight: 360 }}>
-          <div className="md:col-span-2 relative rounded-md overflow-hidden bg-black/5" style={{ height: 300 }}>
+          <div className="md:col-span-2 relative rounded-md overflow-hidden bg-black/5 dark:bg-black/20" style={{ height: 300 }}>
             <Cropper
               image={imageSrc}
               crop={crop}
@@ -135,7 +137,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
           </div>
           <div className="space-y-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">缩放</label>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">缩放</label>
               <input
                 type="range"
                 min={1}
@@ -147,22 +149,22 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
               />
             </div>
             <div>
-              <div className="text-xs text-gray-500 mb-1">预览（1:1）</div>
-              <div className="w-24 h-24 border rounded-md overflow-hidden bg-gray-50 flex items-center justify-center">
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">预览（1:1）</div>
+              <div className="w-24 h-24 border dark:border-gray-600 rounded-md overflow-hidden bg-gray-50 dark:bg-gray-700 flex items-center justify-center">
                 {previewDataUrl ? (
                   <img src={previewDataUrl} alt="预览" className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-gray-400 text-xs">暂无</span>
+                  <span className="text-gray-400 dark:text-gray-500 text-xs">暂无</span>
                 )}
               </div>
-              <div className="text-[10px] text-gray-400 mt-2">建议尺寸：72x72 像素</div>
+              <div className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">建议尺寸：72x72 像素</div>
             </div>
           </div>
         </div>
 
-        <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 flex justify-end gap-2">
-          <button onClick={onCancel} className="px-3 py-1.5 text-sm rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700">取消</button>
-          <button onClick={handleConfirm} className="px-3 py-1.5 text-sm rounded-md bg-blue-600 hover:bg-blue-700 text-white">确认</button>
+        <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-2">
+          <button onClick={onCancel} className="px-3 py-1.5 text-sm rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200">取消</button>
+          <button onClick={handleConfirm} className="px-3 py-1.5 text-sm rounded-md bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 text-white">确认</button>
         </div>
       </div>
     </div>,

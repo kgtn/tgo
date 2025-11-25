@@ -110,13 +110,13 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
   const displayName = platform.display_name || platform.name;
 
   return (
-    <main className="flex flex-col flex-1 min-h-0 bg-gradient-to-br from-gray-50 to-gray-100">
-      <header className="px-6 py-4 border-b border-gray-200/80 flex justify-between items-center bg-white/60 backdrop-blur-lg sticky top-0 z-10">
+    <main className="flex flex-col flex-1 min-h-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <header className="px-6 py-4 border-b border-gray-200/80 dark:border-gray-700/80 flex justify-between items-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg sticky top-0 z-10">
         <div>
-          <h2 className="text-lg font-semibold text-gray-800">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
             {t('platforms.douyin.title', '{{name}} - 抖音平台配置', { name: displayName })}
           </h2>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             {t('platforms.douyin.subtitle', '配置抖音开放平台凭据与回调信息。')}
           </p>
         </div>
@@ -124,7 +124,7 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
           <button
             disabled={isUpdating || isDeleting}
             onClick={() => setConfirmOpen(true)}
-            className={`px-3 py-1.5 text-sm rounded-md ${isDeleting ? 'bg-red-400 text-white' : 'bg-red-600 text-white hover:bg-red-700'}`}
+            className={`px-3 py-1.5 text-sm rounded-md ${isDeleting ? 'bg-red-400 text-white' : 'bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600'}`}
           >
             {isDeleting ? t('platforms.douyin.buttons.deleting', '删除中…') : t('platforms.douyin.buttons.delete', '删除')}
           </button>
@@ -147,7 +147,7 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
                 setIsToggling(false);
               }
             }}
-            className={`px-3 py-1.5 text-sm rounded-md text-white ${isEnabled ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700'} ${isToggling ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`px-3 py-1.5 text-sm rounded-md text-white ${isEnabled ? 'bg-gray-600 dark:bg-gray-500 hover:bg-gray-700 dark:hover:bg-gray-600' : 'bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600'} ${isToggling ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {isToggling
               ? (isEnabled ? t('platforms.douyin.buttons.disabling', '禁用中…') : t('platforms.douyin.buttons.enabling', '启用中…'))
@@ -156,7 +156,7 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
           <button
             disabled={!canSave || isUpdating}
             onClick={handleSave}
-            className={`px-3 py-1.5 text-sm rounded-md ${canSave ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+            className={`px-3 py-1.5 text-sm rounded-md ${canSave ? 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'}`}
           >
             {isUpdating ? t('platforms.douyin.buttons.saving', '保存中…') : t('platforms.douyin.buttons.save', '保存')}
           </button>
@@ -165,10 +165,10 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
 
       <div className="flex flex-1 min-h-0 flex-col lg:flex-row gap-4 p-6">
         {/* Left: form */}
-        <section className="lg:w-2/5 w-full bg-white/80 backdrop-blur-md p-5 rounded-lg shadow-sm border border-gray-200/60 space-y-4 overflow-y-auto min-h-0 auto-hide-scrollbar">
+        <section className="lg:w-2/5 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-5 rounded-lg shadow-sm border border-gray-200/60 dark:border-gray-700/60 space-y-4 overflow-y-auto min-h-0 auto-hide-scrollbar">
           {/* 平台名称 */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               {t('platforms.douyin.form.platformName', '平台名称')}
             </label>
             <input
@@ -176,13 +176,13 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
               value={platformName}
               onChange={(e) => setPlatformName(e.target.value)}
               placeholder={t('platforms.douyin.form.platformNamePlaceholder', '请输入平台名称')}
-              className="w-full text-sm p-1.5 border border-gray-300/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/90"
+              className="w-full text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200"
             />
           </div>
 
           {/* App ID */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               {t('platforms.douyin.form.appId', '应用ID (App ID)')}
             </label>
             <input
@@ -190,13 +190,13 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
               value={formValues.appId}
               onChange={(e) => handleChange({ appId: e.target.value })}
               placeholder={t('platforms.douyin.form.appIdPlaceholder', '例如：your_app_id')}
-              className="w-full text-sm p-1.5 border border-gray-300/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/90"
+              className="w-full text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200"
             />
           </div>
 
           {/* App Secret */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               {t('platforms.douyin.form.appSecret', '应用密钥 (App Secret)')}
             </label>
             <div className="flex items-center gap-2">
@@ -205,12 +205,12 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
                 value={formValues.appSecret}
                 onChange={(e) => handleChange({ appSecret: e.target.value })}
                 placeholder={showAppSecret ? t('platforms.douyin.form.appSecretPlaceholder', '请输入 App Secret') : '********'}
-                className="flex-1 text-sm p-1.5 border border-gray-300/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/90"
+                className="flex-1 text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200"
               />
               <button
                 type="button"
                 onClick={() => setShowAppSecret(v => !v)}
-                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                className="px-2 py-1 text-xs rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
               >
                 {showAppSecret ? t('platforms.douyin.buttons.hide', '隐藏') : t('platforms.douyin.buttons.show', '显示')}
               </button>
@@ -219,7 +219,7 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
 
           {/* Client Key */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               {t('platforms.douyin.form.clientKey', 'Client Key')}
             </label>
             <input
@@ -227,13 +227,13 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
               value={formValues.clientKey}
               onChange={(e) => handleChange({ clientKey: e.target.value })}
               placeholder={t('platforms.douyin.form.clientKeyPlaceholder', '例如：your_client_key')}
-              className="w-full text-sm p-1.5 border border-gray-300/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/90"
+              className="w-full text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200"
             />
           </div>
 
           {/* Client Secret */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               {t('platforms.douyin.form.clientSecret', 'Client Secret')}
             </label>
             <div className="flex items-center gap-2">
@@ -242,12 +242,12 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
                 value={formValues.clientSecret}
                 onChange={(e) => handleChange({ clientSecret: e.target.value })}
                 placeholder={showClientSecret ? t('platforms.douyin.form.clientSecretPlaceholder', '请输入 Client Secret') : '********'}
-                className="flex-1 text-sm p-1.5 border border-gray-300/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/90"
+                className="flex-1 text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200"
               />
               <button
                 type="button"
                 onClick={() => setShowClientSecret(v => !v)}
-                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                className="px-2 py-1 text-xs rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
               >
                 {showClientSecret ? t('platforms.douyin.buttons.hide', '隐藏') : t('platforms.douyin.buttons.show', '显示')}
               </button>
@@ -256,7 +256,7 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
 
           {/* 回调 URL（只读） */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               {t('platforms.douyin.form.callbackUrl', '回调 URL')}
             </label>
             <input
@@ -264,16 +264,16 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
               value={formValues.callbackUrl}
               readOnly
               placeholder={t('platforms.douyin.form.callbackUrlPlaceholder', '平台创建后会生成回调URL')}
-              className="w-full text-sm p-1.5 border border-gray-300/80 rounded-md bg-gray-100/70 focus:outline-none font-mono"
+              className="w-full text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md bg-gray-100/70 dark:bg-gray-700/50 dark:text-gray-200 focus:outline-none font-mono"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {t('platforms.douyin.form.callbackUrlHint', '将此 URL 配置到抖音开放平台「回调地址」设置中。')}
             </p>
           </div>
 
           {/* 授权范围 */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">
               {t('platforms.douyin.form.authScope', '授权范围 (Authorization Scope)')}
             </label>
             <input
@@ -281,32 +281,32 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
               value={formValues.authScope}
               onChange={(e) => handleChange({ authScope: e.target.value })}
               placeholder={t('platforms.douyin.form.authScopePlaceholder', '例如：user_info,video.list')}
-              className="w-full text-sm p-1.5 border border-gray-300/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/90"
+              className="w-full text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
               {t('platforms.douyin.form.authScopeHint', '多个权限用英文逗号分隔，例如：user_info,video.list。')}
             </p>
           </div>
         </section>
 
         {/* Right: comprehensive guide */}
-        <section className="lg:w-3/5 w-full bg-white/80 backdrop-blur-md p-5 rounded-lg shadow-sm border border-gray-200/60 min-h-0 overflow-y-auto auto-hide-scrollbar space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800">
+        <section className="lg:w-3/5 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-5 rounded-lg shadow-sm border border-gray-200/60 dark:border-gray-700/60 min-h-0 overflow-y-auto auto-hide-scrollbar space-y-4">
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
             {t('platforms.douyin.guide.title', '抖音开放平台配置指南')}
           </h3>
 
-          <div className="bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-md p-3">
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-200 text-sm rounded-md p-3">
             <p className="font-medium">{t('platforms.douyin.guide.overview', '快速概览')}</p>
             <p className="mt-1">
               {t('platforms.douyin.guide.overviewText', '完成以下四步：① 注册开放平台账号 → ② 创建应用并获取凭据 → ③ 配置回调地址 → ④ 保存并测试。')}
             </p>
           </div>
 
-          <details className="rounded-md border border-gray-200 p-3 bg-white/70">
-            <summary className="cursor-pointer font-semibold text-gray-800">
+          <details className="rounded-md border border-gray-200 dark:border-gray-600 p-3 bg-white/70 dark:bg-gray-700/50">
+            <summary className="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">
               {t('platforms.douyin.guide.step1Title', '1️⃣ 注册抖音开放平台账号')}
             </summary>
-            <div className="text-sm text-gray-700 mt-2 space-y-2">
+            <div className="text-sm text-gray-700 dark:text-gray-300 mt-2 space-y-2">
               <ol className="list-decimal pl-5 space-y-1">
                 <li dangerouslySetInnerHTML={{ __html: t('platforms.douyin.guide.step1Item1', '访问 <a class="text-blue-600 hover:underline" href="https://developer.open-douyin.com/" target="_blank" rel="noreferrer">抖音开放平台</a> 并完成账号注册与主体认证（如需）。') }} />
                 <li>{t('platforms.douyin.guide.step1Item2', '登录控制台，完善开发者信息。')}</li>
@@ -314,17 +314,17 @@ const DouyinPlatformConfig: React.FC<Props> = ({ platform }) => {
             </div>
           </details>
 
-          <details className="rounded-md border border-gray-200 p-3 bg-white/70">
-            <summary className="cursor-pointer font-semibold text-gray-800">
+          <details className="rounded-md border border-gray-200 dark:border-gray-600 p-3 bg-white/70 dark:bg-gray-700/50">
+            <summary className="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">
               {t('platforms.douyin.guide.step2Title', '2️⃣ 创建应用并获取凭据')}
             </summary>
-            <div className="text-sm text-gray-700 mt-2 space-y-2">
+            <div className="text-sm text-gray-700 dark:text-gray-300 mt-2 space-y-2">
               <ol className="list-decimal pl-5 space-y-1">
                 <li>{t('platforms.douyin.guide.step2Item1', '在控制台创建新应用，记下 App ID 与 App Secret。')}</li>
                 <li>{t('platforms.douyin.guide.step2Item2', '在应用设置中获取 Client Key 与 Client Secret。')}</li>
                 <li>{t('platforms.douyin.guide.step2Item3', '根据业务选择并开通所需的授权范围（Scope）。')}</li>
               </ol>
-              <div className="bg-gray-50 border border-gray-200 rounded p-2 text-xs">
+              <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded p-2 text-xs dark:text-gray-300">
                 <pre className="font-mono overflow-x-auto">{`APP_ID=your_app_id
 APP_SECRET=your_app_secret
 CLIENT_KEY=your_client_key
@@ -334,36 +334,36 @@ AUTH_SCOPE=user_info,video.list`}</pre>
             </div>
           </details>
 
-          <details className="rounded-md border border-gray-200 p-3 bg-white/70">
-            <summary className="cursor-pointer font-semibold text-gray-800">
+          <details className="rounded-md border border-gray-200 dark:border-gray-600 p-3 bg-white/70 dark:bg-gray-700/50">
+            <summary className="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">
               {t('platforms.douyin.guide.step3Title', '3️⃣ 配置回调地址')}
             </summary>
-            <div className="text-sm text-gray-700 mt-2 space-y-2">
+            <div className="text-sm text-gray-700 dark:text-gray-300 mt-2 space-y-2">
               <ol className="list-decimal pl-5 space-y-1">
                 <li>{t('platforms.douyin.guide.step3Item1', '在开放平台「回调设置」中配置回调 URL：使用上方只读回调 URL。')}</li>
                 <li>{t('platforms.douyin.guide.step3Item2', '确保服务端可公网访问，并正确处理校验请求。')}</li>
               </ol>
-              <div className="bg-gray-50 border border-gray-200 rounded p-2 text-xs">
+              <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded p-2 text-xs dark:text-gray-300">
                 <pre className="font-mono overflow-x-auto">{`CALLBACK_URL=https://your-domain.com/api/douyin/callback/{platformId}`}</pre>
               </div>
             </div>
           </details>
 
-          <details className="rounded-md border border-gray-200 p-3 bg-white/70">
-            <summary className="cursor-pointer font-semibold text-gray-800">
+          <details className="rounded-md border border-gray-200 dark:border-gray-600 p-3 bg-white/70 dark:bg-gray-700/50">
+            <summary className="cursor-pointer font-semibold text-gray-800 dark:text-gray-100">
               {t('platforms.douyin.guide.step4Title', '4️⃣ 常见问题与排查')}
             </summary>
-            <div className="text-sm text-gray-700 mt-2 space-y-2">
+            <div className="text-sm text-gray-700 dark:text-gray-300 mt-2 space-y-2">
               <ul className="list-disc pl-5 space-y-1">
                 <li>{t('platforms.douyin.guide.step4Item1', '回调校验失败：检查回调 URL 是否可访问、TLS 证书是否有效。')}</li>
                 <li>{t('platforms.douyin.guide.step4Item2', '权限不足：确认所需 Scope 已在开放平台开通并授权。')}</li>
                 <li>{t('platforms.douyin.guide.step4Item3', '凭据错误：核对 App ID/Secret 与 Client Key/Secret 是否输入正确。')}</li>
               </ul>
-              <a className="text-blue-600 hover:underline" href="https://developer.open-douyin.com/" target="_blank" rel="noreferrer">抖音开放平台文档</a>
+              <a className="text-blue-600 dark:text-blue-400 hover:underline" href="https://developer.open-douyin.com/" target="_blank" rel="noreferrer">抖音开放平台文档</a>
             </div>
           </details>
 
-          <div className="bg-green-50 border border-green-200 text-green-800 text-sm rounded-md p-3">
+          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-200 text-sm rounded-md p-3">
             <p className="font-semibold">{t('platforms.douyin.guide.bestPracticesTitle', '最佳实践')}</p>
             <ul className="list-disc pl-5 mt-1 space-y-1">
               <li>{t('platforms.douyin.guide.bestPracticesItem1', '将密钥存放于安全的密钥管理服务（如 KMS/Vault），避免出现在代码库。')}</li>

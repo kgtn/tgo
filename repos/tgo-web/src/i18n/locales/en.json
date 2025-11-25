@@ -73,6 +73,13 @@
       "title": "Appearance Settings",
       "comingSoon": "More appearance and theme options coming soon..."
     },
+    "theme": {
+      "title": "Theme Mode",
+      "description": "Choose your preferred theme mode. Changes will take effect immediately",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "Follow System"
+    },
     "general": {
       "title": "General",
       "login": "Login",
@@ -1025,6 +1032,18 @@
         "invalidEmail": "Please enter a valid email address",
         "invalidPhone": "Please enter a valid phone number"
       },
+      "avatar": {
+        "uploadTitle": "Click to upload avatar",
+        "cropTitle": "Crop Avatar",
+        "invalidTypeTitle": "Invalid file type",
+        "invalidTypeDesc": "Please select a JPEG, PNG, GIF, or WebP image",
+        "fileTooLargeTitle": "File too large",
+        "fileTooLargeDesc": "Image size must not exceed 5MB",
+        "uploadSuccessTitle": "Upload successful",
+        "uploadSuccessDesc": "Visitor avatar has been updated",
+        "uploadFailedTitle": "Upload failed",
+        "uploadFailedDesc": "Upload failed"
+      },
       "customAttr": {
         "addButton": "Add Custom Attribute",
         "namePlaceholder": "Attribute name",
@@ -1356,7 +1375,7 @@
     },
     "website": {
       "header": {
-        "title": "{{name}} - Website Widget Configuration",
+        "title": "Website Widget Configuration",
         "subtitle": "Adjust the configuration on the left, the preview on the right will update in real-time"
       },
       "buttons": {

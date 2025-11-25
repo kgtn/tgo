@@ -174,6 +174,7 @@ from app.schemas.visitor import (
     VisitorSystemInfoRequest,
     VisitorSystemInfoResponse,
     VisitorUpdate,
+    VisitorAvatarUploadResponse,
 )
 from app.schemas.visitor_activity import (
     VisitorActivityContext,
@@ -293,6 +294,7 @@ __all__ = [
     "VisitorBasicResponse",
     "VisitorListParams",
     "VisitorListResponse",
+    "VisitorAvatarUploadResponse",
     # Assignment schemas
     "AssignmentCreate",
     "AssignmentUpdate",

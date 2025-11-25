@@ -49,14 +49,14 @@ export const KnowledgeBaseHeader: React.FC<KnowledgeBaseHeaderProps> = ({
 
 
   return (
-    <header className="px-6 py-4 border-b border-gray-200/80 sticky top-0 bg-white/60 backdrop-blur-lg z-10">
+    <header className="px-6 py-4 border-b border-gray-200/80 dark:border-gray-700/80 sticky top-0 bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg z-10">
       {/* Main Header Row - matches HTML reference structure */}
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-4">
           {/* Back Button */}
           <button
             onClick={onBack}
-            className="p-2 text-gray-500 hover:bg-gray-200/70 rounded-md transition-colors duration-200"
+            className="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-200/70 dark:hover:bg-gray-700/70 rounded-md transition-colors duration-200"
             title={t('knowledge.detail.backToList')}
           >
             <ArrowLeft className="w-5 h-5" />
@@ -64,11 +64,11 @@ export const KnowledgeBaseHeader: React.FC<KnowledgeBaseHeaderProps> = ({
 
           {/* Title and Description */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-800">
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
               {knowledgeBase.name}
             </h2>
             {knowledgeBase.description && (
-              <p className="text-sm text-gray-500 mt-0.5">
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                 {knowledgeBase.description}
               </p>
             )}
@@ -101,7 +101,7 @@ export const KnowledgeBaseHeader: React.FC<KnowledgeBaseHeaderProps> = ({
         <div className="flex items-center space-x-3">
           <button
             onClick={onRefresh}
-            className="p-1.5 text-gray-500 hover:bg-gray-200/70 rounded-md transition-colors duration-200"
+            className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-200/70 dark:hover:bg-gray-700/70 rounded-md transition-colors duration-200"
             title={t('knowledge.detail.refresh')}
           >
             <RefreshCw className="w-4 h-4" />
@@ -111,8 +111,8 @@ export const KnowledgeBaseHeader: React.FC<KnowledgeBaseHeaderProps> = ({
             onClick={onToggleUpload}
             className={`flex items-center px-3 py-1.5 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors duration-200 ${
               isUploadVisible
-                ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                : 'bg-blue-500 text-white hover:bg-blue-600'
+                ? 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+                : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
             }`}
           >
             <Upload className="w-4 h-4 mr-1" />
@@ -129,17 +129,17 @@ export const KnowledgeBaseHeader: React.FC<KnowledgeBaseHeaderProps> = ({
             placeholder={t('knowledge.detail.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300/70 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80"
+            className="w-full pl-9 pr-3 py-1.5 text-sm border border-gray-300/70 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80 dark:bg-gray-700/80 dark:text-gray-100 dark:placeholder-gray-400"
           />
-          <Search className="w-4 h-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Search className="w-4 h-4 absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
         </div>
 
         <div className="flex items-center space-x-2 flex-shrink-0">
-          <span className="text-sm text-gray-500">{t('knowledge.detail.filter')}:</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{t('knowledge.detail.filter')}:</span>
           <select
             value={fileTypeFilter}
             onChange={(e) => onFilterChange(e.target.value)}
-            className="text-sm border border-gray-300/70 rounded-md py-1.5 pl-2 pr-7 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80 appearance-none"
+            className="text-sm border border-gray-300/70 dark:border-gray-600 rounded-md py-1.5 pl-2 pr-7 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/80 dark:bg-gray-700/80 dark:text-gray-100 appearance-none"
           >
             <option value="">{t('knowledge.detail.allTypes')}</option>
             <option value="pdf">PDF</option>
@@ -152,7 +152,7 @@ export const KnowledgeBaseHeader: React.FC<KnowledgeBaseHeaderProps> = ({
       </div>
 
       {/* Quick Stats */}
-      <div className="mt-3 flex items-center space-x-6 text-sm text-gray-600">
+      <div className="mt-3 flex items-center space-x-6 text-sm text-gray-600 dark:text-gray-300">
         <span>{t('knowledge.detail.totalDocuments', { count: totalDocuments })}</span>
         <span>{t('knowledge.detail.totalSize', { size: totalSize })}</span>
         <span>{t('knowledge.detail.lastUpdated', { date: lastUpdated })}</span>

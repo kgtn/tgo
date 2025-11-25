@@ -9,7 +9,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { AgentsGridSkeleton, AgentsErrorState, AgentsEmptyState } from '@/components/ui/AgentsSkeleton';
 import { useAIStore } from '@/stores';
 import { useToast } from '@/hooks/useToast';
-import { Plus, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { LuPlus, LuChevronLeft, LuChevronRight, LuRefreshCw } from 'react-icons/lu';
 import type { Agent, AgentToolResponse } from '@/types';
 
 /**
@@ -229,28 +229,28 @@ const AgentManagement: React.FC = () => {
   };
 
   return (
-    <main className="flex-grow flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+    <main className="flex-grow flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <header className="px-6 py-4 border-b border-gray-200/80 flex justify-between items-center bg-white/60 backdrop-blur-lg sticky top-0 z-10">
+      <header className="px-6 py-4 border-b border-gray-200/80 dark:border-gray-700 flex justify-between items-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg sticky top-0 z-10">
         <div className="flex items-center space-x-4">
-          <h2 className="text-lg font-semibold text-gray-800">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
             {t('agents.title', '智能体管理')}
           </h2>
         </div>
         <div className="flex items-center space-x-2">
           <button
-            className="flex items-center px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 transition-colors duration-200 disabled:opacity-50"
+            className="flex items-center px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-sm rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1 transition-colors duration-200 disabled:opacity-50"
             onClick={handleRefreshAgents}
             disabled={isLoadingAgents}
           >
-            <RefreshCw className={`w-4 h-4 mr-1 ${isLoadingAgents ? 'animate-spin' : ''}`} />
+            <LuRefreshCw className={`w-4 h-4 mr-1 ${isLoadingAgents ? 'animate-spin' : ''}`} />
             <span>{t('agents.actions.refresh', '刷新')}</span>
           </button>
           <button
-            className="flex items-center px-3 py-1.5 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors duration-200"
+            className="flex items-center px-3 py-1.5 bg-blue-500 dark:bg-blue-600 text-white text-sm rounded-md hover:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors duration-200"
             onClick={handleCreateAgent}
           >
-            <Plus className="w-4 h-4 mr-1" />
+            <LuPlus className="w-4 h-4 mr-1" />
             <span>{t('agents.actions.create', '创建智能体')}</span>
           </button>
         </div>
@@ -273,9 +273,9 @@ const AgentManagement: React.FC = () => {
             actionButton={
               <button
                 onClick={handleCreateAgent}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
               >
-                <Plus className="w-4 h-4 mr-2" />
+                <LuPlus className="w-4 h-4 mr-2" />
                 {t('agents.actions.create', '创建智能体')}
               </button>
             }
@@ -296,24 +296,24 @@ const AgentManagement: React.FC = () => {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="mt-8 flex justify-center">
-            <nav className="inline-flex rounded-md shadow-sm -space-x-px bg-white border border-gray-300" aria-label="Pagination">
+            <nav className="inline-flex rounded-md shadow-sm -space-x-px bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700" aria-label="Pagination">
               <button
-                className="relative inline-flex items-center px-2 py-2 rounded-l-md border-r border-gray-300 text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="relative inline-flex items-center px-2 py-2 rounded-l-md border-r border-gray-300 dark:border-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
               >
                 <span className="sr-only">{t('agents.pagination.previous', 'Previous')}</span>
-                <ChevronLeft className="h-5 w-5" />
+                <LuChevronLeft className="h-5 w-5" />
               </button>
 
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                 <button
                   key={page}
                   onClick={() => handlePageChange(page)}
-                  className={`relative inline-flex items-center px-4 py-2 border-r border-gray-300 text-sm font-medium ${
+                  className={`relative inline-flex items-center px-4 py-2 border-r border-gray-300 dark:border-gray-700 text-sm font-medium ${
                     page === currentPage
-                      ? 'z-10 bg-blue-500 border-blue-500 text-white'
-                      : 'text-gray-500 hover:bg-gray-50'
+                      ? 'z-10 bg-blue-500 dark:bg-blue-600 border-blue-500 dark:border-blue-600 text-white'
+                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
                   }`}
                 >
                   {page}
@@ -321,12 +321,12 @@ const AgentManagement: React.FC = () => {
               ))}
 
               <button
-                className="relative inline-flex items-center px-2 py-2 rounded-r-md text-sm font-medium text-gray-500 hover:bg-gray-50"
+                className="relative inline-flex items-center px-2 py-2 rounded-r-md text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700"
                 onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
               >
                 <span className="sr-only">{t('agents.pagination.next', 'Next')}</span>
-                <ChevronRight className="h-5 w-5" />
+                <LuChevronRight className="h-5 w-5" />
               </button>
             </nav>
           </div>

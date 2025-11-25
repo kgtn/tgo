@@ -4,11 +4,29 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, field_validator
 
+from app.core.config import settings
 from app.models.platform import PlatformType
 from app.schemas.base import BaseSchema, PaginatedResponse, SoftDeleteMixin, TimestampMixin
 from app.schemas.tag import TagResponse
+
+
+def _resolve_avatar_url(avatar_url: Optional[str]) -> Optional[str]:
+    """
+    Resolve avatar URL to full URL.
+    
+    - If None or empty, return None
+    - If already a full URL (http:// or https://), return as-is
+    - If relative path (starts with /), prepend API_BASE_URL
+    """
+    if not avatar_url:
+        return None
+    if avatar_url.startswith("http://") or avatar_url.startswith("https://"):
+        return avatar_url
+    # Relative path: prepend API_BASE_URL
+    base_url = settings.API_BASE_URL.rstrip("/")
+    return f"{base_url}{avatar_url}"
 
 
 
@@ -242,6 +260,12 @@ class VisitorResponse(VisitorInDB):
     system_info: Optional[VisitorSystemInfoResponse] = Field(None, description="System metadata")
     recent_activities: List[VisitorActivityResponse] = Field(default_factory=list, description="Recent visitor activities")
 
+    @field_validator("avatar_url", mode="after")
+    @classmethod
+    def resolve_avatar_url(cls, v: Optional[str]) -> Optional[str]:
+        """Resolve relative avatar URL to full URL."""
+        return _resolve_avatar_url(v)
+
 
 class VisitorBasicResponse(BaseSchema):
     """Lightweight visitor response with essential fields only."""
@@ -261,6 +285,12 @@ class VisitorBasicResponse(BaseSchema):
     is_online: bool = Field(..., description="Whether the visitor is currently online/active")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
+
+    @field_validator("avatar_url", mode="after")
+    @classmethod
+    def resolve_avatar_url(cls, v: Optional[str]) -> Optional[str]:
+        """Resolve relative avatar URL to full URL."""
+        return _resolve_avatar_url(v)
 
 
 class VisitorListParams(BaseSchema):
@@ -297,3 +327,14 @@ class VisitorListResponse(PaginatedResponse):
     """Schema for visitor list response."""
 
     data: list[VisitorResponse] = Field(..., description="List of visitors")
+
+
+class VisitorAvatarUploadResponse(BaseSchema):
+    """Response schema for visitor avatar upload."""
+
+    visitor_id: UUID = Field(..., description="Visitor ID")
+    avatar_url: str = Field(..., description="Avatar URL (relative path for local storage)")
+    file_name: str = Field(..., description="Original file name")
+    file_size: int = Field(..., description="File size in bytes")
+    file_type: str = Field(..., description="MIME type of the file")
+    uploaded_at: datetime = Field(..., description="Upload timestamp")

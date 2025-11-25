@@ -1102,7 +1102,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   return (
-    <footer className="p-4 border-t border-gray-200/80 bg-white/80 backdrop-blur-lg sticky bottom-0 z-10">
+    <footer className="p-4 border-t border-gray-200/80 dark:border-gray-700/80 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg sticky bottom-0 z-10">
 
 
       {/* Toolbar */}
@@ -1112,7 +1112,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
             ref={emojiBtnRef}
             onClick={() => { if (isManualDisabled) return; setShowEmoji(v => !v); }}
             disabled={isManualDisabled}
-            className="p-1.5 text-gray-500 hover:text-gray-700 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label={t('chat.input.emoji.aria', '打开表情选择器')}
             title={isManualDisabled ? t('chat.input.disabled.tooltip', 'AI助手已启用，手动输入已禁用') : t('chat.input.emoji.title', '插入表情')}
           >
@@ -1122,16 +1122,16 @@ const MessageInput: React.FC<MessageInputProps> = ({
             ref={screenshotBtnRef}
             onClick={() => { if (isManualDisabled) return; handleClickScreenshotBtn(); }}
             disabled={isManualDisabled}
-            className="p-1.5 text-gray-500 hover:text-gray-700 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label={t('chat.input.screenshot.aria', '截图粘贴说明')}
             title={isManualDisabled ? t('chat.input.disabled.tooltip', 'AI助手已启用，手动输入已禁用') : t('chat.input.screenshot.title', '截图')}
           >
             <Scissors className="w-6 h-6" />
           </button>
-          <button onClick={handleClickImageBtn} disabled={isManualDisabled} className="p-1.5 text-gray-500 hover:text-gray-700 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" aria-label={t('chat.input.image.aria', '上传图片')} title={isManualDisabled ? t('chat.input.disabled.tooltip', 'AI助手已启用，手动输入已禁用') : t('chat.input.image.title', '发送图片')}>
+          <button onClick={handleClickImageBtn} disabled={isManualDisabled} className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" aria-label={t('chat.input.image.aria', '上传图片')} title={isManualDisabled ? t('chat.input.disabled.tooltip', 'AI助手已启用，手动输入已禁用') : t('chat.input.image.title', '发送图片')}>
             <ImageIcon className="w-6 h-6" />
           </button>
-          <button onClick={handleClickFileBtn} disabled={isManualDisabled} className="p-1.5 text-gray-500 hover:text-gray-700 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" aria-label={t('chat.input.file.aria', '上传文件')} title={isManualDisabled ? t('chat.input.disabled.tooltip', 'AI助手已启用，手动输入已禁用') : t('chat.input.file.title', '发送文件')}>
+          <button onClick={handleClickFileBtn} disabled={isManualDisabled} className="p-1.5 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" aria-label={t('chat.input.file.aria', '上传文件')} title={isManualDisabled ? t('chat.input.disabled.tooltip', 'AI助手已启用，手动输入已禁用') : t('chat.input.file.title', '发送文件')}>
             <Folder className="w-6 h-6" />
           </button>
           {/* <button className="p-1.5 text-gray-500 hover:text-gray-700 transition-colors duration-200">
@@ -1154,7 +1154,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
       />
 
         <div className="flex items-center space-x-2" title={isAIEnabled ? t('chat.input.ai.enabled', 'AI已启用') : t('chat.input.ai.disabled', 'AI已禁用')}>
-          <span className="text-xs text-gray-600 select-none">{t('chat.input.ai.label', 'AI助手')}</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400 select-none">{t('chat.input.ai.label', 'AI助手')}</span>
           <Toggle
             aria-label={t('chat.input.ai.toggleAria', '切换AI助手')}
             checked={isAIEnabled}
@@ -1310,7 +1310,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           readOnly={isSending || isSendingLocal || isManualDisabled}
           disabled={isManualDisabled}
           title={isManualDisabled ? t('chat.input.disabled.placeholder', 'AI助手已启用，无法手动输入') : undefined}
-          className={`w-full text-sm p-2 border border-transparent rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none bg-transparent ${
+          className={`w-full text-sm p-2 border border-transparent rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none bg-transparent dark:text-gray-200 ${
             isSending || isSendingLocal || isManualDisabled ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         />
@@ -1318,16 +1318,16 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
       {/* Send controls */}
       <div className="flex justify-end mt-1">
-        <button className="text-xs text-gray-500 hover:text-blue-600 mr-2" title={isManualDisabled ? t('chat.input.disabled.tooltip', 'AI助手已启用，手动输入已禁用') : undefined}>
+        <button className="text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mr-2" title={isManualDisabled ? t('chat.input.disabled.tooltip', 'AI助手已启用，手动输入已禁用') : undefined}>
           {t('chat.input.shortcuts.sendWithHint', 'Enter 发送 • {{hint}}', { hint: newlineHint })}
         </button>
         <button
-          className={`px-4 py-1 text-white text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 transition-colors duration-200 ${
+          className={`px-4 py-1 text-white text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-1 transition-colors duration-200 ${
             isSending || isSendingLocal || isManualDisabled
-              ? 'bg-gray-400 cursor-not-allowed'
+              ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
               : (message.trim() || pastedItems.length > 0 || selectedFiles.length > 0)
-              ? 'bg-blue-500 hover:bg-blue-600'
-              : 'bg-gray-400 cursor-not-allowed'
+              ? 'bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
+              : 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
           }`}
           onMouseDown={(e) => e.preventDefault()}
           onClick={handleSend}

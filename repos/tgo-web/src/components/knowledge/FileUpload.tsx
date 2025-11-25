@@ -188,22 +188,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   if (!isVisible) return null;
 
   return (
-    <div className="mx-6 mt-4 p-6 bg-white/80 backdrop-blur-md rounded-lg shadow-sm border border-gray-200/60">
+    <div className="mx-6 mt-4 p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-lg shadow-sm border border-gray-200/60 dark:border-gray-700/60">
       {/* Embedding Model Warning */}
       {!isCheckingEmbedding && !hasEmbeddingModel && (
-        <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+        <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h4 className="text-sm font-semibold text-amber-900 mb-1">
+              <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-1">
                 {t('knowledge.upload.noEmbeddingModel.title', '⚠️ 无法上传文件')}
               </h4>
-              <p className="text-sm text-amber-800 mb-3">
+              <p className="text-sm text-amber-800 dark:text-amber-300 mb-3">
                 {t('knowledge.upload.noEmbeddingModel.description', '系统尚未配置嵌入模型。知识库文件需要嵌入模型进行向量化处理，请先前往 AI 模型提供商设置页面配置默认嵌入模型。')}
               </p>
               <button
                 onClick={() => navigate('/settings/providers')}
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-600 text-white text-sm rounded-md hover:bg-amber-700 transition-colors"
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-600 dark:bg-amber-700 text-white text-sm rounded-md hover:bg-amber-700 dark:hover:bg-amber-800 transition-colors"
               >
                 <Settings className="w-4 h-4" />
                 {t('knowledge.upload.noEmbeddingModel.goToSettings', '前往配置')}
@@ -217,10 +217,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       <div
         className={`upload-area rounded-lg p-8 text-center border-2 border-dashed transition-all duration-300 ${
           isUploadDisabled
-            ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+            ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 cursor-not-allowed opacity-60'
             : isDragOver
-              ? 'border-blue-500 bg-blue-50/50'
-              : 'border-gray-300 hover:border-gray-400'
+              ? 'border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-900/30'
+              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
         }`}
         onDragOver={isUploadDisabled ? undefined : handleDragOver}
         onDragLeave={isUploadDisabled ? undefined : handleDragLeave}
@@ -228,18 +228,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       >
         {isCheckingEmbedding ? (
           <>
-            <Loader className="w-12 h-12 mx-auto text-gray-400 mb-4 animate-spin" />
-            <h3 className="text-lg font-medium text-gray-600 mb-2">
+            <Loader className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4 animate-spin" />
+            <h3 className="text-lg font-medium text-gray-600 dark:text-gray-300 mb-2">
               {t('knowledge.upload.checkingEmbedding', '检查嵌入模型配置...')}
             </h3>
           </>
         ) : (
           <>
-            <UploadCloud className={`w-12 h-12 mx-auto mb-4 ${isUploadDisabled ? 'text-gray-300' : 'text-gray-400'}`} />
-            <h3 className={`text-lg font-medium mb-2 ${isUploadDisabled ? 'text-gray-500' : 'text-gray-800'}`}>
+            <UploadCloud className={`w-12 h-12 mx-auto mb-4 ${isUploadDisabled ? 'text-gray-300 dark:text-gray-600' : 'text-gray-400 dark:text-gray-500'}`} />
+            <h3 className={`text-lg font-medium mb-2 ${isUploadDisabled ? 'text-gray-500 dark:text-gray-500' : 'text-gray-800 dark:text-gray-100'}`}>
               {t('knowledge.upload.title')}
             </h3>
-            <p className={`text-sm mb-4 ${isUploadDisabled ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className={`text-sm mb-4 ${isUploadDisabled ? 'text-gray-400 dark:text-gray-600' : 'text-gray-500 dark:text-gray-400'}`}>
               {t('knowledge.upload.supportedFormats')}
             </p>
 
@@ -258,8 +258,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               disabled={isUploadDisabled}
               className={`px-4 py-2 rounded-md transition-colors duration-200 ${
                 isUploadDisabled
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                  ? 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
               }`}
             >
               {t('knowledge.upload.selectFiles')}
@@ -275,28 +275,28 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             {displayUploadFiles.map(file => (
               <div
                 key={file.id}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
+                className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
               >
                 <div className="flex items-center flex-1 min-w-0">
                   <span className="text-xl mr-3">{getFileIcon(file.name)}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                       {file.name || 'Unknown file'}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       {file.size > 0 ? formatFileSize(file.size) : '上传中...'}
                     </p>
                     
                     {/* Progress bar */}
                     {file.status === 'uploading' && (
                       <div className="mt-2">
-                        <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                        <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
                           <span>{t('knowledge.upload.uploadProgress')}</span>
                           <span>{Math.round(file.progress)}%</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-1.5">
                           <div 
-                            className="bg-blue-500 h-1.5 rounded-full progress-bar"
+                            className="bg-blue-500 dark:bg-blue-400 h-1.5 rounded-full progress-bar"
                             style={{ width: `${file.progress}%` }}
                           />
                         </div>
@@ -305,7 +305,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     
                     {/* Error message */}
                     {file.status === 'error' && file.error && (
-                      <p className="text-xs text-red-500 mt-1">{file.error}</p>
+                      <p className="text-xs text-red-500 dark:text-red-400 mt-1">{file.error}</p>
                     )}
                   </div>
                 </div>
@@ -313,19 +313,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 <div className="flex items-center ml-4">
                   {/* Status icon */}
                   {file.status === 'uploading' && (
-                    <Loader className="w-4 h-4 text-blue-500 animate-spin mr-2" />
+                    <Loader className="w-4 h-4 text-blue-500 dark:text-blue-400 animate-spin mr-2" />
                   )}
                   {file.status === 'success' && (
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <CheckCircle className="w-4 h-4 text-green-500 dark:text-green-400 mr-2" />
                   )}
                   {file.status === 'error' && (
-                    <AlertCircle className="w-4 h-4 text-red-500 mr-2" />
+                    <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 mr-2" />
                   )}
                   
                   {/* Remove button */}
                   <button
                     onClick={() => removeUploadFile(file.id)}
-                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>

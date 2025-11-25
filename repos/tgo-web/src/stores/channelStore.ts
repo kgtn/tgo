@@ -17,6 +17,8 @@ interface ChannelStoreState {
   refreshChannel: (params: { channel_id: string; channel_type: number }) => Promise<ChannelInfo | null>;
   /** Update presence fields on cached channel info (no fetch). */
   updateVisitorOnlineStatus: (channel_id: string, channel_type: number, is_online: boolean, last_offline_iso?: string | null) => void;
+  /** Update avatar on cached channel info (no fetch). */
+  updateChannelAvatar: (channel_id: string, channel_type: number, avatar: string) => void;
   clear: () => void;
 }
 
@@ -139,6 +141,29 @@ export const useChannelStore = create<ChannelStoreState>((set, get) => ({
 
       const nextExtra = { ...prevExtra, is_online, last_offline_time: nextLast };
       const nextInfo: ChannelInfo = { ...prev, extra: nextExtra };
+      return {
+        channels: { ...state.channels, [key]: nextInfo }
+      } as any;
+    });
+  },
+
+  updateChannelAvatar: (channel_id: string, channel_type: number, avatar: string) => {
+    if (!channel_id || !Number.isFinite(channel_type)) return;
+    const key = getChannelKey(channel_id, channel_type);
+    set((state) => {
+      const prev = state.channels[key];
+      if (!prev) return {} as any;
+      
+      // Only update if avatar actually changes
+      if (prev.avatar === avatar) {
+        return {} as any;
+      }
+
+      const nextInfo: ChannelInfo = { ...prev, avatar };
+      // Also update avatar_url in extra if it exists
+      if (nextInfo.extra && typeof nextInfo.extra === 'object') {
+        nextInfo.extra = { ...nextInfo.extra, avatar_url: avatar };
+      }
       return {
         channels: { ...state.channels, [key]: nextInfo }
       } as any;

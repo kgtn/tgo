@@ -23,11 +23,11 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ className = '' }) => 
   };
 
   return (
-    <aside className={`hidden md:flex w-64 flex-col bg-white border-r border-gray-200 shrink-0 ${className}`}>
-      <div className="px-4 py-3 border-b border-gray-200">
+    <aside className={`hidden md:flex w-64 flex-col bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 shrink-0 ${className}`}>
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
-          <SettingsIcon className="w-4 h-4 text-gray-700" />
-          <h2 className="text-base font-semibold text-gray-800">{t('settings.title', '设置')}</h2>
+          <SettingsIcon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+          <h2 className="text-base font-semibold text-gray-800 dark:text-gray-100">{t('settings.title', '设置')}</h2>
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto p-2 space-y-1">
@@ -37,7 +37,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ className = '' }) => 
             to={`/settings/${item.id}`}
             className={({ isActive }) => `
               block px-3 py-2 rounded-md text-sm transition-colors
-              ${isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}
+              ${isActive ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}
             `}
           >
             <span className="inline-flex items-center gap-2">
@@ -47,12 +47,12 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ className = '' }) => 
           </NavLink>
         ))}
       </nav>
-      <div className="p-2 border-t border-gray-200 space-y-1">
+      <div className="p-2 border-t border-gray-200 dark:border-gray-700 space-y-1">
         <NavLink
           to="/settings/about"
           className={({ isActive }) => `
             block px-3 py-2 rounded-md text-sm transition-colors
-            ${isActive ? 'bg-blue-100 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}
+            ${isActive ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}
           `}
         >
           <span className="inline-flex items-center gap-2">
@@ -69,7 +69,7 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ className = '' }) => 
                 console.error('Logout failed:', error);
               }
             }}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-red-600 hover:bg-red-50 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
           >
             <FiLogOut className="w-4 h-4" />
             <span>{t('settings.menu.logout', '退出登录')}</span>

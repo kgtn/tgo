@@ -72,8 +72,8 @@ const FileMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) => {
   }, [message.metadata, message.channelId, message.channelType, message.clientMsgNo, message.id, isConnected, sendWsMessage, updateMessageByClientMsgNo, showToast]);
 
   const wrapperClass = isStaff
-    ? 'bg-white p-3 rounded-lg rounded-tr-none shadow-sm border border-blue-200 w-[280px] max-w-xs cursor-pointer'
-    : 'bg-white p-3 rounded-lg rounded-tl-none shadow-sm border border-gray-100 w-[280px] max-w-xs cursor-pointer';
+    ? 'bg-white dark:bg-gray-700 p-3 rounded-lg rounded-tr-none shadow-sm border border-blue-200 dark:border-blue-700 w-[280px] max-w-xs cursor-pointer'
+    : 'bg-white dark:bg-gray-800 p-3 rounded-lg rounded-tl-none shadow-sm border border-gray-100 dark:border-gray-700 w-[280px] max-w-xs cursor-pointer';
 
   return (
     <div
@@ -91,8 +91,8 @@ const FileMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) => {
       <div className="flex items-center space-x-3">
         {getFileIcon(fileName, 'w-8 h-8', 32)}
         <div className="flex-1 min-w-0">
-          <div className="text-sm text-gray-800 truncate">{fileName || t('chat.messages.file.placeholder', '[文件]')}</div>
-          <div className="text-xs text-gray-500">
+          <div className="text-sm text-gray-800 dark:text-gray-200 truncate">{fileName || t('chat.messages.file.placeholder', '[文件]')}</div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">
             {fileUploadError ? t('chat.messages.file.uploadFailedRetry', '上传失败，点击重试') : (fileUploading ? t('chat.messages.file.uploadingWithPercent', '上传中 {{percent}}%', { percent: fileUploadProgress ?? 0 }) : formatBytes(fileSize))}
           </div>
         </div>

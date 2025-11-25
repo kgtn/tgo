@@ -168,17 +168,17 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
   };
 
   return (
-    <main className="flex flex-col flex-1 min-h-0 bg-gradient-to-br from-gray-50 to-gray-100">
-      <header className="px-6 py-4 border-b border-gray-200/80 flex justify-between items-center bg-white/60 backdrop-blur-lg sticky top-0 z-10">
+    <main className="flex flex-col flex-1 min-h-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
+      <header className="px-6 py-4 border-b border-gray-200/80 dark:border-gray-700/80 flex justify-between items-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg sticky top-0 z-10">
         <div>
-          <h2 className="text-lg font-semibold text-gray-800">{platform.name} - {t('platforms.website.header.title', '网站小部件配置')}</h2>
-          <p className="text-xs text-gray-500 mt-1">{t('platforms.website.header.subtitle', '调整左侧配置，右侧预览会实时更新')}</p>
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{platform.name} - {t('platforms.website.header.title', '网站小部件配置')}</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('platforms.website.header.subtitle', '调整左侧配置，右侧预览会实时更新')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button
             disabled={isUpdating || isDeleting}
             onClick={() => setConfirmOpen(true)}
-            className={`px-3 py-1.5 text-sm rounded-md ${isDeleting ? 'bg-red-400 text-white' : 'bg-red-600 text-white hover:bg-red-700'}`}
+            className={`px-3 py-1.5 text-sm rounded-md ${isDeleting ? 'bg-red-400 text-white' : 'bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600'}`}
           >
             {isDeleting ? t('platforms.website.buttons.deleting', '删除中…') : t('platforms.website.buttons.delete', '删除')}
           </button>
@@ -201,14 +201,14 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
                 setIsToggling(false);
               }
             }}
-            className={`px-3 py-1.5 text-sm rounded-md text-white ${isEnabled ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700'} ${isToggling ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`px-3 py-1.5 text-sm rounded-md text-white ${isEnabled ? 'bg-gray-600 dark:bg-gray-500 hover:bg-gray-700 dark:hover:bg-gray-600' : 'bg-green-600 dark:bg-green-500 hover:bg-green-700 dark:hover:bg-green-600'} ${isToggling ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {isToggling ? (isEnabled ? t('platforms.website.buttons.disabling', '禁用中…') : t('platforms.website.buttons.enabling', '启用中…')) : (isEnabled ? t('platforms.website.buttons.disable', '禁用') : t('platforms.website.buttons.enable', '启用'))}
           </button>
           <button
             disabled={!canSave || isUpdating}
             onClick={handleSave}
-            className={`px-3 py-1.5 text-sm rounded-md ${canSave ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+            className={`px-3 py-1.5 text-sm rounded-md ${canSave ? 'bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'}`}
           >
             {isUpdating ? t('platforms.website.buttons.saving', '保存中…') : t('platforms.website.buttons.save', '保存')}
           </button>
@@ -217,52 +217,52 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
 
       <div className="flex flex-1 min-h-0 flex-col lg:flex-row gap-4 p-6">
         {/* Left: form */}
-        <section className="lg:w-2/5 w-full bg-white/80 backdrop-blur-md p-5 rounded-lg shadow-sm border border-gray-200/60 space-y-4 overflow-y-auto min-h-0 auto-hide-scrollbar">
+        <section className="lg:w-2/5 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-5 rounded-lg shadow-sm border border-gray-200/60 dark:border-gray-700/60 space-y-4 overflow-y-auto min-h-0 auto-hide-scrollbar">
           {/* 平台名称（置于表单最上方） */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">{t('platforms.website.form.name', '名称')}</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{t('platforms.website.form.name', '名称')}</label>
             <input
               type="text"
               value={platformName}
               onChange={(e) => setPlatformName(e.target.value)}
-              className="w-full text-sm p-1.5 border border-gray-300/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/90"
+              className="w-full text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200"
               placeholder={t('platforms.website.form.namePlaceholder', '请输入平台名称')}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">{t('platforms.website.form.widgetTitle', '访客窗口标题')}</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{t('platforms.website.form.widgetTitle', '访客窗口标题')}</label>
             <input
               type="text"
               value={formValues.widgetTitle}
               onChange={e => handleChange({ widgetTitle: e.target.value })}
-              className="w-full text-sm p-1.5 border border-gray-300/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/90"
+              className="w-full text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">{t('platforms.website.form.themeColor', '主题颜色')}</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{t('platforms.website.form.themeColor', '主题颜色')}</label>
             <input
               type="color"
               value={formValues.themeColor}
               onChange={e => handleChange({ themeColor: e.target.value })}
-              className="h-9 w-16 p-1 border border-gray-300/80 rounded-md bg-white/90"
+              className="h-9 w-16 p-1 border border-gray-300/80 dark:border-gray-600/80 rounded-md bg-white/90 dark:bg-gray-700/50"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">{t('platforms.website.form.logo', 'Logo')}</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{t('platforms.website.form.logo', 'Logo')}</label>
             <div className="flex items-start gap-4">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="relative group w-24 h-24 md:w-28 md:h-28 border border-dashed border-gray-300 rounded-md bg-gray-50 flex items-center justify-center overflow-hidden hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition"
+                className="relative group w-24 h-24 md:w-28 md:h-28 border border-dashed border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 flex items-center justify-center overflow-hidden hover:border-blue-400 dark:hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition"
                 aria-label={t('platforms.website.form.uploadLogo', '上传 Logo')}
               >
                 {formValues.logoUrl ? (
                   <img src={formValues.logoUrl} alt="Logo" className="w-full h-full object-contain transition-opacity group-hover:opacity-80" />
                 ) : (
-                  <div className="flex flex-col items-center justify-center text-gray-400 text-xs">
+                  <div className="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 text-xs">
                     <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4-4 4 4 4-4 4 4M4 8h16" />
                     </svg>
@@ -304,13 +304,13 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
                   className="hidden"
                 />
                 {uploadingLogo && (
-                  <p className="text-xs text-gray-400">{t('platforms.website.form.uploading', '上传中…')}</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500">{t('platforms.website.form.uploading', '上传中…')}</p>
                 )}
                 {formValues.logoUrl && (
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                      className="px-2 py-1 text-xs rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
                       onClick={async () => {
                         try {
                           setUploadingLogo(true);
@@ -329,27 +329,27 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
                     </button>
                   </div>
                 )}
-                <p className="text-xs text-gray-600">{t('platforms.website.form.logoHint', '建议尺寸：72x72 像素。支持 PNG/JPG/SVG，最大 2MB。')}</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">{t('platforms.website.form.logoHint', '建议尺寸：72x72 像素。支持 PNG/JPG/SVG，最大 2MB。')}</p>
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">{t('platforms.website.form.welcomeMessage', '欢迎语')}</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{t('platforms.website.form.welcomeMessage', '欢迎语')}</label>
             <textarea
               rows={3}
               value={formValues.welcomeMessage}
               onChange={e => handleChange({ welcomeMessage: e.target.value })}
-              className="w-full text-sm p-1.5 border border-gray-300/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/90 resize-none"
+              className="w-full text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200 resize-none"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">{t('platforms.website.form.position', '位置')}</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{t('platforms.website.form.position', '位置')}</label>
             <select
               value={formValues.position}
               onChange={e => handleChange({ position: e.target.value as WebsiteWidgetConfig['position'] })}
-              className="w-full text-sm p-1.5 border border-gray-300/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white/90"
+              className="w-full text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200"
             >
               <option value="bottom-right">{t('platforms.website.form.positionBottomRight', '右下角')}</option>
               <option value="bottom-left">{t('platforms.website.form.positionBottomLeft', '左下角')}</option>
@@ -360,25 +360,25 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
 
           {/* API Key（移动到主表单，位置字段之后） */}
           <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">{t('platforms.website.form.apiKey', 'API Key')}</label>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{t('platforms.website.form.apiKey', 'API Key')}</label>
             <div className="flex flex-wrap items-center gap-2">
               <input
                 type={showApiKey ? 'text' : 'password'}
                 readOnly
                 value={apiKey || ''}
                 placeholder={apiKey ? '' : t('platforms.website.form.noApiKey', '暂无 API Key')}
-                className="flex-1 min-w-[160px] text-sm p-1.5 border border-gray-300/80 rounded-md bg-gray-50"
+                className="flex-1 min-w-[160px] text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md bg-gray-50 dark:bg-gray-700/50 dark:text-gray-200"
               />
               <button
                 type="button"
-                className="px-2 py-1 text-xs rounded-md bg-gray-100 hover:bg-gray-200 text-gray-700"
+                className="px-2 py-1 text-xs rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200"
                 onClick={() => setShowApiKey(v => !v)}
               >
                 {showApiKey ? t('platforms.website.buttons.hide', '隐藏') : t('platforms.website.buttons.show', '显示')}
               </button>
               <button
                 type="button"
-                className="px-2 py-1 text-xs rounded-md bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                className="px-2 py-1 text-xs rounded-md bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
                 onClick={async () => {
                   if (!apiKey) return;
                   try { await navigator.clipboard.writeText(apiKey); showSuccess(showToast, t('platforms.website.messages.copied', '已复制'), t('platforms.website.messages.apiKeyCopied', 'API Key 已复制到剪贴板')); }
@@ -390,7 +390,7 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
               </button>
               <button
                 type="button"
-                className="px-2 py-1 text-xs rounded-md bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+                className="px-2 py-1 text-xs rounded-md bg-amber-500 dark:bg-amber-600 text-white hover:bg-amber-600 dark:hover:bg-amber-700 disabled:opacity-50"
                 onClick={async () => {
                   try {
                     if (!confirm(t('platforms.website.confirm.regenerateApiKey', '确定要重新生成 API Key 吗？现有嵌入脚本将需要更新。'))) return;
@@ -404,7 +404,7 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
                 {t('platforms.website.buttons.regenerate', '重新生成')}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">{t('platforms.website.form.apiKeyHint', '用于网站集成脚本的鉴权标识，请妥善保管。')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('platforms.website.form.apiKeyHint', '用于网站集成脚本的鉴权标识，请妥善保管。')}</p>
           </div>
 
 
@@ -412,7 +412,7 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
         </section>
 
         {/* Right: preview */}
-        <section className="lg:w-3/5 w-full bg-white/80 backdrop-blur-md p-0 rounded-lg shadow-sm border border-gray-200/60 flex min-h-0">
+        <section className="lg:w-3/5 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-0 rounded-lg shadow-sm border border-gray-200/60 dark:border-gray-700/60 flex min-h-0">
           <iframe
             ref={iframeRef}
             src={WIDGET_PREVIEW_URL}
@@ -425,40 +425,40 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
       </div>
       {/* Embed code section (bottom, collapsible) */}
       <section className="px-6 pb-6">
-        <div className="bg-white/80 backdrop-blur-md rounded-lg shadow-sm border border-gray-200/60 overflow-hidden">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md rounded-lg shadow-sm border border-gray-200/60 dark:border-gray-700/60 overflow-hidden">
           <button
             type="button"
-            className="w-full px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 transition-colors"
+            className="w-full px-5 py-3 flex items-center justify-between hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-colors"
             onClick={() => setEmbedOpen(v => !v)}
           >
-            <h3 className="text-md font-semibold text-gray-700">{t('platforms.website.embed.title', '网站集成代码')}</h3>
-            <svg className={`w-5 h-5 text-gray-500 transition-transform ${embedOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h3 className="text-md font-semibold text-gray-700 dark:text-gray-200">{t('platforms.website.embed.title', '网站集成代码')}</h3>
+            <svg className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform ${embedOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
           {embedOpen && (
             <div className="px-5 pb-5 pt-2 space-y-4">
               {/* 嵌入代码 */}
-              <p className="text-xs text-gray-500" dangerouslySetInnerHTML={{ __html: t('platforms.website.embed.instruction', '将以下代码复制并粘贴到您网站的 <code>&lt;head&gt;</code> 或 <code>&lt;body&gt;</code> 中：') }} />
+              <p className="text-xs text-gray-500 dark:text-gray-400" dangerouslySetInnerHTML={{ __html: t('platforms.website.embed.instruction', '将以下代码复制并粘贴到您网站的 <code>&lt;head&gt;</code> 或 <code>&lt;body&gt;</code> 中：') }} />
               {(() => {
                 const snippet = `<script src="${WIDGET_SCRIPT_BASE}?api_key=${apiKey}" async></script>`;
                 const demoUrl = `${WIDGET_DEMO_URL}${apiKey ? `?api_key=${encodeURIComponent(apiKey)}` : ''}`;
                 return (
                   <div className="relative">
-                    <pre className="text-xs bg-gray-50 border border-gray-200 rounded-md p-3 overflow-x-auto whitespace-pre-wrap">{snippet}</pre>
+                    <pre className="text-xs bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-md p-3 overflow-x-auto whitespace-pre-wrap dark:text-gray-300">{snippet}</pre>
                     <div className="absolute top-2 right-2 flex gap-2">
                       <a
                         href={demoUrl}
                         target="_blank"
                         rel="noreferrer"
                         onClick={(e) => { if (!apiKey) { e.preventDefault(); } }}
-                        className={`px-2 py-1 text-xs rounded ${apiKey ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-gray-200 text-gray-500 cursor-not-allowed'}`}
+                        className={`px-2 py-1 text-xs rounded ${apiKey ? 'bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'}`}
                       >
                         {t('platforms.website.buttons.testIntegration', '测试集成')}
                       </a>
                       <button
                         type="button"
-                        className="px-2 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                        className="px-2 py-1 text-xs rounded bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
                         onClick={async () => {
                           try { await navigator.clipboard.writeText(snippet); showSuccess(showToast, t('platforms.website.messages.copied', '已复制'), t('platforms.website.messages.embedCodeCopied', '嵌入代码已复制到剪贴板')); } catch (e) { showApiError(showToast, e); }
                         }}

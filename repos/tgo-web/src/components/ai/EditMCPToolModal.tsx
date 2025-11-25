@@ -130,44 +130,44 @@ const EditMCPToolModal: React.FC<EditMCPToolModalProps> = ({ isOpen, onClose, to
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
-            <Edit className="w-6 h-6 text-green-600" />
-            <h2 className="text-xl font-semibold text-gray-800">
+            <Edit className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
               {t('mcp.editMcpToolModal.title', '编辑 MCP 工具')}
             </h2>
           </div>
           <button
             onClick={handleClose}
             disabled={isSubmitting}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6 dark:bg-gray-900">
           {/* Tool Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               {t('mcp.editMcpToolModal.fields.name', '工具名称')}
-              <span className="text-red-500 ml-1">*</span>
+              <span className="text-red-500 dark:text-red-400 ml-1">*</span>
             </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => handleInputChange('name', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                errors.name ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-gray-100 ${
+                errors.name ? 'border-red-500 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
               }`}
               placeholder={t('mcp.editMcpToolModal.placeholders.name', '例如：weather-api')}
               disabled={isSubmitting}
             />
             {errors.name && (
-              <div className="mt-1 flex items-center text-sm text-red-600">
+              <div className="mt-1 flex items-center text-sm text-red-600 dark:text-red-400">
                 <AlertCircle className="w-4 h-4 mr-1" />
                 {errors.name}
               </div>
@@ -176,14 +176,14 @@ const EditMCPToolModal: React.FC<EditMCPToolModalProps> = ({ isOpen, onClose, to
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               {t('mcp.editMcpToolModal.fields.description', '工具描述')}
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-gray-100"
               placeholder={t('mcp.editMcpToolModal.placeholders.description', '简要描述该工具的功能')}
               disabled={isSubmitting}
             />
@@ -191,13 +191,13 @@ const EditMCPToolModal: React.FC<EditMCPToolModalProps> = ({ isOpen, onClose, to
 
           {/* Transport Type */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               {t('mcp.editMcpToolModal.fields.transportType', '传输类型')}
             </label>
             <select
               value={formData.transport_type}
               onChange={(e) => handleInputChange('transport_type', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-gray-100"
               disabled={isSubmitting}
             >
               <option value="http">HTTP</option>
@@ -207,22 +207,22 @@ const EditMCPToolModal: React.FC<EditMCPToolModalProps> = ({ isOpen, onClose, to
 
           {/* Endpoint */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               {t('mcp.editMcpToolModal.fields.endpoint', '端点地址')}
-              <span className="text-red-500 ml-1">*</span>
+              <span className="text-red-500 dark:text-red-400 ml-1">*</span>
             </label>
             <input
               type="text"
               value={formData.endpoint}
               onChange={(e) => handleInputChange('endpoint', e.target.value)}
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                errors.endpoint ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-gray-100 ${
+                errors.endpoint ? 'border-red-500 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
               }`}
               placeholder={t('mcp.editMcpToolModal.placeholders.endpoint', '例如：https://api.example.com/mcp')}
               disabled={isSubmitting}
             />
             {errors.endpoint && (
-              <div className="mt-1 flex items-center text-sm text-red-600">
+              <div className="mt-1 flex items-center text-sm text-red-600 dark:text-red-400">
                 <AlertCircle className="w-4 h-4 mr-1" />
                 {errors.endpoint}
               </div>
@@ -231,28 +231,28 @@ const EditMCPToolModal: React.FC<EditMCPToolModalProps> = ({ isOpen, onClose, to
 
           {/* Tool Type - Read Only */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
               {t('mcp.editMcpToolModal.fields.toolType', '工具类型')}
             </label>
             <input
               type="text"
               value={tool.tool_type}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
               disabled
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {t('mcp.editMcpToolModal.hints.toolTypeReadonly', '工具类型不可修改')}
             </p>
           </div>
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
           <button
             type="button"
             onClick={handleClose}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
           >
             {t('common.cancel', '取消')}
           </button>
@@ -260,7 +260,7 @@ const EditMCPToolModal: React.FC<EditMCPToolModalProps> = ({ isOpen, onClose, to
             type="submit"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm font-medium text-white bg-green-600 dark:bg-green-700 border border-transparent rounded-md hover:bg-green-700 dark:hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? t('common.submitting', '提交中...') : t('common.save', '保存')}
           </button>

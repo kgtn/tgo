@@ -244,7 +244,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
     return (
       <button
         key={v.id}
-        className="w-full flex items-center p-2 rounded-md hover:bg-gray-50 text-left"
+        className="w-full flex items-center p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 text-left"
         onClick={() => openVisitorConversation(v)}
       >
         {/* Avatar - use same logic as ChatList */}
@@ -252,11 +252,11 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center min-w-0">
-            <div className="text-sm font-medium text-gray-900 truncate search-html" dangerouslySetInnerHTML={{ __html: nameHtml }} />
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate search-html" dangerouslySetInnerHTML={{ __html: nameHtml }} />
             <ChatPlatformIcon platformType={platformType} />
           </div>
         </div>
-        <Icon name="ChevronRight" size={16} className="text-gray-300" />
+        <Icon name="ChevronRight" size={16} className="text-gray-300 dark:text-gray-600" />
       </button>
     );
   }, [openConversation]);
@@ -282,7 +282,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
     return (
       <button
         key={m.message_id_str}
-        className="w-full flex items-start p-2 rounded-md hover:bg-gray-50 text-left"
+        className="w-full flex items-start p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50 text-left"
         onClick={() => {
           if (channelId && typeof m.message_seq === 'number') {
             useChatStore.getState().setTargetMessageLocation({ channelId, channelType, messageSeq: m.message_seq });
@@ -295,18 +295,18 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center min-w-0">
-              <div className="text-sm font-medium text-gray-900 truncate mr-1">{displayName}</div>
+              <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate mr-1">{displayName}</div>
               {platformType ? <ChatPlatformIcon platformType={platformType} /> : null}
             </div>
-            <div className="text-xs text-gray-500 flex-shrink-0 ml-2">{time}</div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 ml-2">{time}</div>
           </div>
           {hasPreview ? (
-            <div className="text-sm text-gray-900 line-clamp-2 whitespace-pre-wrap break-words search-html mt-0.5" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+            <div className="text-sm text-gray-900 dark:text-gray-100 line-clamp-2 whitespace-pre-wrap break-words search-html mt-0.5" dangerouslySetInnerHTML={{ __html: previewHtml }} />
           ) : (
-            <div className="text-sm text-gray-400 mt-0.5">{t('search.noPreview', '\uff08\u65e0\u9884\u89c8\u5185\u5bb9\uff09')}</div>
+            <div className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">{t('search.noPreview', '\uff08\u65e0\u9884\u89c8\u5185\u5bb9\uff09')}</div>
           )}
         </div>
-        <Icon name="ChevronRight" size={16} className="text-gray-300 ml-2" />
+        <Icon name="ChevronRight" size={16} className="text-gray-300 dark:text-gray-600 ml-2" />
       </button>
     );
   }, [openConversation]);
@@ -324,25 +324,25 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] bg-black/20 backdrop-blur-sm flex items-start justify-center pt-8 md:pt-16 px-2 md:px-6" onClick={handleBackdropClick}>
-      <div ref={panelRef} className="w-full md:max-w-3xl max-h-[80vh] md:max-h-[70vh] bg-white/90 backdrop-blur-lg border border-gray-200/60 rounded-xl shadow-2xl ring-1 ring-black/5 flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div ref={panelRef} className="w-full md:max-w-3xl max-h-[80vh] md:max-h-[70vh] bg-white/90 backdrop-blur-lg border border-gray-200/60 dark:bg-gray-800/90 dark:border-gray-700 rounded-xl shadow-2xl ring-1 ring-black/5 flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
         {/* Header search input */}
-        <div className="px-4 py-3 border-b border-gray-200/60 bg-white/60 backdrop-blur sticky top-0 z-10 flex items-center gap-2">
+        <div className="px-4 py-3 border-b border-gray-200/60 dark:border-gray-700 bg-white/60 dark:bg-gray-800/60 backdrop-blur sticky top-0 z-10 flex items-center gap-2">
           <div className="relative flex-1">
-            <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <Icon name="Search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <input
               ref={inputRef}
               value={query}
               onChange={handleChange}
               placeholder={t('search.placeholder', '\u641c\u7d22\u8bbf\u5ba2\u6216\u6d88\u606f')}
-              className="w-full pl-9 pr-9 py-2.5 text-sm border border-gray-200/70 rounded-full bg-gray-50/80 focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
+              className="w-full pl-9 pr-9 py-2.5 text-sm border border-gray-200/70 rounded-full bg-gray-50/80 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/70 focus:border-blue-500"
             />
             {query && (
-              <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onClick={handleClear} aria-label={t('common.clear', '\u6e05\u7a7a')} title={t('common.clear', '\u6e05\u7a7a')}>
+              <button className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300" onClick={handleClear} aria-label={t('common.clear', '\u6e05\u7a7a')} title={t('common.clear', '\u6e05\u7a7a')}>
                 <Icon name="X" size={16} />
               </button>
             )}
           </div>
-          <button className="p-2 rounded-md hover:bg-gray-100" onClick={onClose} aria-label={t('common.close', '\u5173\u95ed')} title={t('common.close', '\u5173\u95ed')}>
+          <button className="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700" onClick={onClose} aria-label={t('common.close', '\u5173\u95ed')} title={t('common.close', '\u5173\u95ed')}>
             <Icon name="X" size={18} />
           </button>
         </div>
@@ -356,12 +356,16 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
             border-radius: 4px;
             box-shadow: inset 0 0 0 1px rgba(0,0,0,0.04);
           }
+          .dark .search-html mark {
+            background-color: #854D0E; /* Tailwind yellow-900 */
+            color: #FEF08A; /* Tailwind yellow-200 */
+          }
         `}</style>
 
         {/* Tabs */}
-        <div className="px-4 pt-2 border-b border-gray-100/80 bg-white/40 backdrop-blur">
+        <div className="px-4 pt-2 border-b border-gray-100/80 dark:border-gray-700/80 bg-white/40 dark:bg-gray-800/40 backdrop-blur">
           <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-1 rounded-md bg-gray-100/60 p-1 ring-1 ring-inset ring-gray-200/60" role="tablist" aria-label={t('search.aria.tablist', '\u641c\u7d22\u5206\u7c7b')}>
+            <div className="inline-flex items-center gap-1 rounded-md bg-gray-100/60 dark:bg-gray-700/60 p-1 ring-1 ring-inset ring-gray-200/60 dark:ring-gray-600/60" role="tablist" aria-label={t('search.aria.tablist', '\u641c\u7d22\u5206\u7c7b')}>
               {tabs.map(tab => {
                 const isActive = activeTab === tab.key;
                 return (
@@ -370,9 +374,9 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
                     role="tab"
                     aria-selected={isActive}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`inline-flex items-center px-2.5 py-1.5 text-sm rounded-md transition-all focus:outline-none ${isActive ? 'bg-white text-gray-900 shadow-sm ring-1 ring-gray-200/70' : 'text-gray-600 hover:text-gray-900 hover:bg-white/70'}`}
+                    className={`inline-flex items-center px-2.5 py-1.5 text-sm rounded-md transition-all focus:outline-none ${isActive ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-gray-200/70 dark:ring-gray-500/70' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/70 dark:hover:bg-gray-600/70'}`}
                   >
-                    <Icon name={tab.icon} size={14} className={isActive ? 'text-blue-600' : 'text-gray-500'} />
+                    <Icon name={tab.icon} size={14} className={isActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'} />
                     <span className="ml-1.5">{tab.label}</span>
                   </button>
                 );
@@ -382,17 +386,17 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-auto px-4 py-3 bg-white/30">
+        <div className="flex-1 overflow-auto px-4 py-3 bg-white/30 dark:bg-gray-800/30">
           {!query ? (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+            <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">
               {t('search.emptyQueryHint', '\u8f93\u5165\u5173\u952e\u8bcd\u5f00\u59cb\u641c\u7d22')}
             </div>
           ) : loading ? (
-            <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+            <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400 text-sm">
               <Icon name="Loader2" className="animate-spin mr-2" size={16} /> {t('search.searching', '\u6b63\u5728\u641c\u7d22...')}
             </div>
           ) : error ? (
-            <div className="h-full flex items-center justify-center text-red-500 text-sm">
+            <div className="h-full flex items-center justify-center text-red-500 dark:text-red-400 text-sm">
               <Icon name="AlertCircle" size={16} className="mr-2" /> {error}
             </div>
           ) : data ? (
@@ -400,11 +404,11 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
               <div className="space-y-6">
                 {/* Visitors section */}
                 <div>
-                  <div className="text-xs font-medium text-gray-500 mb-2">{t('search.sections.visitors', '访客')}（{data.visitor_count ?? data.visitors.length}）</div>
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t('search.sections.visitors', '访客')}（{data.visitor_count ?? data.visitors.length}）</div>
                   {data.visitors.length === 0 ? (
-                    <div className="text-sm text-gray-400">{t('search.empty.visitors', '\u672a\u627e\u5230\u76f8\u5173\u8bbf\u5ba2')}</div>
+                    <div className="text-sm text-gray-400 dark:text-gray-500">{t('search.empty.visitors', '\u672a\u627e\u5230\u76f8\u5173\u8bbf\u5ba2')}</div>
                   ) : (
-                    <div className="divide-y divide-gray-100 bg-white rounded-md border border-gray-100">
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-700 rounded-md border border-gray-100 dark:border-gray-600">
                       {data.visitors.map(v => (
                         <div key={v.id} className="p-1">{renderVisitorItem(v)}</div>
                       ))}
@@ -423,11 +427,11 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
 
                 {/* Messages section */}
                 <div>
-                  <div className="text-xs font-medium text-gray-500 mb-2">{t('search.sections.messages', '\u6d88\u606f')}（{data.message_count ?? data.messages.length}）</div>
+                  <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">{t('search.sections.messages', '\u6d88\u606f')}（{data.message_count ?? data.messages.length}）</div>
                   {data.messages.length === 0 ? (
-                    <div className="text-sm text-gray-400">{t('search.empty.messages', '\u672a\u627e\u5230\u76f8\u5173\u6d88\u606f')}</div>
+                    <div className="text-sm text-gray-400 dark:text-gray-500">{t('search.empty.messages', '\u672a\u627e\u5230\u76f8\u5173\u6d88\u606f')}</div>
                   ) : (
-                    <div className="divide-y divide-gray-100 bg-white rounded-md border border-gray-100">
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-700 rounded-md border border-gray-100 dark:border-gray-600">
                       {data.messages.map(m => (
                         <div key={m.message_id_str} className="p-1">{renderMessageItem(m)}</div>
                       ))}
@@ -447,9 +451,9 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
             ) : activeTab === 'visitors' ? (
               <div>
                 {data.visitors.length === 0 ? (
-                  <div className="text-sm text-gray-400">{t('search.empty.visitors', '\u672a\u627e\u5230\u76f8\u5173\u8bbf\u5ba2')}</div>
+                  <div className="text-sm text-gray-400 dark:text-gray-500">{t('search.empty.visitors', '\u672a\u627e\u5230\u76f8\u5173\u8bbf\u5ba2')}</div>
                 ) : (
-                  <div className="divide-y divide-gray-100 bg-white rounded-md border border-gray-100">
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-700 rounded-md border border-gray-100 dark:border-gray-600">
                     {data.visitors.map(v => (
                       <div key={v.id} className="p-1">{renderVisitorItem(v)}</div>
                     ))}
@@ -468,9 +472,9 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
             ) : (
               <div>
                 {data.messages.length === 0 ? (
-                  <div className="text-sm text-gray-400">{t('search.empty.messages', '\u672a\u627e\u5230\u76f8\u5173\u6d88\u606f')}</div>
+                  <div className="text-sm text-gray-400 dark:text-gray-500">{t('search.empty.messages', '\u672a\u627e\u5230\u76f8\u5173\u6d88\u606f')}</div>
                 ) : (
-                  <div className="divide-y divide-gray-100 bg-white rounded-md border border-gray-100">
+                  <div className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-700 rounded-md border border-gray-100 dark:border-gray-600">
                     {data.messages.map(m => (
                       <div key={m.message_id_str} className="p-1">{renderMessageItem(m)}</div>
                     ))}
@@ -488,16 +492,16 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
               </div>
             )
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm">{t('search.emptyQueryHint', '输入关键词开始搜索')}</div>
+            <div className="h-full flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">{t('search.emptyQueryHint', '输入关键词开始搜索')}</div>
           )}
         </div>
-        <div className="px-4 py-2 border-t border-gray-100 text-xs text-gray-500 bg-white/60 backdrop-blur flex items-center justify-between">
+        <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 bg-white/60 dark:bg-gray-800/60 backdrop-blur flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="hidden md:inline">{t('search.footer.tip', '小提示：')}</span>
             <span>{t('search.footer.escClose', 'Esc 关闭')}</span>
             <span>{t('search.footer.enterOpen', 'Enter 打开')}</span>
           </div>
-          <div className="text-gray-400">{t('search.footer.summary', '搜索访客和消息')}</div>
+          <div className="text-gray-400 dark:text-gray-500">{t('search.footer.summary', '搜索访客和消息')}</div>
         </div>
       </div>
     </div>,

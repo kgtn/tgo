@@ -70,7 +70,7 @@ export const ChatListItem: React.FC<ChatListItemProps> = React.memo(({ chat, isA
     <div
       className={`
         flex items-center p-3 rounded-lg cursor-pointer transition-colors duration-150
-        ${isActive ? 'bg-blue-500 text-white shadow-sm' : 'hover:bg-gray-100/70'}
+        ${isActive ? 'bg-blue-500 dark:bg-blue-600 text-white shadow-sm' : 'hover:bg-gray-100/70 dark:hover:bg-gray-700/70'}
       `}
       onClick={handleClick}
     >
@@ -83,7 +83,7 @@ export const ChatListItem: React.FC<ChatListItemProps> = React.memo(({ chat, isA
 
       <div className="flex-grow overflow-hidden">
         <div className="flex justify-between items-center">
-          <h3 className={`text-sm font-semibold truncate ${isActive ? 'text-white' : 'text-gray-800'}`}>
+          <h3 className={`text-sm font-semibold truncate ${isActive ? 'text-white' : 'text-gray-800 dark:text-gray-200'}`}>
             {displayName}
             <ChatPlatformIcon platformType={(() => {
               const extra: any = chat.channelInfo?.extra;
@@ -93,13 +93,13 @@ export const ChatListItem: React.FC<ChatListItemProps> = React.memo(({ chat, isA
               return fromExtra ?? toPlatformType(chat.platform);
             })()} />
           </h3>
-          <span className={`text-xs flex-shrink-0 ml-2 ${isActive ? 'text-blue-100' : 'text-gray-400'}`}>
+          <span className={`text-xs flex-shrink-0 ml-2 ${isActive ? 'text-blue-100' : 'text-gray-400 dark:text-gray-500'}`}>
             {formatWeChatConversationTime(chat.timestamp)}
           </span>
         </div>
 
         <div className="flex justify-between items-center mt-1">
-          <p className={`text-xs truncate flex-1 ${isActive ? 'text-blue-100' : 'text-gray-500'}`}>{chat.lastMessage}</p>
+          <p className={`text-xs truncate flex-1 ${isActive ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>{chat.lastMessage}</p>
           {(chat.unreadCount > 0 || fadeOut) && (
             <div className={`min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-medium rounded-full flex items-center justify-center px-1 flex-shrink-0 ml-2 transition-opacity duration-200 ${fadeOut && chat.unreadCount === 0 ? 'opacity-0' : 'opacity-100'}`}>
               {unreadToDisplay > 99 ? '99+' : unreadToDisplay}

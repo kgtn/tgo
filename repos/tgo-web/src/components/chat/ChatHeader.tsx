@@ -19,9 +19,9 @@ export interface ChatHeaderProps {
 const ChatHeader: React.FC<ChatHeaderProps> = React.memo(({ activeChat }) => {
   const { t } = useTranslation();
   return (
-    <header className="px-6 py-3 border-b border-gray-200/80 flex justify-between items-center bg-white/60 backdrop-blur-lg sticky top-0 z-10">
+    <header className="px-6 py-3 border-b border-gray-200/80 dark:border-gray-700/80 flex justify-between items-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg sticky top-0 z-10">
       <div>
-        <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center">
           <span>{activeChat.channelInfo?.name || t('chat.header.visitorFallback', 'Visitor{{suffix}}', { suffix: String(activeChat.channelId || activeChat.id).slice(-4) })}</span>
           {(() => {
             const extra: any = activeChat.channelInfo?.extra;

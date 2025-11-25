@@ -1,5 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import PlatformList from '../components/platforms/PlatformList';
 import { usePlatformStore } from '@/stores/platformStore';
 
@@ -7,29 +8,17 @@ import { usePlatformStore } from '@/stores/platformStore';
  * Platform Management layout component with nested routing
  */
 const PlatformManagement: React.FC = () => {
+  const { i18n } = useTranslation();
   const initializePlatformStore = usePlatformStore(state => state.initializeStore);
-  const isLoading = usePlatformStore(state => state.isLoading);
-  const loadError = usePlatformStore(state => state.loadError);
-  const platforms = usePlatformStore(state => state.platforms);
-
-  // Track whether we've already attempted to initialize to prevent infinite loops
-  const hasAttemptedInit = useRef(false);
 
   useEffect(() => {
-    // Only initialize if:
-    // 1. Not currently loading
-    // 2. No load error (to prevent retry loop on error)
-    // 3. No platforms loaded yet
-    // 4. Haven't already attempted initialization
-    if (!isLoading && !loadError && platforms.length === 0 && !hasAttemptedInit.current) {
-      hasAttemptedInit.current = true;
-      initializePlatformStore();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, loadError, platforms.length]); // Don't include initializePlatformStore (it's a stable store function)
+    // Fetch platform list when the page is displayed or language changes
+    // This ensures data is refreshed after language change or navigation
+    initializePlatformStore();
+  }, [initializePlatformStore, i18n.language]);
 
   return (
-    <div className="flex h-full w-full">
+    <div className="flex h-full w-full bg-gray-50 dark:bg-gray-900">
       {/* Platform List Sidebar */}
       <PlatformList />
 

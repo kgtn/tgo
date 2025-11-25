@@ -35,8 +35,8 @@ const emptyDraft = (t: (k: string, d: string)=>string): Draft => ({
 const FieldRow: React.FC<{ label: string; required?: boolean; children: React.ReactNode }>
   = ({ label, required, children }) => (
   <div className="grid grid-cols-12 items-center gap-3 py-2">
-    <label className="col-span-3 text-sm text-gray-600">
-      {label}{required && <span className="text-red-500">*</span>}
+    <label className="col-span-3 text-sm text-gray-600 dark:text-gray-300">
+      {label}{required && <span className="text-red-500 dark:text-red-400">*</span>}
     </label>
     <div className="col-span-9">{children}</div>
   </div>
@@ -410,7 +410,7 @@ const ModelProvidersSettings: React.FC = () => {
       <div className="mt-4 space-y-4">
         <FieldRow label={t('settings.providers.fields.kind', '提供商')} required>
           <select
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={d.kind}
             onChange={(e) => {
               const kind = e.target.value as ProviderKind;
@@ -450,14 +450,14 @@ const ModelProvidersSettings: React.FC = () => {
 
         <FieldRow label={t('settings.providers.fields.name', '名称/别名')}>
           <input
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={d.name}
             onChange={(e) => setDraft({ ...d, name: e.target.value })}
             placeholder={providerLabel(d.kind)}
           />
         </FieldRow>
 
-        <div className="pt-1 text-xs font-medium text-gray-700 border-t border-gray-100 mt-2">
+        <div className="pt-1 text-xs font-medium text-gray-700 dark:text-gray-200 border-t border-gray-100 dark:border-gray-700 mt-2">
           {t('settings.providers.groups.connection', '认证与连接')}
         </div>
 
@@ -466,7 +466,7 @@ const ModelProvidersSettings: React.FC = () => {
           <div className="flex items-center gap-2">
             <input
               type={reveal[idForState] ? 'text' : 'password'}
-              className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex-1 rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={d.apiKey || ''}
               onChange={(e) => setDraft({ ...d, apiKey: e.target.value })}
               placeholder={d.hasApiKey && d.apiKeyMasked ? (t('settings.providers.placeholders.apiKeyMasked', `已配置：${d.apiKeyMasked}，留空则不更新`) as string) : (t('settings.providers.placeholders.apiKey', '粘贴密钥') as string)}
@@ -474,7 +474,7 @@ const ModelProvidersSettings: React.FC = () => {
             <button
               type="button"
               onClick={() => setReveal((s) => ({ ...s, [idForState]: !s[idForState] }))}
-              className="p-2 rounded border border-gray-300 text-gray-600 hover:bg-gray-50"
+              className="p-2 rounded border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               title={reveal[idForState] ? t('common.hide', '隐藏') : t('common.show', '显示')}
             >
               {reveal[idForState] ? <FiEyeOff /> : <FiEye />}
@@ -484,7 +484,7 @@ const ModelProvidersSettings: React.FC = () => {
 
         <FieldRow label={t('settings.providers.fields.baseUrl', 'API Base URL')} required={d.kind !== 'ollama'}>
           <input
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={d.apiBaseUrl || ''}
             onChange={(e) => setDraft({ ...d, apiBaseUrl: e.target.value })}
             placeholder={selected?.hint}
@@ -494,30 +494,30 @@ const ModelProvidersSettings: React.FC = () => {
         {d.kind === 'azure' && (
           <div className="grid grid-cols-12 gap-3">
             <div className="col-span-12 md:col-span-4">
-              <label className="block text-sm text-gray-600 mb-1">{t('settings.providers.fields.azure.deployment', 'Deployment Name')}</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">{t('settings.providers.fields.azure.deployment', 'Deployment Name')}</label>
               <input
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={d.params?.azure?.deployment || ''}
                 onChange={(e) => setDraft({ ...d, params: { ...d.params, azure: { ...(d.params?.azure || {}), deployment: e.target.value } } })}
                 placeholder="gpt-4o"
               />
-              <div className="text-xs text-gray-500 mt-1">{t('settings.providers.help.azure.deployment', 'Azure 中的部署名称，区别于模型 ID')}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('settings.providers.help.azure.deployment', 'Azure 中的部署名称，区别于模型 ID')}</div>
 
             </div>
             <div className="col-span-6 md:col-span-4">
-              <label className="block text-sm text-gray-600 mb-1">{t('settings.providers.fields.azure.resource', 'Resource')}</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">{t('settings.providers.fields.azure.resource', 'Resource')}</label>
               <input
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={d.params?.azure?.resource || ''}
                 onChange={(e) => setDraft({ ...d, params: { ...d.params, azure: { ...(d.params?.azure || {}), resource: e.target.value } } })}
                 placeholder="my-azure-resource"
               />
-              <div className="text-xs text-gray-500 mt-1">{t('settings.providers.help.azure.resource', 'Azure 资源名称，例如 OpenAI 服务资源名')}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('settings.providers.help.azure.resource', 'Azure 资源名称，例如 OpenAI 服务资源名')}</div>
             </div>
             <div className="col-span-6 md:col-span-4">
-              <label className="block text-sm text-gray-600 mb-1">{t('settings.providers.fields.azure.apiVersion', 'API Version')}</label>
+              <label className="block text-sm text-gray-600 dark:text-gray-300 mb-1">{t('settings.providers.fields.azure.apiVersion', 'API Version')}</label>
               <input
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={d.params?.azure?.apiVersion || '2024-02-15-preview'}
                 onChange={(e) => setDraft({ ...d, params: { ...d.params, azure: { ...(d.params?.azure || {}), apiVersion: e.target.value } } })}
                 placeholder="2024-02-15-preview"
@@ -528,7 +528,7 @@ const ModelProvidersSettings: React.FC = () => {
 
 
 
-              <div className="text-xs text-gray-500 mt-1">{t('settings.providers.help.azure.apiVersion', 'Azure OpenAI API 版本号，如 2024-02-15-preview')}</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('settings.providers.help.azure.apiVersion', 'Azure OpenAI API 版本号，如 2024-02-15-preview')}</div>
             </div>
 
           </div>
@@ -537,7 +537,7 @@ const ModelProvidersSettings: React.FC = () => {
         )}
 
 
-        <div className="pt-1 text-xs font-medium text-gray-700 border-t border-gray-100 mt-3 mb-1">
+        <div className="pt-1 text-xs font-medium text-gray-700 dark:text-gray-200 border-t border-gray-100 dark:border-gray-700 mt-3 mb-1">
           {t('settings.providers.groups.modelsTitle', '模型与默认值')}
         </div>
 
@@ -546,15 +546,15 @@ const ModelProvidersSettings: React.FC = () => {
 
 
             <div
-              className="flex flex-wrap items-center gap-1 rounded-md border border-gray-300 px-2 py-1 focus-within:ring-2 focus-within:ring-blue-500 hover:border-gray-400 transition-colors"
+              className="flex flex-wrap items-center gap-1 rounded-md border border-gray-300 dark:border-gray-600 px-2 py-1 focus-within:ring-2 focus-within:ring-blue-500 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
               onClick={() => { ensureFetchModelOptions(d.kind); setIsModelsOpen(true); }}
             >
               {(d.models || []).map((m, idx) => (
-                <span key={`${m}-${idx}`} className="inline-flex items-center px-2 py-0.5 text-xs border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors">
+                <span key={`${m}-${idx}`} className="inline-flex items-center px-2 py-0.5 text-xs border border-gray-300 dark:border-gray-600 rounded-md bg-gray-50 dark:bg-gray-700 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
                   <span className="truncate max-w-[140px]">{m}</span>
                   <button
                     type="button"
-                    className="ml-1 text-gray-500 hover:text-gray-700"
+                    className="ml-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                     onClick={(e) => {
                       e.stopPropagation();
                       const next = (d.models || []).filter(x => x !== m);
@@ -568,7 +568,7 @@ const ModelProvidersSettings: React.FC = () => {
                 </span>
               ))}
               <input
-                className="flex-1 min-w-[120px] outline-none bg-transparent text-sm py-1"
+                className="flex-1 min-w-[120px] outline-none bg-transparent dark:text-gray-100 text-sm py-1"
                 value={modelsQuery}
                 onChange={(e) => setModelsQuery(e.target.value)}
                 onFocus={() => { ensureFetchModelOptions(d.kind); setIsModelsOpen(true); }}
@@ -590,16 +590,16 @@ const ModelProvidersSettings: React.FC = () => {
                 placeholder={t('settings.providers.placeholders.modelsSearch', '搜索或输入模型ID...') || '搜索或输入模型ID...'}
               />
             </div>
-            <div className="mt-1 text-xs text-gray-500">
+            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {t('settings.providers.help.modelsCustom', '如果列表为空或未找到所需模型，您可以手动输入自定义模型名称')}
             </div>
 
 
             {isModelsOpen && (
-              <div className="absolute z-20 mt-1 w-full max-h-64 overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+              <div className="absolute z-20 mt-1 w-full max-h-64 overflow-auto rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
                 <div className="p-2">
                   {modelsLoading ? (
-                    <div className="flex items-center text-sm text-gray-500"><FiLoader className="animate-spin mr-2" />{t('common.loading', '加载中...')}</div>
+                    <div className="flex items-center text-sm text-gray-500 dark:text-gray-400"><FiLoader className="animate-spin mr-2" />{t('common.loading', '加载中...')}</div>
                   ) : (
                     <>
                       {(() => {
@@ -615,7 +615,7 @@ const ModelProvidersSettings: React.FC = () => {
                             {q && !(d.models || []).includes(modelsQuery.trim()) && !list.some(opt => opt.id === modelsQuery.trim()) && (
                               <button
                                 type="button"
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded"
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded dark:text-gray-100"
                                 onClick={() => {
                                   const val = modelsQuery.trim();
                                   if (!val) return;
@@ -626,11 +626,11 @@ const ModelProvidersSettings: React.FC = () => {
                                   setIsModelsOpen(false);
                                 }}
                               >
-                                {t('settings.providers.createModelOption', '创建')} “{modelsQuery.trim()}”
+                                {t('settings.providers.createModelOption', '创建')} "{modelsQuery.trim()}"
                               </button>
                             )}
                             {list.length === 0 && !q && (
-                              <div className="px-3 py-2 text-sm text-gray-500">{t('settings.providers.fetchModels.empty', '没有可用模型')}</div>
+                              <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">{t('settings.providers.fetchModels.empty', '没有可用模型')}</div>
                             )}
                             {list.map(opt => {
                               const active = selected.has(opt.id);
@@ -638,7 +638,7 @@ const ModelProvidersSettings: React.FC = () => {
                                 <button
                                   type="button"
                                   key={opt.id}
-                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded transition-colors ${active ? 'bg-blue-50 text-blue-700' : ''}`}
+                                  className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition-colors ${active ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'dark:text-gray-100'}`}
                                   onClick={() => {
                                     let next = active ? (d.models || []).filter(m => m !== opt.id) : Array.from(new Set([...(d.models || []), opt.id]));
                                     const nextDefault = d.defaultModel && next.includes(d.defaultModel) ? d.defaultModel : (next[0] || '');
@@ -648,9 +648,9 @@ const ModelProvidersSettings: React.FC = () => {
                                   <div className="flex items-center justify-between">
                                     <div className="min-w-0">
                                       <div className="truncate">{opt.id}</div>
-                                      {opt.name ? <div className="text-xs text-gray-500 truncate">{opt.name}</div> : null}
+                                      {opt.name ? <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{opt.name}</div> : null}
                                     </div>
-                                    {active ? <span className="text-xs text-blue-600">{t('common.selected', '已选择')}</span> : null}
+                                    {active ? <span className="text-xs text-blue-600 dark:text-blue-400">{t('common.selected', '已选择')}</span> : null}
                                   </div>
                                 </button>
                               );
@@ -669,7 +669,7 @@ const ModelProvidersSettings: React.FC = () => {
 
         <FieldRow label={t('settings.providers.fields.defaultModel', '默认模型')}>
           <select
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={d.defaultModel || ''}
             onChange={(e) => setDraft({ ...d, defaultModel: e.target.value })}
             disabled={!d.models || d.models.length === 0}
@@ -685,7 +685,7 @@ const ModelProvidersSettings: React.FC = () => {
           <Toggle checked={!!d.enabled} onChange={(v) => setDraft({ ...d, enabled: v })} />
         </FieldRow>
 
-        <div className="flex items-center gap-2 pt-4 mt-2 border-t border-gray-100">
+        <div className="flex items-center gap-2 pt-4 mt-2 border-t border-gray-100 dark:border-gray-700">
           <Button variant="primary" size="md" onClick={saveDraft}>{t('common.save', '保存')}</Button>
           <Button variant="secondary" size="md" onClick={cancelEdit}>{t('common.cancel', '取消')}</Button>
         </div>
@@ -699,11 +699,11 @@ const ModelProvidersSettings: React.FC = () => {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FiCpu className="w-5 h-5 text-gray-600" />
-          <h2 className="text-lg font-medium text-gray-800">{t('settings.providers.title', '模型提供商')}</h2>
+          <FiCpu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          <h2 className="text-lg font-medium text-gray-800 dark:text-gray-100">{t('settings.providers.title', '模型提供商')}</h2>
         </div>
         <div className="flex items-center gap-2">
-          {isLoading && <FiLoader className="animate-spin text-gray-400" />}
+          {isLoading && <FiLoader className="animate-spin text-gray-400 dark:text-gray-500" />}
           <Button variant="primary" size="md" onClick={startAdd} disabled={isLoading}>
             <FiPlus className="mr-1" />{t('settings.providers.add', '添加提供商')}
           </Button>
@@ -711,7 +711,7 @@ const ModelProvidersSettings: React.FC = () => {
       </div>
 
       {/* 页面说明 */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-gray-600 dark:text-gray-300">
         {t('settings.providers.subtitle', '集中管理各大 AI 提供商的访问配置：密钥、安全代理、模型清单与默认模型。')}
       </div>
 
@@ -719,16 +719,16 @@ const ModelProvidersSettings: React.FC = () => {
       {/* Global Default Models Card */}
       <SectionCard>
         <SectionHeader title={t('settings.models.defaults.title', '默认模型')} />
-        <div className="text-sm text-gray-600 mb-3">
+        <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
           {t('settings.models.defaults.description', '选择全局默认的 LLM 和嵌入模型，具体页面可覆盖。')}
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
               {t('settings.models.defaults.llmLabel', '默认 LLM')}
             </label>
             <select
-              className="w-full rounded-md border-gray-300 focus:border-gray-400 focus:ring-0"
+              className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-gray-400 focus:ring-0"
               value={llmSelection}
               onChange={(e) => setLlmSelection(e.target.value)}
               onFocus={ensureFetchChatOptions}
@@ -745,39 +745,39 @@ const ModelProvidersSettings: React.FC = () => {
 
           <div>
             <div className="flex items-center gap-1 mb-1">
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-200">
                 {t('settings.models.defaults.embeddingLabel', '默认嵌入模型')}
               </label>
               <div className="relative" ref={embeddingHelpRef}>
                 <button
                   type="button"
                   onClick={() => setShowEmbeddingHelp(!showEmbeddingHelp)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                   aria-label="查看推荐的嵌入模型"
                 >
                   <FiHelpCircle className="w-4 h-4" />
                 </button>
                 {showEmbeddingHelp && (
-                  <div className="absolute left-0 top-6 z-50 w-80 bg-white rounded-lg shadow-lg border border-gray-200 p-4">
-                    <h4 className="text-sm font-semibold text-gray-800 mb-3">
+                  <div className="absolute left-0 top-6 z-50 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4">
+                    <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">
                       {t('settings.models.defaults.embeddingHelp.title', '推荐的嵌入模型')}
                     </h4>
                     <div className="space-y-3">
                       <div>
-                        <div className="text-sm font-medium text-gray-700 mb-1">
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                           {t('settings.models.defaults.embeddingHelp.providers.openai.name', 'OpenAI')}
                         </div>
-                        <ul className="text-xs text-gray-600 space-y-1 ml-2">
+                        <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-1 ml-2">
                           <li>• text-embedding-3-small</li>
                           <li>• text-embedding-3-large</li>
                           <li>• text-embedding-ada-002</li>
                         </ul>
                       </div>
                       <div>
-                        <div className="text-sm font-medium text-gray-700 mb-1">
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                           {t('settings.models.defaults.embeddingHelp.providers.qwen.name', '千问/DashScope')}
                         </div>
-                        <ul className="text-xs text-gray-600 space-y-1 ml-2">
+                        <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-1 ml-2">
                           <li>• text-embedding-v4</li>
                         </ul>
                       </div>
@@ -787,7 +787,7 @@ const ModelProvidersSettings: React.FC = () => {
               </div>
             </div>
             <select
-              className="w-full rounded-md border-gray-300 focus:border-gray-400 focus:ring-0"
+              className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-gray-400 focus:ring-0"
               value={embSelection}
               onChange={(e) => setEmbSelection(e.target.value)}
               onFocus={ensureFetchEmbeddingOptions}
@@ -819,10 +819,10 @@ const ModelProvidersSettings: React.FC = () => {
       {/* 已配置列表 */}
       <div className="space-y-4">
         {sortedProviders.length === 0 && editingId !== 'new' && (
-          <div className="bg-white rounded-lg border-2 border-dashed border-gray-200 p-10 text-center text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+          <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-200 dark:border-gray-700 p-10 text-center text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
             <div className="flex flex-col items-center gap-2">
-              <FiCpu className="w-8 h-8 text-gray-400" />
-              <div>{t('settings.providers.empty', '尚未配置任何模型提供商，点击右上角“添加提供商”开始。')}</div>
+              <FiCpu className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+              <div>{t('settings.providers.empty', '尚未配置任何模型提供商，点击右上角"添加提供商"开始。')}</div>
               <div>
                 <Button variant="primary" size="md" onClick={startAdd}>
                   <FiPlus className="mr-1" />{t('settings.providers.add', '添加提供商')}
@@ -833,28 +833,28 @@ const ModelProvidersSettings: React.FC = () => {
         )}
 
         {sortedProviders.map((p) => (
-          <SectionCard key={p.id} className="transition-shadow hover:shadow-md hover:border-gray-300">
+          <SectionCard key={p.id} className="transition-shadow hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className="text-base font-medium text-gray-800">{p.name || providerLabel(p.kind)}</span>
+                  <span className="text-base font-medium text-gray-800 dark:text-gray-100">{p.name || providerLabel(p.kind)}</span>
                   <UIBadge variant={p.enabled ? 'success' : 'secondary'} size="md">{p.enabled ? t('settings.providers.enableButton', '启用') : t('common.disabled', '禁用')}</UIBadge>
                   {p.defaultModel ? (
-                    <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-md border bg-blue-50 text-blue-700 border-blue-200">
+                    <span className="inline-flex items-center px-2 py-0.5 text-xs rounded-md border bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700">
                       {t('settings.providers.badges.default', '默认')}: {p.defaultModel}
                     </span>
                   ) : null}
                 </div>
-                <div className="text-xs text-gray-500 flex flex-wrap items-center gap-x-3">
+                <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap items-center gap-x-3">
                   <span>{t('settings.providers.fields.kind', '提供商')}: {providerLabel(p.kind)}</span>
                   {p.apiBaseUrl && <span className="truncate max-w-[320px]">{t('settings.providers.baseUrl', 'Base URL')}: {p.apiBaseUrl}</span>}
-                  <span className="text-gray-300">·</span>
+                  <span className="text-gray-300 dark:text-gray-600">·</span>
                   <span>{t('settings.providers.updateButton', '更新')}: {new Date(p.updatedAt).toLocaleString()}</span>
                 </div>
                 {(p.models && p.models.length > 0) && (
                   <div className="mt-2 flex flex-wrap gap-1">
                     {p.models.map((m) => (
-                      <span key={m} className={`px-2 py-0.5 text-[11px] rounded border ${p.defaultModel===m ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-gray-50 text-gray-700 border-gray-200'}`}>
+                      <span key={m} className={`px-2 py-0.5 text-[11px] rounded border ${p.defaultModel===m ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700' : 'bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600'}`}>
                         {m}{p.defaultModel===m ? ` · ${t('settings.providers.badges.default', '默认')}` : ''}
                       </span>
                     ))}
@@ -862,7 +862,7 @@ const ModelProvidersSettings: React.FC = () => {
                 )}
               </div>
 
-              <div className="flex items-center gap-2 pl-3 md:pl-4 border-l border-gray-100">
+              <div className="flex items-center gap-2 pl-3 md:pl-4 border-l border-gray-100 dark:border-gray-700">
                 <Button variant="secondary" size="sm" onClick={() => testConnection(p)} disabled={testingId === p.id}>
                   {testingId === p.id ? <FiLoader className="animate-spin mr-1" /> : null}
                   {t('settings.providers.testButton', '测试连接')}
@@ -877,7 +877,7 @@ const ModelProvidersSettings: React.FC = () => {
             </div>
 
             {editingId === p.id && draft && draft.id === p.id && (
-              <div className="pt-2 border-t border-gray-200 mt-4">
+              <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-4">
                 {renderEditForm(draft as Draft, p.id)}
               </div>
             )}

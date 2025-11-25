@@ -1,12 +1,25 @@
 @import "tailwindcss";
 @import "./styles/markdown.css";
 
+@config "../tailwind.config.js";
+
 /* Tailwind CSS v4 Theme Configuration */
 @theme {
   --font-family-sans: "Inter", system-ui, sans-serif;
 
   /* Custom backdrop blur values */
   --backdrop-blur-xs: 2px;
+}
+
+/* Dark mode color scheme */
+@media (prefers-color-scheme: dark) {
+  :root:not(.dark) {
+    color-scheme: light;
+  }
+}
+
+:root.dark {
+  color-scheme: dark;
 }
 
 /* Line clamp utilities */
@@ -33,8 +46,16 @@
   border-radius: 2px;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.6); /* darker gray in dark mode */
+}
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(107, 114, 128, 0.7); /* gray-500 with 70% opacity */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.8); /* lighter gray on hover in dark mode */
 }
 
 /* Base styles */
@@ -43,6 +64,14 @@ body {
   font-family: var(--font-family-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Root element dark mode support */
+#root {
+  @apply bg-white dark:bg-gray-900;
+  min-height: 100vh;
 }
 
 /* Modal and dialog fixes - Updated for portal rendering */
@@ -62,6 +91,10 @@ body {
   left: 0;
 }
 
+.dark .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
 .modal-content {
   background-color: white;
   border-radius: 0.5rem;
@@ -77,6 +110,11 @@ body {
   /* Ensure modal is properly positioned */
   position: relative;
   z-index: 10000;
+}
+
+.dark .modal-content {
+  background-color: rgb(31, 41, 55); /* gray-800 */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
 }
 
 /* 防止文字垂直显示的修复 */

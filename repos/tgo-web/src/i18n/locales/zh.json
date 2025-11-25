@@ -73,6 +73,13 @@
       "title": "外观设置",
       "comingSoon": "更多外观与主题选项，敬请期待…"
     },
+    "theme": {
+      "title": "主题模式",
+      "description": "选择您偏好的主题模式，更改将立即生效",
+      "light": "浅色",
+      "dark": "深色",
+      "system": "跟随系统"
+    },
     "general": {
       "title": "通用",
       "login": "登录",
@@ -931,6 +938,18 @@
         "invalidEmail": "请输入有效的邮箱地址",
         "invalidPhone": "请输入有效的电话号码"
       },
+      "avatar": {
+        "uploadTitle": "点击上传头像",
+        "cropTitle": "裁剪头像",
+        "invalidTypeTitle": "文件类型错误",
+        "invalidTypeDesc": "请选择 JPEG、PNG、GIF 或 WebP 格式的图片",
+        "fileTooLargeTitle": "文件过大",
+        "fileTooLargeDesc": "图片大小不能超过 5MB",
+        "uploadSuccessTitle": "上传成功",
+        "uploadSuccessDesc": "访客头像已更新",
+        "uploadFailedTitle": "上传失败",
+        "uploadFailedDesc": "上传失败"
+      },
       "customAttr": {
         "addButton": "添加自定义属性",
         "namePlaceholder": "属性名",
@@ -1262,7 +1281,7 @@
     },
     "website": {
       "header": {
-        "title": "{{name}} - 网站小部件配置",
+        "title": "网站小部件配置",
         "subtitle": "调整左侧配置，右侧预览会实时更新"
       },
       "buttons": {

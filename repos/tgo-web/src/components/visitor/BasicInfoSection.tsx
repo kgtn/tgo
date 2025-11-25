@@ -42,7 +42,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   };
   return (
     <div className={className}>
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-3">{t('chat.visitor.sections.basicInfo', '\u57fa\u672c\u4fe1\u606f')}</h4>
+      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-3">{t('chat.visitor.sections.basicInfo', '\u57fa\u672c\u4fe1\u606f')}</h4>
       <div className="space-y-1.5 text-[13px] leading-5">
         <EditableField
           label={t('chat.visitor.fields.name', '\u59d3\u540d')}

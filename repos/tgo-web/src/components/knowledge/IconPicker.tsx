@@ -103,15 +103,15 @@ export const IconPicker: React.FC<IconPickerProps> = ({
         disabled={disabled}
         className={`w-full flex items-center justify-between px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
           disabled
-            ? 'bg-gray-100 cursor-not-allowed border-gray-300'
-            : 'bg-white hover:bg-gray-50 border-gray-300'
+            ? 'bg-gray-100 dark:bg-gray-800 cursor-not-allowed border-gray-300 dark:border-gray-600'
+            : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600'
         }`}
         title={selectedIconData.title}
       >
         <div className="flex items-center justify-center">
           <SelectedIconComponent className={`w-5 h-5 ${selectedIconData.color}`} />
         </div>
-        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}
@@ -124,7 +124,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
           />
 
           {/* Icon Grid */}
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-20 max-h-64 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-20 max-h-64 overflow-y-auto">
             <div className="grid grid-cols-6 gap-1 p-3">
               {KNOWLEDGE_BASE_ICONS.map((iconData) => {
                 const IconComponent = iconData.icon;
@@ -135,14 +135,14 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                     key={iconData.name}
                     type="button"
                     onClick={() => handleIconSelect(iconData.name)}
-                    className={`relative flex items-center justify-center p-3 rounded-md transition-colors hover:bg-gray-100 ${
-                      isSelected ? 'bg-blue-50 border border-blue-200' : 'border border-transparent'
+                    className={`relative flex items-center justify-center p-3 rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                      isSelected ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700' : 'border border-transparent'
                     }`}
                     title={iconData.title}
                   >
-                    <IconComponent className={`w-5 h-5 ${isSelected ? 'text-blue-600' : iconData.color}`} />
+                    <IconComponent className={`w-5 h-5 ${isSelected ? 'text-blue-600 dark:text-blue-400' : iconData.color}`} />
                     {isSelected && (
-                      <Check className="absolute -top-1 -right-1 w-3 h-3 text-blue-600 bg-white rounded-full border border-blue-200" />
+                      <Check className="absolute -top-1 -right-1 w-3 h-3 text-blue-600 dark:text-blue-400 bg-white dark:bg-gray-800 rounded-full border border-blue-200 dark:border-blue-700" />
                     )}
                   </button>
                 );

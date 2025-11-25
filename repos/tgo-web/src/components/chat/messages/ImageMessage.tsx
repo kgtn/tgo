@@ -34,8 +34,8 @@ const ImageMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) => 
   const [previewOpen, setPreviewOpen] = React.useState(false);
 
   const bubbleClass = isStaff
-    ? 'relative rounded-lg overflow-hidden border border-blue-200 bg-white '
-    : 'relative rounded-lg overflow-hidden border border-gray-100 bg-white ';
+    ? 'relative rounded-lg overflow-hidden border border-blue-200 dark:border-blue-700 bg-white dark:bg-gray-700 '
+    : 'relative rounded-lg overflow-hidden border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 ';
 
   return (
     <>
@@ -50,7 +50,7 @@ const ImageMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) => 
         {imageUrl ? (
           <img src={imageUrl} alt={t('chat.messages.image.alt', '图片')} className="w-full h-full object-cover" loading="lazy" />
         ) : (
-          <div className="w-full h-full bg-gray-100" />
+          <div className="w-full h-full bg-gray-100 dark:bg-gray-700" />
         )}
         {uploading && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white text-xs">
@@ -58,7 +58,7 @@ const ImageMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) => 
           </div>
         )}
         {uploadError && (
-          <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center text-red-700 text-xs">{t('chat.messages.image.uploadFailed', '上传失败')}</div>
+          <div className="absolute inset-0 bg-red-500/20 dark:bg-red-900/40 flex items-center justify-center text-red-700 dark:text-red-400 text-xs">{t('chat.messages.image.uploadFailed', '上传失败')}</div>
         )}
       </div>
 

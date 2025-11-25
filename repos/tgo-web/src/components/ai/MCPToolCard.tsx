@@ -147,25 +147,25 @@ const MCPToolCard: React.FC<MCPToolCardProps> = ({ tool, onAction, onShowToast }
       case 'https':
         return {
           icon: Globe,
-          color: 'text-blue-600 bg-blue-50 border-blue-200',
+          color: 'text-blue-600 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-900/30 dark:border-blue-700',
           label: 'HTTP'
         };
       case 'sse':
         return {
           icon: Radio,
-          color: 'text-purple-600 bg-purple-50 border-purple-200',
+          color: 'text-purple-600 bg-purple-50 border-purple-200 dark:text-purple-400 dark:bg-purple-900/30 dark:border-purple-700',
           label: 'SSE'
         };
       case 'stdio':
         return {
           icon: Zap,
-          color: 'text-green-600 bg-green-50 border-green-200',
+          color: 'text-green-600 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/30 dark:border-green-700',
           label: 'STDIO'
         };
       default:
         return {
           icon: Globe,
-          color: 'text-gray-600 bg-gray-50 border-gray-200',
+          color: 'text-gray-600 bg-gray-50 border-gray-200 dark:text-gray-400 dark:bg-gray-700 dark:border-gray-600',
           label: type.toUpperCase()
         };
     }
@@ -208,13 +208,13 @@ const MCPToolCard: React.FC<MCPToolCardProps> = ({ tool, onAction, onShowToast }
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col h-full">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col h-full">
         {/* Header Section */}
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-gray-100 dark:border-gray-700">
           <div className="flex items-start justify-between mb-3">
             {/* Tool Name */}
             <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-gray-900 truncate" title={tool.name}>
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 truncate" title={tool.name}>
                 {tool.name}
               </h3>
             </div>
@@ -237,7 +237,7 @@ const MCPToolCard: React.FC<MCPToolCardProps> = ({ tool, onAction, onShowToast }
           {/* Tags: Tool Type & Transport Type */}
           <div className="flex items-center gap-2 flex-wrap">
             {/* Tool Type Badge */}
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700">
               {toolType}
             </span>
 
@@ -253,7 +253,7 @@ const MCPToolCard: React.FC<MCPToolCardProps> = ({ tool, onAction, onShowToast }
         <div className="p-4 flex-1 flex flex-col">
           {/* Description */}
           <div className="mb-3">
-            <p className="text-sm text-gray-600 line-clamp-2" title={tool.description}>
+            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2" title={tool.description}>
               {tool.description || t('mcp.tools.noDescription', '暂无描述')}
             </p>
           </div>
@@ -261,11 +261,11 @@ const MCPToolCard: React.FC<MCPToolCardProps> = ({ tool, onAction, onShowToast }
           {/* Endpoint Section */}
           {endpoint && (
             <div className="mt-auto">
-              <div className="flex items-start justify-between gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+              <div className="flex items-start justify-between gap-2 p-2 bg-gray-50 dark:bg-gray-700 rounded border border-gray-200 dark:border-gray-600">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 mb-1">{t('mcp.tools.endpoint', '端点地址')}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{t('mcp.tools.endpoint', '端点地址')}</p>
                   <p
-                    className="text-xs font-mono text-gray-700 break-all"
+                    className="text-xs font-mono text-gray-700 dark:text-gray-200 break-all"
                     title={maskedEndpoint}
                   >
                     {displayEndpoint}
@@ -273,11 +273,11 @@ const MCPToolCard: React.FC<MCPToolCardProps> = ({ tool, onAction, onShowToast }
                 </div>
                 <button
                   onClick={handleCopyEndpoint}
-                  className="flex-shrink-0 p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                  className="flex-shrink-0 p-1.5 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
                   title={t('common.copy', '复制')}
                 >
                   {copiedEndpoint ? (
-                    <Check className="w-3.5 h-3.5 text-green-600" />
+                    <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
                   ) : (
                     <Copy className="w-3.5 h-3.5" />
                   )}
@@ -288,9 +288,9 @@ const MCPToolCard: React.FC<MCPToolCardProps> = ({ tool, onAction, onShowToast }
         </div>
 
         {/* Footer Section - Actions */}
-        <div className="px-4 py-3 bg-gray-50 border-t border-gray-100 flex justify-end gap-2">
+        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 flex justify-end gap-2">
           <button
-            className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 hover:text-green-600 hover:bg-green-50 rounded transition-colors ${
+            className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors ${
               isLoading.edit ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             title={t('common.edit', '编辑')}
@@ -301,7 +301,7 @@ const MCPToolCard: React.FC<MCPToolCardProps> = ({ tool, onAction, onShowToast }
             <span className="hidden sm:inline">{t('common.edit', '编辑')}</span>
           </button>
           <button
-            className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 hover:text-red-600 hover:bg-red-50 rounded transition-colors ${
+            className={`inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-700 dark:text-gray-200 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors ${
               isLoading.delete ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             title={t('common.delete', '删除')}

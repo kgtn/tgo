@@ -143,34 +143,34 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
-          <h3 className="text-lg font-semibold text-gray-900">{t('mcp.selectModal.title', '选择工具')}</h3>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('mcp.selectModal.title', '选择工具')}</h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Search Bar */}
-        <div className="p-4 border-b border-gray-200 flex-shrink-0">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('mcp.selectModal.searchPlaceholder', '搜索工具...')}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
             />
           </div>
         </div>
 
         {/* Category Filters */}
-        <div className="p-4 border-b border-gray-200 flex-shrink-0">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <div className="flex space-x-2">
             {TOOL_CATEGORIES.map(category => (
               <button
@@ -178,8 +178,8 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
                 onClick={() => setSelectedCategory(category.id)}
                 className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                   selectedCategory === category.id
-                    ? 'bg-blue-100 text-blue-700 border border-blue-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? 'bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
                 }`}
               >
                 {t('common.all', 'All')}
@@ -189,14 +189,14 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
         </div>
 
         {/* Tools List - Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 dark:bg-gray-900">
           <div className="p-4">
             {/* Loading State */}
             {isLoading && (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
-                  <RefreshCw className="w-6 h-6 animate-spin text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-500 text-sm">{t('mcp.selectModal.loading', '正在加载MCP工具...')}</p>
+                  <RefreshCw className="w-6 h-6 animate-spin text-gray-400 dark:text-gray-500 mx-auto mb-2" />
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{t('mcp.selectModal.loading', '正在加载MCP工具...')}</p>
                 </div>
               </div>
             )}
@@ -205,14 +205,14 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
             {error && !isLoading && (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <X className="w-6 h-6 text-red-600" />
+                  <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <X className="w-6 h-6 text-red-600 dark:text-red-400" />
                   </div>
-                  <h3 className="text-sm font-medium text-gray-900 mb-1">{t('common.loadFailed', '加载失败')}</h3>
-                  <p className="text-xs text-gray-500 mb-3">{error}</p>
+                  <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">{t('common.loadFailed', '加载失败')}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{error}</p>
                   <button
                     onClick={handleRetry}
-                    className="px-3 py-1.5 bg-blue-500 text-white text-xs rounded hover:bg-blue-600 transition-colors"
+                    className="px-3 py-1.5 bg-blue-500 dark:bg-blue-600 text-white text-xs rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
                   >
                     {t('common.retry', '重试')}
                   </button>
@@ -224,7 +224,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
             {!isLoading && !error && (
               <div className="space-y-2">
                 {filteredTools.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                     <Wrench className="w-8 h-8 mx-auto mb-2 opacity-50" />
                     <p>{t('mcp.selectModal.noMatch', '未找到匹配的MCP工具')}</p>
                   </div>
@@ -241,8 +241,8 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
                         onClick={() => handleToolClick(tool)}
                         className={`flex items-center justify-between p-3 rounded-md border cursor-pointer transition-colors ${
                           isSelected
-                            ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
-                            : 'bg-white border-gray-200 hover:bg-gray-50'
+                            ? 'bg-blue-50 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:border-blue-700 dark:hover:bg-blue-900/50'
+                            : 'bg-white border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:hover:bg-gray-700'
                         }`}
                       >
                     <div className="flex items-center space-x-3">
@@ -250,11 +250,11 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
                         {toolAvatar.letter}
                       </div>
                       <div>
-                        <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900' : 'text-gray-800'}`}>
+                        <div className={`text-sm font-semibold ${isSelected ? 'text-blue-900 dark:text-blue-300' : 'text-gray-800 dark:text-gray-100'}`}>
                           {tool.name}
                         </div>
-                        <div className="text-xs text-gray-500">{tool.short_no || tool.author}</div>
-                        <div className="text-xs text-gray-500 mt-1 leading-snug">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">{tool.short_no || tool.author}</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-snug">
                           {tool.description}
                         </div>
                       </div>
@@ -265,7 +265,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
                           e.stopPropagation();
                           handleConfigTool(tool);
                         }}
-                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                        className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                         title={t('mcp.selectModal.configTool', '配置工具')}
                       >
                         <Settings className="w-4 h-4" />
@@ -274,7 +274,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleToolClick(tool)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        className="rounded border-gray-300 dark:border-gray-600 text-blue-600 dark:text-blue-500 focus:ring-blue-500 dark:bg-gray-700"
                       />
                     </div>
                   </div>
@@ -287,10 +287,10 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
         </div>
 
         {/* Tool Management Link */}
-        <div className="p-4 border-t border-gray-200 flex-shrink-0">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
           <button
             onClick={handleManageTools}
-            className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 text-sm transition-colors"
+            className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm transition-colors"
           >
             <span>{t('mcp.selectModal.manageTools', '管理MCP工具')}</span>
             <ExternalLink className="w-4 h-4" />
@@ -298,16 +298,16 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
         </div>
 
         {/* Footer - Always Visible */}
-        <div className="flex justify-end space-x-3 p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="flex justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
           >
             {t('common.cancel', '取消')}
           </button>
           <button
             onClick={handleConfirm}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700"
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-800"
           >
             {t('mcp.selectModal.confirmSelection', '确认选择 ({{count}})', { count: tempSelectedTools.length })}
           </button>

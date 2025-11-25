@@ -88,8 +88,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick })
   const isSending = Boolean(meta.isLocal) && !hasError && meta.ws_sent !== true;
 
   // Sender channel info lazy-loading
-  const senderChannelId = message.fromUid;
-  const senderChannelType = 1;
+  // Use message.channelId (the conversation channel) for cache lookup, as this is what VisitorPanel updates
+  const senderChannelId = message.channelId || message.fromUid;
+  const senderChannelType = message.channelType ?? 1;
   const compositeKey = React.useMemo(() => {
     if (!senderChannelId || senderChannelType == null) return null;
     return getChannelKey(senderChannelId, senderChannelType);
@@ -111,7 +112,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick })
   }, [senderChannelId, senderChannelType, isOwnMessage, needsSenderInfo, channelInfoCache, isChannelFetching, channelStoreError, ensureChannelInfo]);
 
   const displayName = message.fromInfo?.name || channelInfoCache?.name || (isOwnMessage ? t('chat.header.staffFallback', '客服') : t('chat.header.visitorFallback', { suffix: String(senderChannelId || '').slice(-4), defaultValue: `访客${String(senderChannelId || '').slice(-4)}` }));
-  const displayAvatar = message.fromInfo?.avatar || channelInfoCache?.avatar || message.avatar || '';
+  // Prioritize channelInfoCache avatar as it's the most up-to-date (e.g., after avatar upload)
+  const displayAvatar = channelInfoCache?.avatar || message.fromInfo?.avatar || message.avatar || '';
 
   const hasAvatar = hasValidAvatar(displayAvatar);
   const defaultAvatar = !hasAvatar ? generateDefaultAvatar(displayName) : null;
@@ -119,7 +121,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick })
   // System message (date separator)
   if (isSystemMessage) {
     return (
-      <div className="text-center text-xs text-gray-400">
+      <div className="text-center text-xs text-gray-400 dark:text-gray-500">
         {message.content}
       </div>
     );
@@ -134,7 +136,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick })
   if (!isOwnMessage) {
     return (
       <div className="flex flex-col items-start max-w-xl">
-        <div className="text-xs text-gray-600 mb-1 ml-1">
+        <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 ml-1">
           {displayName}{' '}
           {(() => {
             const fromInfoExtra: any = message.fromInfo?.extra;
@@ -162,7 +164,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick })
               <img
                 src={displayAvatar}
                 alt="Visitor Avatar"
-                className="w-full h-full rounded-md object-cover"
+                className="w-full h-full rounded-md object-cover bg-gray-200 dark:bg-gray-700"
               />
             ) : (
               <div
@@ -230,7 +232,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick })
         </div>
         {isSending && (
           <div
-            className="relative self-center text-gray-400"
+            className="relative self-center text-gray-400 dark:text-gray-500"
             title={t('chat.messages.sending', '发送中...')}
           >
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -238,13 +240,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick })
         )}
         {hasError && (
           <div
-            className="relative self-center text-red-500 cursor-pointer"
+            className="relative self-center text-red-500 dark:text-red-400 cursor-pointer"
             onClick={() => setErrorOpen(v => !v)}
             title={t('chat.messages.sendFailedTitle', '发送失败')}
           >
             <AlertCircle className="w-5 h-5" />
             {errorOpen && (
-              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-white border border-red-200 text-red-700 text-xs rounded-md py-2 px-3 shadow-lg z-50 w-fit min-w-[240px] max-w-[80vw] sm:max-w-md max-h-[60vh] overflow-auto whitespace-pre-wrap break-words">
+              <div className="absolute right-full mr-2 top-1/2 -translate-y-1/2 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800/50 text-red-700 dark:text-red-400 text-xs rounded-md py-2 px-3 shadow-lg z-50 w-fit min-w-[240px] max-w-[80vw] sm:max-w-md max-h-[60vh] overflow-auto whitespace-pre-wrap break-words">
                 {errorText}
               </div>
             )}

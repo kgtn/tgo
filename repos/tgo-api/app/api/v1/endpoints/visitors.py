@@ -1,16 +1,25 @@
 """Visitor endpoints."""
 
 import hashlib
+import mimetypes
+import os
+import re
+import secrets
+import time
 import uuid
 from datetime import datetime
+from pathlib import Path
+from typing import Optional
 from uuid import UUID
 
-from typing import Optional
-# import base64  # replaced by Base62 utility
+from fastapi import APIRouter, Depends, File, Header, HTTPException, Request, UploadFile, status
+from fastapi.responses import FileResponse
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session, joinedload, selectinload
 
-from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
-from sqlalchemy.orm import Session, selectinload, joinedload
+from app.core.config import settings
+from app.core.security import verify_token
 
 from app.services.wukongim_client import wukongim_client
 from app.services.visitor_notifications import notify_visitor_profile_updated
@@ -39,6 +48,7 @@ from app.schemas import (
     VisitorAIProfileResponse,
     VisitorActivityResponse,
     VisitorAttributesUpdate,
+    VisitorAvatarUploadResponse,
     VisitorCreate,
     VisitorListParams,
     VisitorListResponse,
@@ -1468,3 +1478,292 @@ async def sync_visitor_channel_messages(
     except Exception as e:
         logger.error(f"Failed to sync channel messages for visitor: {e}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to sync channel messages")
+
+
+# ============================================================================
+# Visitor Avatar Upload Endpoints
+# ============================================================================
+
+# Allowed image types for avatar upload
+AVATAR_ALLOWED_MIME_TYPES = {
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+}
+AVATAR_ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
+AVATAR_MAX_SIZE_MB = 5  # 5MB limit for avatar
+
+
+def _sanitize_avatar_filename(name: str, limit: int = 100) -> str:
+    """Sanitize filename for avatar upload."""
+    name = name.replace("\\", "_").replace("/", "_").replace("..", ".")
+    name = re.sub(r"[^A-Za-z0-9._-]", "_", name)
+    if len(name) <= limit:
+        return name
+    # Preserve extension if present
+    if "." in name:
+        base, ext = name.rsplit(".", 1)
+        base = base[: max(1, limit - len(ext) - 1)]
+        return f"{base}.{ext}"
+    return name[:limit]
+
+
+@router.post(
+    "/{visitor_id}/avatar",
+    response_model=VisitorAvatarUploadResponse,
+    summary="Upload visitor avatar",
+    description="""
+    Upload an avatar image for a visitor.
+
+    **Authentication**: JWT (Staff) authentication required.
+    - Use `Authorization: Bearer <token>` header
+
+    **File Requirements**:
+    - Allowed formats: JPEG, PNG, GIF, WebP
+    - Maximum size: 5MB
+
+    **Storage**:
+    - Files are stored locally on the server
+    - The `avatar_url` field is updated with a relative path (e.g., `/v1/visitors/{visitor_id}/avatar`)
+    """,
+    tags=["Visitors"],
+)
+async def upload_visitor_avatar(
+    visitor_id: UUID,
+    file: UploadFile = File(..., description="Avatar image file"),
+    db: Session = Depends(get_db),
+    current_user: Staff = Depends(get_current_active_user),
+) -> VisitorAvatarUploadResponse:
+    """Upload an avatar image for a visitor."""
+    # 1) Query visitor
+    visitor = (
+        db.query(Visitor)
+        .filter(Visitor.id == visitor_id, Visitor.deleted_at.is_(None))
+        .first()
+    )
+    if not visitor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Visitor not found"
+        )
+
+    # 2) Authorization check: Staff must belong to the same project
+    if visitor.project_id != current_user.project_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this visitor"
+        )
+
+    # 4) Validate file type and extension
+    original_name = file.filename or "avatar.jpg"
+    sanitized_name = _sanitize_avatar_filename(original_name)
+    ext = sanitized_name.rsplit(".", 1)[-1].lower() if "." in sanitized_name else ""
+    mime = file.content_type or mimetypes.guess_type(sanitized_name)[0] or "application/octet-stream"
+
+    if ext not in AVATAR_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File type not allowed. Allowed types: {', '.join(AVATAR_ALLOWED_EXTENSIONS)}"
+        )
+
+    if mime not in AVATAR_ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"MIME type not allowed. Allowed types: {', '.join(AVATAR_ALLOWED_MIME_TYPES)}"
+        )
+
+    max_bytes = AVATAR_MAX_SIZE_MB * 1024 * 1024
+
+    # 5) Build storage path
+    ts_ms = int(time.time() * 1000)
+    rand = secrets.token_hex(4)
+    fname = f"{ts_ms}_{rand}.{ext}"
+
+    # Path: uploads/avatars/{project_id}/{visitor_id}/{filename}
+    rel_path = f"avatars/{visitor.project_id}/{visitor_id}/{fname}"
+    base_dir = Path(settings.UPLOAD_BASE_DIR).resolve()
+    dest_path = base_dir / rel_path
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 6) Save file in chunks with size validation
+    total = 0
+    try:
+        with open(dest_path, "wb") as out:
+            while True:
+                chunk = await file.read(1024 * 1024)  # 1MB chunks
+                if not chunk:
+                    break
+                total += len(chunk)
+                if total > max_bytes:
+                    try:
+                        out.flush()
+                        out.close()
+                    finally:
+                        try:
+                            os.unlink(dest_path)
+                        except Exception:
+                            pass
+                    raise HTTPException(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        detail=f"File too large. Maximum size: {AVATAR_MAX_SIZE_MB}MB"
+                    )
+                out.write(chunk)
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Cleanup on failure
+        try:
+            if dest_path.exists():
+                os.unlink(dest_path)
+        except Exception:
+            pass
+        logger.error(f"Failed to save avatar file: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to save avatar file"
+        )
+
+    # 7) Delete old avatar file if exists (local file only, not external URL)
+    old_avatar_url = visitor.avatar_url
+    if old_avatar_url and old_avatar_url.startswith("/v1/visitors/"):
+        # Extract old file path and try to delete
+        try:
+            # Old avatar is stored in same structure
+            old_files = list((base_dir / f"avatars/{visitor.project_id}/{visitor_id}").glob("*"))
+            for old_file in old_files:
+                if old_file.name != fname and old_file.is_file():
+                    os.unlink(old_file)
+        except Exception as e:
+            logger.warning(f"Failed to delete old avatar file: {e}")
+
+    # 8) Update visitor avatar_url with relative path (stored in DB)
+    # Use relative URL path that can be served by the API
+    relative_avatar_url = f"/v1/visitors/{visitor_id}/avatar"
+    visitor.avatar_url = relative_avatar_url
+    db.commit()
+    db.refresh(visitor)
+
+    # Build absolute URL for response
+    absolute_avatar_url = f"{settings.API_BASE_URL.rstrip('/')}{relative_avatar_url}"
+
+    logger.info(
+        "Visitor avatar uploaded",
+        extra={
+            "visitor_id": str(visitor_id),
+            "file_size": total,
+            "file_type": mime,
+        }
+    )
+
+    return VisitorAvatarUploadResponse(
+        visitor_id=visitor_id,
+        avatar_url=absolute_avatar_url,
+        file_name=original_name,
+        file_size=total,
+        file_type=mime,
+        uploaded_at=visitor.updated_at,
+    )
+
+
+@router.get(
+    "/{visitor_id}/avatar",
+    summary="Get visitor avatar",
+    description="""
+    Retrieve the avatar image for a visitor.
+
+    **Public Access**: This endpoint allows public access to serve avatar images.
+    If the visitor has no avatar or an external URL, returns 404.
+    """,
+    tags=["Visitors"],
+    responses={
+        200: {"content": {"image/*": {}}, "description": "Avatar image file"},
+        404: {"description": "Avatar not found"},
+    },
+)
+async def get_visitor_avatar(
+    visitor_id: UUID,
+    db: Session = Depends(get_db),
+):
+    """Get visitor avatar image file."""
+    # 1) Query visitor
+    visitor = (
+        db.query(Visitor)
+        .filter(Visitor.id == visitor_id, Visitor.deleted_at.is_(None))
+        .first()
+    )
+    if not visitor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Visitor not found"
+        )
+
+    # 2) Check if avatar exists and is a local file
+    avatar_url = visitor.avatar_url
+    if not avatar_url:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Visitor has no avatar"
+        )
+
+    # If avatar is an external URL (https://...), redirect or return 404
+    if avatar_url.startswith("http://") or avatar_url.startswith("https://"):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Avatar is hosted externally. Use the avatar_url field directly."
+        )
+
+    # 3) Find the avatar file on disk
+    base_dir = Path(settings.UPLOAD_BASE_DIR).resolve()
+    avatar_dir = base_dir / f"avatars/{visitor.project_id}/{visitor_id}"
+
+    if not avatar_dir.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Avatar file not found"
+        )
+
+    # Get the most recent avatar file
+    avatar_files = sorted(avatar_dir.glob("*"), key=lambda f: f.stat().st_mtime, reverse=True)
+    if not avatar_files:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Avatar file not found"
+        )
+
+    avatar_file = avatar_files[0]
+
+    # 4) Ensure file path stays under base directory (security)
+    try:
+        avatar_file.resolve().relative_to(base_dir)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invalid file path"
+        )
+
+    if not avatar_file.exists() or not avatar_file.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Avatar file not found"
+        )
+
+    # 5) Determine content type
+    ext = avatar_file.suffix.lower().lstrip(".")
+    content_type_map = {
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "gif": "image/gif",
+        "webp": "image/webp",
+    }
+    content_type = content_type_map.get(ext, "application/octet-stream")
+
+    return FileResponse(
+        path=str(avatar_file),
+        media_type=content_type,
+        headers={
+            "Cache-Control": "public, max-age=86400",  # Cache for 1 day
+        },
+    )

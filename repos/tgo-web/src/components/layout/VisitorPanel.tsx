@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { User, AlertCircle, Loader2 } from 'lucide-react';
 import TagManager from '../ui/TagManager';
 import VisitorHeader from '../visitor/VisitorHeader';
 import BasicInfoSection from '../visitor/BasicInfoSection';
+import ImageCropModal from '../ui/ImageCropModal';
 
 import AIInsightsSection from '../visitor/AIInsightsSection';
 import SystemInfoSection from '../visitor/SystemInfoSection';
@@ -132,11 +133,17 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
   const [visitor, setVisitor] = useState<ExtendedVisitor | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [hasLoadedInitial, setHasLoadedInitial] = useState(false);
+  // Avatar crop modal state
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string>('');
+  const [cropImageMimeType, setCropImageMimeType] = useState<string>('image/png');
   const { t } = useTranslation();
   const { showToast } = useToast();
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const { channelId, channelType } = useMemo(
     () => deriveVisitorContext(activeChat),
@@ -576,38 +583,142 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
     }
   }, [visitor, showToast, channelId, channelType]);
 
+  // 头像上传处理
+  const handleAvatarClick = useCallback(() => {
+    avatarInputRef.current?.click();
+  }, []);
 
+  const handleAvatarChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !visitor) return;
+
+    // 验证文件类型
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      showToast('error', t('chat.visitor.avatar.invalidTypeTitle', '文件类型错误'), t('chat.visitor.avatar.invalidTypeDesc', '请选择 JPEG、PNG、GIF 或 WebP 格式的图片'));
+      return;
+    }
+
+    // 验证文件大小 (5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showToast('error', t('chat.visitor.avatar.fileTooLargeTitle', '文件过大'), t('chat.visitor.avatar.fileTooLargeDesc', '图片大小不能超过 5MB'));
+      return;
+    }
+
+    // 创建 object URL 用于裁剪预览
+    const imageUrl = URL.createObjectURL(file);
+    setCropImageSrc(imageUrl);
+    setCropImageMimeType(file.type);
+    setShowCropModal(true);
+
+    // 清空 input 以便可以重新选择同一个文件
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = '';
+    }
+  }, [visitor, showToast, t]);
+
+  // 取消裁剪
+  const handleCropCancel = useCallback(() => {
+    setShowCropModal(false);
+    // 释放 object URL
+    if (cropImageSrc) {
+      URL.revokeObjectURL(cropImageSrc);
+    }
+    setCropImageSrc('');
+  }, [cropImageSrc]);
+
+  // 确认裁剪并上传
+  const handleCropConfirm = useCallback(async (blob: Blob) => {
+    if (!visitor) return;
+
+    setShowCropModal(false);
+    // 释放 object URL
+    if (cropImageSrc) {
+      URL.revokeObjectURL(cropImageSrc);
+    }
+    setCropImageSrc('');
+
+    setIsUploadingAvatar(true);
+    setUpdateError(null);
+
+    try {
+      // 将 Blob 转换为 File 对象
+      const fileName = `avatar_${Date.now()}.${cropImageMimeType.split('/')[1] || 'png'}`;
+      const file = new File([blob], fileName, { type: cropImageMimeType });
+
+      const response = await visitorApiService.uploadAvatar(visitor.id, file);
+      
+      // 更新本地状态，添加时间戳参数避免浏览器缓存
+      const avatarUrlWithCacheBust = `${response.avatar_url}?t=${Date.now()}`;
+      setVisitor((prev: ExtendedVisitor | null) => prev ? {
+        ...prev,
+        avatar: avatarUrlWithCacheBust,
+        basicInfo: {
+          ...prev.basicInfo,
+          avatarUrl: avatarUrlWithCacheBust
+        }
+      } : null);
+
+      // 同步更新到其他UI
+      if (channelId) {
+        const syncedInfo = await useChatStore.getState().syncChannelInfoAcrossUI(channelId, channelType ?? 1);
+        // 如果同步返回的头像 URL 没有缓存参数，手动添加以强制刷新聊天列表中的头像
+        if (syncedInfo && syncedInfo.avatar) {
+          const avatarWithCacheBust = syncedInfo.avatar.includes('?') 
+            ? `${syncedInfo.avatar}&t=${Date.now()}` 
+            : `${syncedInfo.avatar}?t=${Date.now()}`;
+          // 更新 channelStore 中的缓存
+          useChannelStore.getState().updateChannelAvatar(channelId, channelType ?? 1, avatarWithCacheBust);
+          // 重新应用到 chatStore
+          useChatStore.getState().applyChannelInfo(channelId, channelType ?? 1, {
+            ...syncedInfo,
+            avatar: avatarWithCacheBust
+          });
+        }
+      }
+
+      showToast('success', t('chat.visitor.avatar.uploadSuccessTitle', '上传成功'), t('chat.visitor.avatar.uploadSuccessDesc', '访客头像已更新'));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : t('chat.visitor.avatar.uploadFailedDesc', '上传失败');
+      setUpdateError(errorMessage);
+      showToast('error', t('chat.visitor.avatar.uploadFailedTitle', '上传失败'), errorMessage);
+      console.error('上传访客头像失败:', error);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }, [visitor, channelId, channelType, cropImageSrc, cropImageMimeType, showToast, t]);
 
   // 渲染空状态或错误状态
   if (!visitor) {
     return (
-      <aside className="w-72 bg-white/80 backdrop-blur-lg border-l border-gray-200/60 flex items-center justify-center shrink-0 font-sans antialiased">
-        <div className="text-center text-gray-500 px-4">
+      <aside className="w-72 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-l border-gray-200/60 dark:border-gray-700/60 flex items-center justify-center shrink-0 font-sans antialiased">
+        <div className="text-center text-gray-500 dark:text-gray-400 px-4">
           {isLoading ? (
             <>
-              <Loader2 size={48} className="mx-auto mb-4 text-gray-300 animate-spin" />
+              <Loader2 size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600 animate-spin" />
               <p className="text-sm leading-5">{t('chat.visitor.ui.loading', '正在加载访客信息...')}</p>
             </>
           ) : loadError ? (
             <>
-              <AlertCircle size={48} className="mx-auto mb-4 text-red-300" />
-              <p className="text-sm leading-5 text-red-600 mb-2">{t('chat.visitor.ui.loadFailed', '加载失败')}</p>
-              <p className="text-xs text-gray-400 mb-4">{loadError}</p>
+              <AlertCircle size={48} className="mx-auto mb-4 text-red-300 dark:text-red-500" />
+              <p className="text-sm leading-5 text-red-600 dark:text-red-400 mb-2">{t('chat.visitor.ui.loadFailed', '加载失败')}</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">{loadError}</p>
               <button
                 onClick={() => window.location.reload()}
-                className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
               >
                 {t('common.retry', '重试')}
               </button>
             </>
           ) : !activeChat ? (
             <>
-              <User size={48} className="mx-auto mb-4 text-gray-300" />
+              <User size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
               <p className="text-sm leading-5">{t('chat.visitor.ui.selectConversation', '选择聊天查看访客信息')}</p>
             </>
           ) : (
             <>
-              <User size={48} className="mx-auto mb-4 text-gray-300" />
+              <User size={48} className="mx-auto mb-4 text-gray-300 dark:text-gray-600" />
               <p className="text-sm leading-5">{t('chat.visitor.ui.noInfo', '暂无访客信息')}</p>
             </>
           )}
@@ -617,9 +728,17 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
   }
 
   return (
-    <aside className="w-72 bg-white/80 backdrop-blur-lg border-l border-gray-200/60 flex flex-col shrink-0 font-sans antialiased">
+    <aside className="w-72 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg border-l border-gray-200/60 dark:border-gray-700/60 flex flex-col shrink-0 font-sans antialiased">
       {/* Panel Header */}
-      <div className="p-4 border-b border-gray-200/60 sticky top-0 bg-white/80 backdrop-blur-lg z-10">
+      <div className="p-4 border-b border-gray-200/60 dark:border-gray-700/60 sticky top-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg z-10">
+        {/* Hidden file input for avatar upload */}
+        <input
+          ref={avatarInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          className="hidden"
+          onChange={handleAvatarChange}
+        />
         {/* Visitor Avatar and Name */}
         <VisitorHeader
           name={visitor.name}
@@ -637,6 +756,8 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
             const extra = channelInfo?.extra as ChannelVisitorExtra | undefined;
             return buildLastSeenText(extra?.last_offline_time, extra?.is_online ?? null) || undefined;
           })()}
+          onAvatarClick={handleAvatarClick}
+          isUploading={isUploadingAvatar}
         />
 
       </div>
@@ -645,14 +766,14 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
       <div className="relative flex-grow overflow-y-auto p-4 space-y-6" style={{ height: 0 }}>
         {/* Loading/Error State (absolute overlay to avoid layout shift) */}
         {isUpdating && (
-          <div className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center text-xs text-blue-700 bg-white/80 backdrop-blur px-2 py-1 rounded border border-blue-100 shadow-sm">
+          <div className="pointer-events-none absolute top-2 left-1/2 -translate-x-1/2 z-20 flex items-center text-xs text-blue-700 dark:text-blue-400 bg-white/80 dark:bg-gray-800/80 backdrop-blur px-2 py-1 rounded border border-blue-100 dark:border-blue-800 shadow-sm">
             <Loader2 className="w-3 h-3 mr-1 animate-spin" />
             {t('common.updating', '更新中...')}
           </div>
         )}
 
         {(updateError || loadError) && (
-          <div className="flex items-center py-2 px-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex items-center py-2 px-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800/50 rounded-md">
             <AlertCircle className="w-4 h-4 mr-2 flex-shrink-0" />
             <span className="flex-1">{updateError || loadError}</span>
           </div>
@@ -680,9 +801,9 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
         {/* Tags */}
         <div className="pt-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('chat.visitor.tags.title', '标签')}</h4>
+            <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('chat.visitor.tags.title', '标签')}</h4>
             {isUpdating && (
-              <div className="flex items-center text-xs text-blue-600">
+              <div className="flex items-center text-xs text-blue-600 dark:text-blue-400">
                 <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                 {t('common.updating', '更新中')}
               </div>
@@ -707,6 +828,17 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
         <RecentActivitySection activities={recentActivities} />
 
       </div>
+
+      {/* Avatar Crop Modal */}
+      <ImageCropModal
+        isOpen={showCropModal}
+        imageSrc={cropImageSrc}
+        aspect={1}
+        mimeType={cropImageMimeType}
+        title={t('chat.visitor.avatar.cropTitle', '裁剪头像')}
+        onCancel={handleCropCancel}
+        onConfirm={handleCropConfirm}
+      />
     </aside>
   );
 };

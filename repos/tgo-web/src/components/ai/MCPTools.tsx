@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Package } from 'lucide-react';
+import { LuPackage } from 'react-icons/lu';
 import { useTranslation } from 'react-i18next';
 import MCPSearchBar from './MCPSearchBar';
 import MCPToolsList from './MCPToolsList';
@@ -99,16 +99,16 @@ const MCPToolsContent: React.FC = () => {
   };
 
   return (
-    <main className="flex-grow flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
+    <main className="flex-grow flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <header className="px-6 py-4 border-b border-gray-200/80 flex justify-between items-center bg-white/60 backdrop-blur-lg sticky top-0 z-10">
-        <h2 className="text-lg font-semibold text-gray-800">{t('navigation.mcpTools', 'MCP 工具')}</h2>
+      <header className="px-6 py-4 border-b border-gray-200/80 dark:border-gray-700 flex justify-between items-center bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg sticky top-0 z-10">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('navigation.mcpTools', 'MCP 工具')}</h2>
         <div className="flex items-center space-x-3">
           <button
-            className="flex items-center px-3 py-1.5 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 transition-colors duration-200"
+            className="flex items-center px-3 py-1.5 bg-green-600 dark:bg-green-700 text-white text-sm rounded-md hover:bg-green-700 dark:hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-1 transition-colors duration-200"
             onClick={() => setShowAddMCPToolModal(true)}
           >
-            <Package className="w-4 h-4 mr-1" />
+            <LuPackage className="w-4 h-4 mr-1" />
             <span>{t('mcp.tools.addMcpTool', '添加 MCP 工具')}</span>
           </button>
         </div>

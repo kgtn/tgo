@@ -44,7 +44,7 @@ const LoadingStates: React.FC<LoadingStatesProps> = React.memo(({
         <button
           onClick={onLoadMore}
           disabled={isLoadingMore}
-          className="flex items-center px-4 py-2 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoadingMore ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -64,8 +64,8 @@ const LoadingStates: React.FC<LoadingStatesProps> = React.memo(({
   if (isLoadingHistory && !hasMessages) {
     return (
       <div className="flex items-center justify-center h-32">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-500 mr-2" />
-        <span className="text-gray-600">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-500 dark:text-blue-400 mr-2" />
+        <span className="text-gray-600 dark:text-gray-400">
           {t('chat.history.loading', '加载历史消息中...')}
         </span>
       </div>
@@ -76,11 +76,11 @@ const LoadingStates: React.FC<LoadingStatesProps> = React.memo(({
   if (historyError) {
     return (
       <div className="flex flex-col items-center justify-center h-32">
-        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-        <p className="text-gray-600 text-center mb-4">{historyError}</p>
+        <AlertCircle className="w-12 h-12 text-red-500 dark:text-red-400 mb-4" />
+        <p className="text-gray-600 dark:text-gray-400 text-center mb-4">{historyError}</p>
         <button
           onClick={onRetry}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
         >
           {t('chat.history.retry', '重试')}
         </button>

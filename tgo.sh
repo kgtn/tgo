@@ -28,7 +28,7 @@ Commands:
   service <start|stop|remove> [--source] [--cn]
                                       Start/stop/remove core services
   tools <start|stop>                  Start/stop debug tools (kafka-ui, adminer)
-  build [--source] [--cn] <service>   Rebuild specific service from source (api|rag|ai|platform|web|widget|all)
+  build <service>                     Rebuild specific service from source (api|rag|ai|platform|web|widget|all)
   config <subcommand> [args]          Configure domains and SSL certificates
 
 Config Subcommands:
@@ -253,6 +253,10 @@ cmd_up() {
 
   echo "[INFO] Starting all core services..."
   docker compose --env-file "$ENV_FILE" $compose_file_args up -d
+
+  echo "[INFO] Restart nginx to pick up new configuration..."
+  docker compose --env-file "$ENV_FILE" $compose_file_args restart nginx
+
   echo "[INFO] All services are starting. Use 'docker compose ps' to inspect status."
 }
 
@@ -803,18 +807,18 @@ cmd_tools() {
 cmd_build() {
   ensure_env_files
 
-  local mode="image"
+  local mode="source"
   local use_cn=false
 
   # Parse arguments (support --source and --cn in any order)
   while [ "$#" -gt 0 ]; do
     case "$1" in
       --source)
-        mode="source"
+        # Deprecated: build always uses source mode; this flag is no longer required.
         shift
         ;;
       --cn)
-        use_cn=true
+        # Deprecated: build always uses source mode and does not need --cn.
         USE_CN_MIRROR=true
         shift
         ;;
@@ -829,12 +833,6 @@ cmd_build() {
         ;;
     esac
   done
-
-  if [ "$mode" != "source" ]; then
-    echo "[ERROR] build is only supported in --source mode (local builds)." >&2
-    echo "Usage: ./tgo.sh build --source [--cn] <service>" >&2
-    exit 1
-  fi
 
   local target=${1-}
   if [ -z "$target" ]; then
