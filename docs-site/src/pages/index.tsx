@@ -2,34 +2,65 @@ import React from 'react';
 import Layout from '@theme/Layout';
 import Link from '@docusaurus/Link';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import { useColorMode } from '@docusaurus/theme-common';
 import styles from './index.module.css';
 
 // 引入 react-icons
 import { 
-  FaFacebookF, 
-  FaFacebookMessenger, 
-  FaInstagram, 
-  FaWhatsapp, 
-  FaTelegramPlane, 
-  FaLine, 
-  FaVk, 
-  FaWeixin,
-  FaTiktok
+  FaWhatsapp,
+  FaTelegramPlane,
+  FaDiscord,
+  FaSlack,
+  FaFacebook,
+  FaInstagram,
+  FaTwitter,
+  FaLinkedin,
+  FaPhone
 } from 'react-icons/fa';
 
-import { SiZalo } from 'react-icons/si';
+import { 
+  IoLogoWechat
+} from 'react-icons/io5';
+
+import {
+  AiOutlineWechatWork
+} from 'react-icons/ai';
+
+import {
+  TbWorld,
+  TbUsers,
+  TbMessageCircle
+} from 'react-icons/tb';
+
+import {
+  MdEmail,
+  MdSms
+} from 'react-icons/md';
+
+import {
+  SiTiktok
+} from 'react-icons/si';
+
+import {
+  FiShare2
+} from 'react-icons/fi';
 
 const IntegrationIcons = [
-  { name: 'Facebook', color: '#1877F2', icon: <FaFacebookF /> },
-  { name: 'Messenger', color: '#A834EA', icon: <FaFacebookMessenger /> },
-  { name: 'Instagram', color: '#E4405F', icon: <FaInstagram /> },
+  { name: 'WeChat', color: '#07C160', icon: <IoLogoWechat /> },
+  { name: 'WeCom', color: '#1AAD19', icon: <AiOutlineWechatWork /> },
   { name: 'WhatsApp', color: '#25D366', icon: <FaWhatsapp /> },
-  { name: 'TikTok', color: '#000000', icon: <FaTiktok /> },
   { name: 'Telegram', color: '#0088CC', icon: <FaTelegramPlane /> },
-  { name: 'Line', color: '#00C300', icon: <FaLine /> },
-  { name: 'VK', color: '#0077FF', icon: <FaVk /> },
-  { name: 'WeChat', color: '#07C160', icon: <FaWeixin /> },
-  { name: 'Zalo', color: '#0068FF', icon: <SiZalo /> },
+  { name: 'TikTok', color: '#000000', icon: <SiTiktok /> },
+  { name: 'Facebook', color: '#1877F2', icon: <FaFacebook /> },
+  { name: 'Instagram', color: '#E4405F', icon: <FaInstagram /> },
+  { name: 'Twitter', color: '#1DA1F2', icon: <FaTwitter /> },
+  { name: 'Discord', color: '#5865F2', icon: <FaDiscord /> },
+  { name: 'Slack', color: '#4A154B', icon: <FaSlack /> },
+  { name: 'LinkedIn', color: '#0A66C2', icon: <FaLinkedin /> },
+  { name: 'Email', color: '#EA4335', icon: <MdEmail /> },
+  { name: 'SMS', color: '#34A853', icon: <MdSms /> },
+  { name: 'Website', color: '#6366F1', icon: <TbWorld /> },
 ];
 
 const ORBIT_RADIUS = 160;
@@ -140,6 +171,11 @@ function OrbitIntegrations() {
 
 function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
+  const { colorMode } = useColorMode();
+  const productImage = useBaseUrl(
+    colorMode === 'dark' ? '/img/product_dark.png' : '/img/product.png'
+  );
+
   return (
     <header className={styles.heroBanner} style={{marginTop: "-64px"}}>
       {/* 背景光晕 */}
@@ -164,13 +200,22 @@ function HomepageHeader() {
             <Link
               className="button button--primary button--lg"
               to="/quick-start">
-              开启免费试用
+              快速开始
             </Link>
             <Link
               className="button button--secondary button--lg"
               to="https://github.com/tgoai/tgo">
-              预约演示
+              Github
             </Link>
+          </div>
+
+          {/* 产品截图 */}
+          <div className={styles.productImageSection}>
+            <img 
+              src={productImage} 
+              alt="Tgo 产品截图" 
+              className={styles.productImage}
+            />
           </div>
         </div>
       </div>
