@@ -36,6 +36,9 @@ COPY poetry.lock* ./
 # Install only production dependencies into .venv
 RUN poetry install --only=main --no-root && rm -rf "$POETRY_CACHE_DIR"
 
+# Download NLTK data required by unstructured and other NLP libraries
+RUN .venv/bin/python -m nltk.downloader -d /app/nltk_data punkt punkt_tab averaged_perceptron_tagger averaged_perceptron_tagger_eng
+
 # Copy source code (for any build-time hooks)
 COPY . .
 
@@ -79,6 +82,10 @@ COPY . .
 
 # Install dependencies including dev
 RUN poetry install --with dev --no-root && rm -rf "$POETRY_CACHE_DIR"
+
+# Download NLTK data required by unstructured and other NLP libraries
+RUN python -m nltk.downloader -d /app/nltk_data punkt punkt_tab averaged_perceptron_tagger averaged_perceptron_tagger_eng
+ENV NLTK_DATA=/app/nltk_data
 
 # Create uploads directory
 RUN mkdir -p /app/uploads
@@ -124,6 +131,10 @@ WORKDIR /app
 # Copy virtualenv from builder
 COPY --from=builder --chown=rag:rag /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
+
+# Copy NLTK data from builder
+COPY --from=builder --chown=rag:rag /app/nltk_data /app/nltk_data
+ENV NLTK_DATA=/app/nltk_data
 
 # Create necessary directories and fix ownership
 # RUN mkdir -p /app/uploads /app/logs && \
