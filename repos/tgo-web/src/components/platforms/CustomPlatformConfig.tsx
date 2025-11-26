@@ -7,6 +7,7 @@ import type { Platform } from '@/types';
 import { usePlatformStore } from '@/stores/platformStore';
 import { useToast } from '@/hooks/useToast';
 import { showApiError, showSuccess } from '@/utils/toastHelpers';
+import { toAbsoluteUrl } from '@/utils/config';
 
 interface Props {
   platform: Platform;
@@ -30,10 +31,11 @@ const CustomPlatformConfig: React.FC<Props> = ({ platform }) => {
   useEffect(() => { setPlatformName(platform.name); }, [platform.name]);
   const hasNameChanged = useMemo(() => platformName.trim() !== platform.name, [platformName, platform.name]);
 
-  // Callback URL state - initialize from platform.config.callback_url
+  // Callback URL state - initialize from platform.config.callback_url (convert relative to absolute)
   const [callbackUrl, setCallbackUrl] = useState<string>('');
   useEffect(() => {
-    setCallbackUrl((platform.config as any)?.callback_url ?? '');
+    const rawUrl = (platform.config as any)?.callback_url ?? '';
+    setCallbackUrl(toAbsoluteUrl(rawUrl));
   }, [platform.config]);
   const hasCallbackChanged = useMemo(() => {
     const originalCallback = (platform.config as any)?.callback_url ?? '';
@@ -50,7 +52,8 @@ const CustomPlatformConfig: React.FC<Props> = ({ platform }) => {
 
   const isEnabled = platform.status === 'connected';
   const apiKey: string = useMemo(() => ((platform.config as any)?.apiKey ?? ''), [platform.config]);
-  const chatUrl: string = useMemo(() => platform.chat_url ?? '', [platform.chat_url]);
+  // Convert relative URLs to absolute URLs for display
+  const chatUrl: string = useMemo(() => toAbsoluteUrl(platform.chat_url ?? ''), [platform.chat_url]);
 
   const copyToClipboard = async (text: string, label: string) => {
     if (!text) return;

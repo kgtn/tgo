@@ -6,6 +6,7 @@ import type { Platform, PlatformConfig } from '@/types';
 import { usePlatformStore } from '@/stores/platformStore';
 import { useToast } from '@/hooks/useToast';
 import { showApiError, showSuccess } from '@/utils/toastHelpers';
+import { toAbsoluteUrl } from '@/utils/config';
 
 interface Props {
   platform: Platform; // expected: platform.type === 'wecom'
@@ -42,7 +43,8 @@ const WeComPlatformConfig: React.FC<Props> = ({ platform }) => {
     appSecret: (platform.config as any)?.app_secret ?? '',
     token: (platform.config as any)?.token ?? '',
     encodingAESKey: (platform.config as any)?.encoding_aes_key ?? '',
-    callbackUrl: (platform as any)?.callback_url ?? '',
+    // Convert relative callback URL to absolute
+    callbackUrl: toAbsoluteUrl((platform as any)?.callback_url ?? ''),
   }));
 
   useEffect(() => {
@@ -52,7 +54,8 @@ const WeComPlatformConfig: React.FC<Props> = ({ platform }) => {
       appSecret: (platform.config as any)?.app_secret ?? '',
       token: (platform.config as any)?.token ?? '',
       encodingAESKey: (platform.config as any)?.encoding_aes_key ?? '',
-      callbackUrl: (platform as any)?.callback_url ?? '',
+      // Convert relative callback URL to absolute
+      callbackUrl: toAbsoluteUrl((platform as any)?.callback_url ?? ''),
     });
   }, [platform]);
 

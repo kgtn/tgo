@@ -32,13 +32,21 @@ export default function App(){
 
   // API base via env
   // Priority: window.ENV (runtime) > import.meta.env (build-time) > undefined
-  const cfg = useMemo(() => ({
-    apiBase: (
-      (typeof window !== 'undefined' && (window as any).ENV?.VITE_API_BASE) ||
-      (import.meta as any).env?.VITE_API_BASE ||
+  // If relative path, prepend current origin
+  const cfg = useMemo(() => {
+    let apiBase = (
+      (typeof window !== 'undefined' && (window as any).ENV?.VITE_API_BASE_URL) ||
+      (import.meta as any).env?.VITE_API_BASE_URL ||
       undefined
-    ) as string | undefined,
-  }), [])
+    ) as string | undefined
+
+    // Handle relative URL: starts with "/" but not "//"
+    if (apiBase && apiBase.startsWith('/') && !apiBase.startsWith('//')) {
+      apiBase = window.location.origin + apiBase
+    }
+
+    return { apiBase }
+  }, [])
 
   useEffect(()=>{
     if (cfg.apiBase) {
@@ -49,7 +57,7 @@ export default function App(){
 
   useEffect(()=>{
     if(!cfg.apiBase){
-      console.warn('[Widget] Missing env VITE_API_BASE. Also ensure URL has ?apiKey=... for visitor register')
+      console.warn('[Widget] Missing env VITE_API_BASE_URL. Also ensure URL has ?apiKey=... for visitor register')
       return
     }
     void initIM({ apiBase: cfg.apiBase! })
@@ -339,7 +347,20 @@ export default function App(){
         <MessageList messages={messages} />
         <MessageInput onSend={onSend} />
       </Grow>
-      <div css={css`text-align:center; font-size:12px; color:#9ca3af; padding: 6px 0;`}>Powered by tgo.ai</div>
+      <a 
+        href="https://tgo.ai" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        css={css`
+          display:block; 
+          text-align:center; 
+          font-size:12px; 
+          color:#9ca3af; 
+          padding: 6px 0;
+          text-decoration: none;
+          &:hover { color: #6b7280; }
+        `}
+      >Powered by tgo.ai</a>
     </WidgetWrap>
   )
 }

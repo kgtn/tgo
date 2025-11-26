@@ -6,6 +6,7 @@
 import { apiClient } from './api';
 import type { FileResponse } from './knowledgeBaseApi';
 import i18n from '../i18n';
+import { getApiBaseUrl } from '@/utils/config';
 
 /**
  * Get current user language for API requests
@@ -48,8 +49,7 @@ export const uploadFileWithProgress = (
 ): Promise<FileResponse> => {
   return new Promise((resolve, reject) => {
     const fileId = `upload_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    const uploadUrl = `${API_BASE_URL}/v1/rag/files`;
+    const uploadUrl = `${getApiBaseUrl()}/v1/rag/files`;
 
     // Create FormData
     const formData = new FormData();

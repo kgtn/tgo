@@ -171,7 +171,7 @@ export default function MessageInput({ onSend }: { onSend(text: string): void })
             />
             <IconBtn aria-label="Attach" onClick={handlePickFiles}><Paperclip size={18} /></IconBtn>
             <IconBtn ref={emojiBtnRef} active={emojiOpen} aria-label="Emoji" onClick={()=>setEmojiOpen(v=>!v)}><Smile size={18} /></IconBtn>
-            <IconBtn aria-label="Voice"><Mic size={18} /></IconBtn>
+            {/* <IconBtn aria-label="Voice"><Mic size={18} /></IconBtn> */}
           </Icons>
           {isStreaming ? (
             <Interrupt onClick={()=>{ if(!streamCanceling) void cancelStreaming('user_click') }} aria-label="中断" disabled={streamCanceling}><StopIcon size={18} /></Interrupt>

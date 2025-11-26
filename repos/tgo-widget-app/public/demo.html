@@ -31,10 +31,10 @@
       <section id="spa-demo">
         <h2>SPA 路由切换测试</h2>
         <div class="nav">
-          <button type="button" data-path="/demo-home">首页</button>
-          <button type="button" data-path="/demo-product">产品页</button>
-          <button type="button" data-path="/demo-pricing">定价页</button>
-          <button type="button" data-path="/demo-about">关于页</button>
+          <button type="button" data-path="./demo-home">首页</button>
+          <button type="button" data-path="./demo-product">产品页</button>
+          <button type="button" data-path="./demo-pricing">定价页</button>
+          <button type="button" data-path="./demo-about">关于页</button>
         </div>
         <div id="spa-view" class="card" style="min-height:100px;margin-top:12px;"></div>
         <div class="actions" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
@@ -68,15 +68,15 @@
 
       (function(){
         const pages = {
-          '/demo-home':    { title: '首页',   body: '欢迎来到首页。这是用于测试 page_view 上报的演示页面。' },
-          '/demo-product': { title: '产品页', body: '这是产品页，用于模拟 SPA 路由切换。' },
-          '/demo-pricing': { title: '定价页', body: '这是定价页，切换路由后会触发上一页停留时长上报。' },
-          '/demo-about':   { title: '关于页', body: '这是关于页，演示进入即上报 + 离开补时长。' }
+          './demo-home':    { title: '首页',   body: '欢迎来到首页。这是用于测试 page_view 上报的演示页面。' },
+          './demo-product': { title: '产品页', body: '这是产品页，用于模拟 SPA 路由切换。' },
+          './demo-pricing': { title: '定价页', body: '这是定价页，切换路由后会触发上一页停留时长上报。' },
+          './demo-about':   { title: '关于页', body: '这是关于页，演示进入即上报 + 离开补时长。' }
         };
         const view = document.getElementById('spa-view');
 
         function render(path){
-          if(!pages[path]) path = '/demo-home';
+          if(!pages[path]) path = './demo-home';
           const p = pages[path];
           document.title = p.title + ' - SDK Integration Demo';
           if(view){
@@ -97,7 +97,7 @@
         window.addEventListener('popstate', function(){ render(location.pathname); });
 
         // 初始路由（非 pages 范围则替换为 /demo-home）
-        if(!pages[location.pathname]){ history.replaceState({ path:'/demo-home' }, '', '/demo-home'); }
+        if(!pages[location.pathname]){ history.replaceState({ path:'./demo-home' }, '', './demo-home'); }
         render(location.pathname);
 
         // 自定义事件测试按钮

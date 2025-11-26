@@ -38,6 +38,9 @@ services:
   wukongim:
     image: registry.cn-shanghai.aliyuncs.com/wukongim/wukongim:v2.2.2-20251013-dev
     container_name: tgo-wukongim
+    environment:
+      # Use SERVER_HOST from .env for external IP (required for client connections)
+      WK_EXTERNAL_IP: ${SERVER_HOST:-127.0.0.1}
     env_file:
       - ./envs/wukongim.env
     volumes:
@@ -100,6 +103,12 @@ services:
         condition: service_started
     command: >
       sh -c "celery -A src.rag_service.tasks.celery_app worker --loglevel=info"
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A src.rag_service.tasks.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   # RAG Celery beat (scheduler)
@@ -118,6 +127,12 @@ services:
         condition: service_started
     command: >
       sh -c "celery -A src.rag_service.tasks.celery_app beat --loglevel=info"
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery.*beat' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   # RAG Flower (Celery monitoring UI)
@@ -134,6 +149,12 @@ services:
         condition: service_started
     command: >
       sh -c "celery -A src.rag_service.tasks.celery_app flower --port=5555"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:5555/healthcheck || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   # RAG service
@@ -148,8 +169,13 @@ services:
       - redis
     volumes:
       - ./data/tgo-rag/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8082/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
-
 
   # AI service
   tgo-ai:
@@ -167,6 +193,12 @@ services:
         condition: service_started
     command: >
       sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8081"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8081/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   # API service
@@ -186,6 +218,12 @@ services:
     volumes:
       # Persist API uploads (chat files, platform logos, etc.) under unified data directory
       - ./data/tgo-api/uploads:/app/uploads
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   # Platform service
@@ -200,6 +238,12 @@ services:
       - postgres
       - redis
       - wukongim
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8003/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   # Customer service web (React build -> nginx)
@@ -210,9 +254,17 @@ services:
       # Runtime environment variables (injected by docker-entrypoint.sh into env-config.js)
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://tgo-api:8000}
       VITE_DEBUG_MODE: ${VITE_DEBUG_MODE:-false}
-      VITE_WIDGET_PREVIEW_URL: ${VITE_WIDGET_PREVIEW_URL:-http://localhost/widget}
+      VITE_WIDGET_PREVIEW_URL: ${VITE_WIDGET_PREVIEW_URL:-/widget}
+      VITE_WIDGET_SCRIPT_BASE: ${VITE_WIDGET_SCRIPT_BASE:-/widget/tgo-widget-sdk.js}
+      VITE_WIDGET_DEMO_URL: ${VITE_WIDGET_DEMO_URL:-/widget/demo.html}
     env_file:
       - ./envs/tgo-web.env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # Widget app (React build -> nginx)
@@ -221,9 +273,15 @@ services:
     container_name: tgo-widget-app
     environment:
       # Runtime environment variables (injected by docker-entrypoint.sh)
-      VITE_API_BASE: ${VITE_API_BASE:-http://tgo-api:8000}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://tgo-api:8000}
     env_file:
       - ./envs/tgo-widget-app.env
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   # Nginx Reverse Proxy for Domain and SSL Management
@@ -247,7 +305,7 @@ services:
       - tgo-api
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/health"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/health"]
       interval: 30s
       timeout: 10s
       retries: 3

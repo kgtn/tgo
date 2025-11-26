@@ -11,6 +11,7 @@ import {
 } from '../services/wukongimWebSocket';
 import { WuKongIMApiService } from '../services/wukongimApi';
 import { Message } from '../types';
+import { isWebSocketAutoConnectDisabled } from '@/utils/config';
 
 /**
  * Centralized WebSocket manager component
@@ -201,10 +202,8 @@ export const WebSocketManager: React.FC = () => {
    * Auto-connect when token and user are available
    */
   useEffect(() => {
-    // Check if auto-connect is disabled via environment variable
-    const autoConnectDisabled = import.meta.env.VITE_DISABLE_WEBSOCKET_AUTO_CONNECT === 'true';
-
-    if (autoConnectDisabled) {
+    // Check if auto-connect is disabled via runtime/build-time configuration
+    if (isWebSocketAutoConnectDisabled()) {
       console.log('🔌 WebSocket Manager: Auto-connect is disabled via environment variable');
       return;
     }

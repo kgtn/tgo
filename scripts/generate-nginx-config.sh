@@ -85,9 +85,11 @@ else
     }
 
     # Widget service (by domain or /widget path)
-    # Strip /widget prefix when forwarding to backend
-    location ~ ^/widget(/|$) {
-        rewrite ^/widget(/.*)$ $1 break;
+    # Match /widget, /widget/, /widget/xxx (query strings are handled automatically by nginx)
+    location ~ ^/widget(/.*)?$ {
+        # Strip /widget prefix, default to / if nothing after /widget
+        rewrite ^/widget(/.*)?$ $1 break;
+        rewrite ^$ / break;
         proxy_pass http://tgo-widget-app:80;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -212,9 +214,11 @@ server {
     }
 
     # Widget service (by /widget path)
-    # Strip /widget prefix when forwarding to backend
-    location ~ ^/widget(/|$) {
-        rewrite ^/widget(/.*)$ $1 break;
+    # Match /widget, /widget/, /widget/xxx (query strings are handled automatically by nginx)
+    location ~ ^/widget(/.*)?$ {
+        # Strip /widget prefix, default to / if nothing after /widget
+        rewrite ^/widget(/.*)?$ $1 break;
+        rewrite ^$ / break;
         proxy_pass http://tgo-widget-app:80;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;

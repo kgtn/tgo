@@ -109,7 +109,7 @@ export class WuKongIMService {
   private async _fetchRouteWsAddr(apiBase: string, uid: string, timeoutMs = 10000): Promise<string> {
     try {
       const base = apiBase.endsWith('/') ? apiBase : apiBase + '/'
-      let url = new URL('/v1/wukongim/route', base)
+      let url = new URL('v1/wukongim/route', base)
       url.searchParams.set('uid', uid)
       const controller = new AbortController()
       const timer = setTimeout(() => controller.abort(), timeoutMs)

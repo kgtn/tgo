@@ -1,5 +1,6 @@
 import { apiClient, APIError } from './api';
 import i18n from '../i18n';
+import { getApiBaseUrl } from '@/utils/config';
 
 /**
  * Get current user language for API requests
@@ -58,7 +59,7 @@ export const uploadChatImageWithProgress = (
     formData.append('channel_id', channelId);
     formData.append('channel_type', String(channelType));
 
-    xhr.open('POST', (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000') + url, true);
+    xhr.open('POST', getApiBaseUrl() + url, true);
     if (token) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     }
@@ -143,7 +144,7 @@ export const uploadChatFileWithProgress = (
     formData.append('channel_id', channelId);
     formData.append('channel_type', String(channelType));
 
-    xhr.open('POST', (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000') + url, true);
+    xhr.open('POST', getApiBaseUrl() + url, true);
     if (token) {
       xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     }

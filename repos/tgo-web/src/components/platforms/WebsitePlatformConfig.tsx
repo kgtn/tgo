@@ -9,6 +9,7 @@ import { showApiError, showSuccess } from '@/utils/toastHelpers';
 import platformsApiService from '@/services/platformsApi';
 import { keysToSnake } from '@/utils/case';
 import ImageCropModal from '@/components/ui/ImageCropModal';
+import { getConfig, getWidgetPreviewUrl } from '@/utils/config';
 
 
 interface WebsitePlatformConfigProps {
@@ -33,15 +34,56 @@ const getDefaultWebsiteConfig = (t: any): WebsiteWidgetConfig => ({
   position: 'bottom-right',
 });
 
-// Widget preview URL and origin (configurable via Vite env)
-const WIDGET_PREVIEW_URL: string = (import.meta as any).env?.VITE_WIDGET_PREVIEW_URL ?? 'http://127.0.0.1:5500/tgo-widget-app/dist/index.html';
-const WIDGET_PREVIEW_ORIGIN: string = (() => {
-  try { return new URL(WIDGET_PREVIEW_URL, window.location.origin).origin; } catch { return '*'; }
-})();
+// Widget preview URL and origin (configurable via runtime config)
+const getWidgetPreviewUrlWithFallback = (apiKey?: string): string => {
+  const url = getWidgetPreviewUrl();
+  const baseUrl = url || 'http://127.0.0.1:5500/tgo-widget-app/dist/index.html';
+  
+  // Append apiKey as query parameter if provided
+  if (apiKey) {
+    const separator = baseUrl.includes('?') ? '&' : '?';
+    return `${baseUrl}${separator}apiKey=${encodeURIComponent(apiKey)}`;
+  }
+  return baseUrl;
+};
 
-// Widget SDK script base and demo page (configurable via Vite env)
-const WIDGET_SCRIPT_BASE: string = (import.meta as any).env?.VITE_WIDGET_SCRIPT_BASE || `${WIDGET_PREVIEW_ORIGIN}/tgo-widget-sdk.js`;
-const WIDGET_DEMO_URL: string = (import.meta as any).env?.VITE_WIDGET_DEMO_URL || `${WIDGET_PREVIEW_ORIGIN}/demo.html`;
+const getWidgetPreviewOrigin = (): string => {
+  try {
+    return new URL(getWidgetPreviewUrlWithFallback(), window.location.origin).origin;
+  } catch {
+    return '*';
+  }
+};
+
+// Helper to convert relative URL to absolute using current origin
+const toAbsoluteUrl = (url: string): string => {
+  if (!url) return url;
+  // If already absolute (has scheme), return as-is
+  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(url)) {
+    return url;
+  }
+  // Relative URL - prepend current origin
+  return `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
+// Widget SDK script base and demo page (configurable via runtime config)
+const getWidgetScriptBase = (): string => {
+  const configured = getConfig('VITE_WIDGET_SCRIPT_BASE', '');
+  if (configured) {
+    return toAbsoluteUrl(configured);
+  }
+  // Fallback to widget preview origin
+  return `${getWidgetPreviewOrigin()}/tgo-widget-sdk.js`;
+};
+
+// const getWidgetDemoUrl = (): string => {
+//   const configured = getConfig('VITE_WIDGET_DEMO_URL', '');
+//   if (configured) {
+//     return toAbsoluteUrl(configured);
+//   }
+//   // Fallback to widget preview origin
+//   return `${getWidgetPreviewOrigin()}/demo.html`;
+// };
 
 
 
@@ -105,7 +147,7 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
   // Live preview: postMessage to widget iframe whenever form changes (after iframe is loaded)
   useEffect(() => {
     if (!previewLoaded) return;
-    const targetOrigin = WIDGET_PREVIEW_ORIGIN;
+    const targetOrigin = getWidgetPreviewOrigin();
     const win = iframeRef.current?.contentWindow;
     if (!win) return;
     win.postMessage({
@@ -415,7 +457,7 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
         <section className="lg:w-3/5 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md p-0 rounded-lg shadow-sm border border-gray-200/60 dark:border-gray-700/60 flex min-h-0">
           <iframe
             ref={iframeRef}
-            src={WIDGET_PREVIEW_URL}
+            src={getWidgetPreviewUrlWithFallback(apiKey)}
             onLoad={() => setPreviewLoaded(true)}
             title="Widget Preview"
             sandbox="allow-scripts allow-same-origin"
@@ -441,13 +483,13 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
               {/* 嵌入代码 */}
               <p className="text-xs text-gray-500 dark:text-gray-400" dangerouslySetInnerHTML={{ __html: t('platforms.website.embed.instruction', '将以下代码复制并粘贴到您网站的 <code>&lt;head&gt;</code> 或 <code>&lt;body&gt;</code> 中：') }} />
               {(() => {
-                const snippet = `<script src="${WIDGET_SCRIPT_BASE}?api_key=${apiKey}" async></script>`;
-                const demoUrl = `${WIDGET_DEMO_URL}${apiKey ? `?api_key=${encodeURIComponent(apiKey)}` : ''}`;
+                const snippet = `<script src="${getWidgetScriptBase()}?api_key=${apiKey}" async></script>`;
+                // const demoUrl = `${getWidgetDemoUrl()}${apiKey ? `?api_key=${encodeURIComponent(apiKey)}` : ''}`;
                 return (
                   <div className="relative">
                     <pre className="text-xs bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-md p-3 overflow-x-auto whitespace-pre-wrap dark:text-gray-300">{snippet}</pre>
                     <div className="absolute top-2 right-2 flex gap-2">
-                      <a
+                      {/* <a
                         href={demoUrl}
                         target="_blank"
                         rel="noreferrer"
@@ -455,7 +497,7 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
                         className={`px-2 py-1 text-xs rounded ${apiKey ? 'bg-green-600 dark:bg-green-500 text-white hover:bg-green-700 dark:hover:bg-green-600' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'}`}
                       >
                         {t('platforms.website.buttons.testIntegration', '测试集成')}
-                      </a>
+                      </a> */}
                       <button
                         type="button"
                         className="px-2 py-1 text-xs rounded bg-blue-600 dark:bg-blue-500 text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"

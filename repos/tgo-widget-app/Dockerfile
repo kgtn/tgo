@@ -7,14 +7,14 @@ ENV CI=true
 
 # Build-time envs for Vite (must be defined BEFORE build)
 # Note: These are no longer used for API_BASE, which is now runtime-configurable
-ARG VITE_API_BASE
-ENV VITE_API_BASE=${VITE_API_BASE}
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
 COPY . .
-RUN echo "Building with VITE_API_BASE=${VITE_API_BASE}" && yarn build
+RUN echo "Building with VITE_API_BASE_URL=${VITE_API_BASE_URL}" && yarn build
 
 # --- Runtime stage ---
 FROM nginx:alpine
