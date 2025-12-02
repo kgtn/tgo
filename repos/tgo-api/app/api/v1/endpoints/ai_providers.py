@@ -205,18 +205,6 @@ async def create_ai_provider(
 ) -> AIProviderResponse:
     """Create a new AI provider configuration for current project."""
 
-    # Optional: prevent duplicate names within project
-    existing = (
-        db.query(AIProvider)
-        .filter(
-            AIProvider.project_id == current_user.project_id,
-            AIProvider.name == payload.name,
-            AIProvider.deleted_at.is_(None),
-        )
-        .first()
-    )
-    if existing:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Provider name already exists")
 
     # Validate default_model within available_models if provided
     if payload.default_model and payload.available_models and payload.default_model not in payload.available_models:

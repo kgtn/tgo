@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from app import __version__
 from app.api import api_router
 from app.config import settings
-from app.database import close_db, init_db
+from app.database import close_db
 from app.exceptions import TGOAIServiceException
 
 
@@ -25,8 +25,6 @@ request_logger.setLevel(getattr(logging, settings.log_level.upper(), logging.INF
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager."""
-    # Startup
-    await init_db()
 
     # Start periodic embedding sync retry loop (if enabled)
     from app.tasks.embedding_sync_retry import start_embedding_sync_retry_loop

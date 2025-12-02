@@ -6,6 +6,7 @@ import Toggle from '@/components/ui/Toggle';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import SectionCard from '@/components/ui/SectionCard';
 import SectionHeader from '@/components/ui/SectionHeader';
+import Select from '@/components/ui/Select';
 
 import { useProvidersStore, type ModelProviderConfig, type ProviderKind } from '@/stores/providersStore';
 import { ToastContext } from '@/components/ui/ToastContainer';
@@ -157,10 +158,9 @@ const ModelProvidersSettings: React.FC = () => {
   const providerOptions: Array<{ value: ProviderKind; label: string; hint?: string }> = useMemo(() => [
     { value: 'openai', label: t('settings.providers.provider.openai', 'OpenAI'), hint: 'https://api.openai.com/v1' },
     { value: 'azure', label: t('settings.providers.provider.azure', 'Azure OpenAI'), hint: 'https://{resource}.openai.azure.com' },
-    { value: 'qwen', label: t('settings.providers.provider.qwen', '通义千问 (DashScope)'), hint: 'https://dashscope.aliyuncs.com' },
-    { value: 'moonshot', label: t('settings.providers.provider.moonshot', '月之暗面 (Kimi)'), hint: 'https://api.moonshot.cn' },
-    { value: 'deepseek', label: t('settings.providers.provider.deepseek', 'DeepSeek'), hint: 'https://api.deepseek.com' },
-    { value: 'baichuan', label: t('settings.providers.provider.baichuan', '百川'), hint: 'https://api.baichuan-ai.com' },
+    { value: 'qwen', label: t('settings.providers.provider.qwen', '通义千问 (DashScope)'), hint: 'https://dashscope.aliyuncs.com/compatible-mode/v1' },
+    { value: 'moonshot', label: t('settings.providers.provider.moonshot', '月之暗面 (Kimi)'), hint: 'https://api.moonshot.cn/v1' },
+    { value: 'deepseek', label: t('settings.providers.provider.deepseek', 'DeepSeek'), hint: 'https://api.deepseek.com/v1' },
     { value: 'ollama', label: t('settings.providers.provider.ollama', 'Ollama'), hint: 'http://localhost:11434' },
     { value: 'custom', label: t('settings.providers.provider.custom', '自定义'), hint: t('settings.providers.placeholders.baseUrl.custom', '自定义 Base URL') },
   ], [t]);
@@ -174,6 +174,18 @@ const ModelProvidersSettings: React.FC = () => {
   const startAdd = () => {
     setEditingId('new');
     const d = emptyDraft(t);
+    setDraft(d);
+    autoNameRef.current = d.name || '';
+  };
+
+  const startAddEmbedding = () => {
+    setEditingId('new');
+    const d = emptyDraft(t);
+    // Set to embedding mode with default embedding model
+    d.modelType = 'embedding';
+    d.kind = 'openai';
+    d.models = ['text-embedding-3-small'];
+    d.defaultModel = 'text-embedding-3-small';
     setDraft(d);
     autoNameRef.current = d.name || '';
   };
@@ -470,11 +482,10 @@ const ModelProvidersSettings: React.FC = () => {
         )}
 
         <FieldRow label={t('settings.providers.fields.kind', '提供商')} required>
-          <select
-            className="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <Select
             value={d.kind}
-            onChange={(e) => {
-              const kind = e.target.value as ProviderKind;
+            onChange={(value) => {
+              const kind = value as ProviderKind;
               const next: Draft = { ...d, kind };
               // 根据提供商类型自动填充 Base URL（使用 providerOptions.hint）；自定义则置空
               const selectedOpt = providerOptions.find(o => o.value === kind);
@@ -513,15 +524,14 @@ const ModelProvidersSettings: React.FC = () => {
 
               setDraft(next);
             }}
-          >
-            {/* 嵌入模型只支持 OpenAI 和千问 */}
-            {(isEmbeddingMode
-              ? providerOptions.filter(o => o.value === 'openai' || o.value === 'qwen')
-              : providerOptions
-            ).map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            options={
+              (isEmbeddingMode
+                ? providerOptions.filter(o => o.value === 'openai' || o.value === 'qwen')
+                : providerOptions
+              ).map(o => ({ value: o.value, label: o.label }))
+            }
+            placeholder={t('settings.providers.fields.selectProvider', '选择提供商')}
+          />
         </FieldRow>
 
         {/* Name field - hide for embedding mode */}
@@ -764,17 +774,14 @@ const ModelProvidersSettings: React.FC = () => {
           </FieldRow>
 
           <FieldRow label={t('settings.providers.fields.defaultModel', '默认模型')}>
-            <select
-              className="w-full rounded-md border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <Select
               value={d.defaultModel || ''}
-              onChange={(e) => setDraft({ ...d, defaultModel: e.target.value })}
+              onChange={(value) => setDraft({ ...d, defaultModel: value })}
               disabled={!d.models || d.models.length === 0}
-            >
-              <option value="" disabled>{t('settings.providers.selectDefaultModel', '请先添加模型')}</option>
-              {(d.models || []).map(m => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
+              options={(d.models || []).map(m => ({ value: m, label: m }))}
+              placeholder={t('settings.providers.selectDefaultModel', '请先添加模型')}
+              emptyMessage={t('settings.providers.selectDefaultModel', '请先添加模型')}
+            />
           </FieldRow>
           </>
         )}
@@ -828,39 +835,22 @@ const ModelProvidersSettings: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
               {t('settings.models.defaults.llmLabel', '默认 LLM')}
             </label>
-            {/* Show empty state with add button when loaded but no models available */}
-            {chatLoaded && !chatLoading && filteredChatModels.length === 0 ? (
-              <div className="w-full rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {t('settings.models.defaults.noModels', '暂无可用模型')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={startAdd}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center gap-1"
-                  >
-                    <span>+</span>
-                    {t('settings.models.defaults.addProvider', '添加供应商')}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <select
-                className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-gray-400 focus:ring-0"
-                value={llmSelection}
-                onChange={(e) => setLlmSelection(e.target.value)}
-                onFocus={ensureFetchChatOptions}
-              >
-                <option value="">{t('settings.models.defaults.none', '未设置')}</option>
-                {chatLoading && <option value="" disabled>{t('common.loading', '加载中...')}</option>}
-                {filteredChatModels.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            )}
+            <Select
+              value={llmSelection}
+              onChange={setLlmSelection}
+              options={[
+                { value: '', label: t('settings.models.defaults.none', '未设置') },
+                ...filteredChatModels,
+              ]}
+              placeholder={t('settings.models.defaults.none', '未设置')}
+              showAddProvider={true}
+              onAddProvider={startAdd}
+              addProviderLabel={t('settings.models.defaults.addProvider', '添加供应商')}
+              emptyMessage={t('settings.models.defaults.noModels', '暂无可用模型')}
+              onOpen={ensureFetchChatOptions}
+              isLoading={chatLoading}
+              loadingText={t('common.loading', '加载中...')}
+            />
           </div>
 
           <div>
@@ -906,39 +896,22 @@ const ModelProvidersSettings: React.FC = () => {
                 )}
               </div>
             </div>
-            {/* Show empty state with add button when loaded but no models available */}
-            {embLoaded && !embLoading && filteredEmbeddingModels.length === 0 ? (
-              <div className="w-full rounded-md border border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 px-3 py-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {t('settings.models.defaults.noEmbeddingModels', '暂无可用嵌入模型')}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={startAdd}
-                    className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center gap-1"
-                  >
-                    <span>+</span>
-                    {t('settings.models.defaults.addProvider', '添加供应商')}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <select
-                className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-gray-400 focus:ring-0"
-                value={embSelection}
-                onChange={(e) => setEmbSelection(e.target.value)}
-                onFocus={ensureFetchEmbeddingOptions}
-              >
-                <option value="">{t('settings.models.defaults.none', '未设置')}</option>
-                {embLoading && <option value="" disabled>{t('common.loading', '加载中...')}</option>}
-                {filteredEmbeddingModels.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            )}
+            <Select
+              value={embSelection}
+              onChange={setEmbSelection}
+              options={[
+                { value: '', label: t('settings.models.defaults.none', '未设置') },
+                ...filteredEmbeddingModels,
+              ]}
+              placeholder={t('settings.models.defaults.none', '未设置')}
+              showAddProvider={true}
+              onAddProvider={startAddEmbedding}
+              addProviderLabel={t('settings.models.defaults.addProvider', '添加供应商')}
+              emptyMessage={t('settings.models.defaults.noEmbeddingModels', '暂无可用嵌入模型')}
+              onOpen={ensureFetchEmbeddingOptions}
+              isLoading={embLoading}
+              loadingText={t('common.loading', '加载中...')}
+            />
           </div>
         </div>
         <div className="mt-4 flex gap-2">

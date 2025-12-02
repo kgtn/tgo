@@ -8,7 +8,14 @@ import { useOnboardingStore } from '@/stores/onboardingStore';
  * Main layout component with sidebar and content area
  */
 const Layout: React.FC = () => {
-  const { hasInitialized, isLoading, fetchProgress } = useOnboardingStore();
+  const {
+    hasInitialized,
+    isLoading,
+    isCompleted,
+    fetchProgress,
+    startPolling,
+    stopPolling
+  } = useOnboardingStore();
 
   // Fetch onboarding progress on mount
   useEffect(() => {
@@ -16,6 +23,18 @@ const Layout: React.FC = () => {
       fetchProgress();
     }
   }, [hasInitialized, isLoading, fetchProgress]);
+
+  // Start polling when onboarding is not completed
+  useEffect(() => {
+    if (hasInitialized && !isCompleted) {
+      startPolling();
+    }
+
+    // Cleanup on unmount or when completed
+    return () => {
+      stopPolling();
+    };
+  }, [hasInitialized, isCompleted, startPolling, stopPolling]);
 
   return (
     <div className="bg-gray-100 dark:bg-gray-900 h-screen overflow-hidden font-sans antialiased">

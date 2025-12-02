@@ -14,6 +14,213 @@ CONFIG_FILE="./data/.tgo-install-mode"
 # Global flag for China mirror support
 USE_CN_MIRROR=false
 
+# =============================================================================
+# Port Detection and Auto-Allocation Functions
+# =============================================================================
+
+# Check if a port is in use (cross-platform: macOS and Linux)
+# Returns 0 if port is in use, 1 if port is available
+is_port_in_use() {
+  local port="$1"
+
+  # Try lsof first (works on both macOS and Linux)
+  if command -v lsof >/dev/null 2>&1; then
+    if lsof -i :"$port" -sTCP:LISTEN >/dev/null 2>&1; then
+      return 0  # Port is in use
+    fi
+  # Fall back to netstat
+  elif command -v netstat >/dev/null 2>&1; then
+    local os_type
+    os_type=$(uname -s)
+    case "$os_type" in
+      Darwin)
+        # macOS netstat
+        if netstat -an -p tcp 2>/dev/null | grep -E "\.${port}\s+.*LISTEN" >/dev/null; then
+          return 0
+        fi
+        ;;
+      Linux)
+        # Linux netstat
+        if netstat -tuln 2>/dev/null | grep -E ":${port}\s+" >/dev/null; then
+          return 0
+        fi
+        ;;
+    esac
+  # Try ss on Linux
+  elif command -v ss >/dev/null 2>&1; then
+    if ss -tuln 2>/dev/null | grep -E ":${port}\s+" >/dev/null; then
+      return 0
+    fi
+  fi
+
+  return 1  # Port is available
+}
+
+# Check if a port is used by the TGO nginx container
+# Returns 0 if used by tgo-nginx, 1 otherwise
+is_port_used_by_tgo_nginx() {
+  local port="$1"
+
+  # Check if tgo-nginx container is running
+  if ! docker ps --filter "name=tgo-nginx" --filter "status=running" --format "{{.Names}}" 2>/dev/null | grep -q "tgo-nginx"; then
+    return 1  # Container not running
+  fi
+
+  # Check if tgo-nginx is using this port
+  # Method 1: Check docker port mappings
+  if docker port tgo-nginx 2>/dev/null | grep -E "^(80|443)/tcp -> .*:${port}$" >/dev/null; then
+    return 0  # tgo-nginx is using this port
+  fi
+
+  # Method 2: Check container's published ports in docker inspect
+  if docker inspect tgo-nginx --format='{{range $p, $conf := .NetworkSettings.Ports}}{{range $conf}}{{.HostPort}}{{"\n"}}{{end}}{{end}}' 2>/dev/null | grep -q "^${port}$"; then
+    return 0  # tgo-nginx is using this port
+  fi
+
+  return 1  # Port not used by tgo-nginx
+}
+
+# Find an available port starting from a given port
+# Usage: find_available_port <start_port> [max_attempts]
+find_available_port() {
+  local start_port="$1"
+  local max_attempts="${2:-100}"
+  local port="$start_port"
+  local attempts=0
+
+  while [ $attempts -lt $max_attempts ]; do
+    if ! is_port_in_use "$port"; then
+      echo "$port"
+      return 0
+    fi
+    port=$((port + 1))
+    attempts=$((attempts + 1))
+  done
+
+  # No available port found
+  echo ""
+  return 1
+}
+
+# Check ports and configure them in .env
+# This function checks HTTP (80) and HTTPS (443) ports
+check_and_configure_ports() {
+  echo ""
+  echo "========================================="
+  echo "  Port Configuration"
+  echo "========================================="
+  echo ""
+
+  local http_port=80
+  local https_port=443
+  local http_port_changed=false
+  local https_port_changed=false
+
+  # Read current port configuration from .env if exists
+  # Note: docker-compose.yml uses NGINX_PORT and NGINX_SSL_PORT
+  local current_http_port=""
+  local current_https_port=""
+  if [ -f "$ENV_FILE" ]; then
+    current_http_port=$(grep -E "^NGINX_PORT=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- || echo "")
+    current_https_port=$(grep -E "^NGINX_SSL_PORT=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- || echo "")
+  fi
+
+  # Use current configured ports if set, otherwise use defaults
+  http_port="${current_http_port:-80}"
+  https_port="${current_https_port:-443}"
+
+  echo "[INFO] Checking port availability..."
+
+  # Check HTTP port
+  if is_port_in_use "$http_port"; then
+    if is_port_used_by_tgo_nginx "$http_port"; then
+      echo "  ✓ Port $http_port is used by TGO Nginx (OK for re-install)"
+    else
+      echo "  ⚠ Port $http_port is occupied by another process"
+
+      # Find an available port starting from 8080
+      local new_http_port
+      new_http_port=$(find_available_port 8080)
+
+      if [ -n "$new_http_port" ]; then
+        echo "  → Auto-assigned new HTTP port: $new_http_port"
+        http_port="$new_http_port"
+        http_port_changed=true
+      else
+        echo "  ❌ Could not find an available HTTP port"
+        echo "[ERROR] Please free up port 80 or manually configure NGINX_PORT in .env"
+        return 1
+      fi
+    fi
+  else
+    echo "  ✓ Port $http_port is available"
+  fi
+
+  # Check HTTPS port
+  if is_port_in_use "$https_port"; then
+    if is_port_used_by_tgo_nginx "$https_port"; then
+      echo "  ✓ Port $https_port is used by TGO Nginx (OK for re-install)"
+    else
+      echo "  ⚠ Port $https_port is occupied by another process"
+
+      # Find an available port starting from 8443
+      local new_https_port
+      new_https_port=$(find_available_port 8443)
+
+      if [ -n "$new_https_port" ]; then
+        echo "  → Auto-assigned new HTTPS port: $new_https_port"
+        https_port="$new_https_port"
+        https_port_changed=true
+      else
+        echo "  ❌ Could not find an available HTTPS port"
+        echo "[ERROR] Please free up port 443 or manually configure NGINX_SSL_PORT in .env"
+        return 1
+      fi
+    fi
+  else
+    echo "  ✓ Port $https_port is available"
+  fi
+
+  # Update .env file with port configuration (using NGINX_PORT/NGINX_SSL_PORT to match docker-compose.yml)
+  update_env_var "NGINX_PORT" "$http_port"
+  update_env_var "NGINX_SSL_PORT" "$https_port"
+
+  echo ""
+
+  # Show summary if ports were changed
+  if [ "$http_port_changed" = true ] || [ "$https_port_changed" = true ]; then
+    echo "========================================="
+    echo "  ⚠️  Port Configuration Changed"
+    echo "========================================="
+    echo ""
+    echo "The default ports were occupied by other processes."
+    echo "TGO has been configured to use the following ports:"
+    echo ""
+    if [ "$http_port_changed" = true ]; then
+      echo "  • HTTP:  $http_port (instead of 80)"
+    else
+      echo "  • HTTP:  $http_port"
+    fi
+    if [ "$https_port_changed" = true ]; then
+      echo "  • HTTPS: $https_port (instead of 443)"
+    else
+      echo "  • HTTPS: $https_port"
+    fi
+    echo ""
+    echo "Access TGO using:"
+    if [ "$http_port" != "80" ]; then
+      echo "  • http://<your-server>:$http_port"
+    else
+      echo "  • http://<your-server>"
+    fi
+    echo ""
+  else
+    echo "[INFO] Port configuration: HTTP=$http_port, HTTPS=$https_port"
+  fi
+
+  return 0
+}
+
 usage() {
   cat <<'EOF'
 Usage: ./tgo.sh <command> [options]
@@ -349,15 +556,24 @@ update_env_var() {
 
 # Show installation complete message with access URLs
 show_install_complete_message() {
-  # Read SERVER_HOST from .env file
+  # Read SERVER_HOST and ports from .env file
   local server_host
   server_host=$(grep -E "^SERVER_HOST=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- || echo "localhost")
   server_host="${server_host:-localhost}"
-  
+
+  local nginx_port
+  nginx_port=$(grep -E "^NGINX_PORT=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- || echo "80")
+  nginx_port="${nginx_port:-80}"
+
   local protocol="http"
-  local web_url="${protocol}://${server_host}"
-  local api_url="${protocol}://${server_host}/api"
-  
+  local port_suffix=""
+  if [ "$nginx_port" != "80" ]; then
+    port_suffix=":${nginx_port}"
+  fi
+
+  local web_url="${protocol}://${server_host}${port_suffix}"
+  local api_url="${protocol}://${server_host}${port_suffix}/api"
+
   echo ""
   echo "========================================="
   echo "  ✅ INSTALLATION COMPLETE"
@@ -368,6 +584,10 @@ show_install_complete_message() {
   echo "Access URLs:"
   echo "  • Web Console:    $web_url"
   echo "  • API Endpoint:   $api_url"
+  if [ "$nginx_port" != "80" ]; then
+    echo ""
+    echo "Note: Using non-standard port $nginx_port (default port 80 was occupied)"
+  fi
   echo ""
   echo "Useful commands:"
   echo "  • Check status:   docker compose ps"
@@ -542,6 +762,12 @@ cmd_install() {
 
   ensure_env_files
   ensure_api_secret_key
+
+  # Check and configure ports (auto-allocate if default ports are occupied)
+  check_and_configure_ports || {
+    echo "[ERROR] Port configuration failed. Please resolve port conflicts and try again."
+    exit 1
+  }
 
   # Configure server host (IP or domain)
   configure_server_host

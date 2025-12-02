@@ -46,16 +46,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def init_db() -> None:
-    """Initialize database tables."""
-    async with engine.begin() as conn:
-        # Import all models to ensure they are registered
-        from app.models import agent, collection, project, team, usage  # noqa: F401
-        from app.models import project_ai_config  # noqa: F401
-        from app.models.base import BaseModel
-
-        # Create all tables
-        await conn.run_sync(BaseModel.metadata.create_all)
 
 
 async def close_db() -> None:
