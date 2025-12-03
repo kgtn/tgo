@@ -141,14 +141,16 @@ server {
     location / {
         proxy_pass http://wukongim:5200;
         proxy_http_version 1.1;
+        proxy_redirect off;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 86400s;
-        proxy_send_timeout 86400s;
+        proxy_read_timeout 180s;
+        proxy_send_timeout 120s;
+        proxy_connect_timeout 4s;
     }
 }
 NGINX_CONFIG
@@ -228,12 +230,14 @@ server {
 
     ssl_certificate /etc/nginx/ssl/WS_DOMAIN/cert.pem;
     ssl_certificate_key /etc/nginx/ssl/WS_DOMAIN/key.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_session_cache shared:SSL:50m;
+    ssl_protocols SSLv3 SSLv2 TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4;
     ssl_prefer_server_ciphers on;
 
     location / {
         proxy_pass http://wukongim:5200;
+        proxy_redirect off;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -241,8 +245,9 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_read_timeout 86400s;
-        proxy_send_timeout 86400s;
+        proxy_read_timeout 180s;
+        proxy_send_timeout 120s;
+        proxy_connect_timeout 4s;
     }
 }
 
