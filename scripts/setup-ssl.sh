@@ -61,6 +61,7 @@ for domain in "$WEB_DOMAIN" "$WIDGET_DOMAIN" "$API_DOMAIN"; do
         certbot/certbot certonly \
         --webroot \
         --webroot-path=/var/www/certbot \
+        --non-interactive \
         --agree-tos \
         --no-eff-email \
         --email "$EMAIL" \
