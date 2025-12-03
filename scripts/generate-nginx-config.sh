@@ -190,7 +190,14 @@ server {
     }
 }
 
-# HTTPS - Unified server block (for localhost or when domains are not configured)
+NGINX_CONFIG
+fi
+
+# Add localhost HTTPS server block ONLY if domains are not configured (localhost mode)
+if [ "$SSL_ENABLED" != "none" ] && [ "$WEB_DOMAIN" = "localhost" ]; then
+    cat >> "$NGINX_CONF_DIR/default.conf" << 'NGINX_CONFIG'
+
+# HTTPS - Unified server block (for localhost when domains are not configured)
 server {
     listen 443 ssl http2;
     server_name localhost;

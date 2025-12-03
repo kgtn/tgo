@@ -88,8 +88,8 @@ echo "[INFO] Certificates stored in: $SSL_DIR"
 
 if [ $SUCCESS_COUNT -gt 0 ]; then
     echo ""
-    echo "[INFO] Reloading nginx to apply new certificates..."
-    docker exec tgo-nginx nginx -s reload 2>/dev/null || echo "[WARN] Could not reload nginx"
+    echo "[INFO] Restarting nginx to apply new certificates..."
+    docker restart tgo-nginx >/dev/null 2>&1 && echo "[INFO] Nginx restarted successfully" || echo "[WARN] Could not restart nginx, please run: docker restart tgo-nginx"
 fi
 
 if [ $SUCCESS_COUNT -eq 0 ]; then
