@@ -833,8 +833,18 @@ cmd_install() {
 
   # Create directories and set permissions
   for dir in "${DATA_DIRS[@]}"; do
+    # Determine permission mode - uploads directories need 777 for container access
+    local perm_mode="755"
+    if [[ "$dir" == *"/uploads" ]]; then
+      perm_mode="777"
+    fi
+
     # Check if directory exists and is writable
     if [ -d "$dir" ] && [ -w "$dir" ]; then
+      # For uploads directories, ensure they have 777 permissions
+      if [[ "$dir" == *"/uploads" ]]; then
+        chmod -R 777 "$dir" 2>/dev/null || true
+      fi
       echo "  ✓ $dir (already exists and writable)"
       continue
     fi
@@ -848,16 +858,16 @@ cmd_install() {
       if [ "$(id -u)" -eq 0 ] && [ "$TARGET_UID" -ne 0 ]; then
         # Running as root, set to actual user
         chown -R "$TARGET_UID:$TARGET_GID" "$dir"
-        chmod -R 755 "$dir"
+        chmod -R "$perm_mode" "$dir"
         echo "  Set ownership to $TARGET_USER ($TARGET_UID:$TARGET_GID)"
       elif [ "$(id -u)" -eq 0 ]; then
         # Running as root, set to Docker default user
         chown -R 1000:1000 "$dir"
-        chmod -R 755 "$dir"
+        chmod -R "$perm_mode" "$dir"
         echo "  Set ownership to 1000:1000 (Docker default)"
       else
         # Running as normal user, just set permissions
-        chmod -R 755 "$dir" 2>/dev/null || echo "  ⚠ Created but cannot set permissions (may need sudo)"
+        chmod -R "$perm_mode" "$dir" 2>/dev/null || echo "  ⚠ Created but cannot set permissions (may need sudo)"
       fi
     else
       # Directory exists but not writable
@@ -865,7 +875,7 @@ cmd_install() {
       if [ "$(id -u)" -eq 0 ]; then
         # We're root, we can fix it
         chown -R "$TARGET_UID:$TARGET_GID" "$dir" 2>/dev/null || chown -R 1000:1000 "$dir"
-        chmod -R 755 "$dir"
+        chmod -R "$perm_mode" "$dir"
         echo "  Fixed permissions"
       else
         echo "  ⚠ Run with sudo to fix permissions, or manually run: sudo chown -R \$USER:$TARGET_GID $dir"
