@@ -38,13 +38,11 @@ services:
   wukongim:
     image: registry.cn-shanghai.aliyuncs.com/wukongim/wukongim:v2.2.2-20251013-dev
     container_name: tgo-wukongim
-    environment:
-      # Use SERVER_HOST from .env for external IP (required for client connections)
-      WK_EXTERNAL_IP: ${SERVER_HOST:-127.0.0.1}
     env_file:
       - ./.env
       - ./envs/wukongim.env
     environment:
+      WK_EXTERNAL_IP: ${SERVER_HOST:-127.0.0.1}
       WK_EXTERNAL_TCPADDR: ${WK_EXTERNAL_TCPADDR:-0.0.0.0:5100}
       WK_EXTERNAL_WSADDR: ${WK_EXTERNAL_WSADDR:-0.0.0.0:5200}
       WK_EXTERNAL_WSSADDR: ${WK_EXTERNAL_WSSADDR:-0.0.0.0:5200}
