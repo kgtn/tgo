@@ -173,7 +173,7 @@ function HomepageHeader() {
   const {siteConfig} = useDocusaurusContext();
   const { colorMode } = useColorMode();
   const productImage = useBaseUrl(
-    colorMode === 'dark' ? '/img/product_dark.png' : '/img/product.png'
+    colorMode === 'dark' ? '/img/screen/home_dark.png' : '/img/screen/home.png'
   );
 
   return (
