@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="resources/readme-banner.svg" width="100%" alt="组建智能体团队为客户服务">
+  <img src="resources/readme-banner.svg" width="100%" height="200" alt="组建智能体团队为客户服务">
 </p>
 
 <p align="center">

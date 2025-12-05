@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="resources/readme-banner-en.svg" width="100%" alt="Build AI Agent Teams for Customer Service">
+  <img src="resources/readme-banner-en.svg" width="100%" height="200" alt="Build AI Agent Teams for Customer Service">
 </p>
 
 <p align="center">

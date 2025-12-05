@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="resources/readme-banner-en.svg" width="100%" alt="顧客サービスのためのAIエージェントチームを構築する">
+  <img src="resources/readme-banner-en.svg" width="100%" height="200" alt="顧客サービスのためのAIエージェントチームを構築する">
 </p>
 
 <p align="center">

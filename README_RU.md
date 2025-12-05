@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="resources/readme-banner-en.svg" width="100%" alt="Создавайте команды ИИ-агентов для обслуживания клиентов">
+  <img src="resources/readme-banner-en.svg" width="100%" height="200" alt="Создавайте команды ИИ-агентов для обслуживания клиентов">
 </p>
 
 <p align="center">
