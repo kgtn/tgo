@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, joinedload, contains_eager
 
 from app.core.database import get_db
 from app.core.logging import get_logger
-from app.core.security import generate_api_key, get_current_active_user
+from app.core.security import generate_api_key, get_current_active_user, require_permission
 from app.models import Platform, PlatformTypeDefinition, Staff
 from app.schemas import (
     PlatformAPIKeyResponse,
@@ -112,10 +112,10 @@ def _build_platform_response(platform: Platform, language: str = "zh") -> Platfo
 @router.get("/types", response_model=list[PlatformTypeDefinitionResponse])
 async def list_platform_types(
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:list")),
     x_user_language: str = Header("zh", alias="X-User-Language"),
 ) -> list[PlatformTypeDefinitionResponse]:
-    """List available platform type definitions."""
+    """List available platform type definitions. Requires platforms:list permission."""
     logger.info(f"User {current_user.username} listing platform types")
 
     platform_types = (
@@ -149,13 +149,14 @@ async def list_platform_types(
 async def list_platforms(
     params: PlatformListParams = Depends(),
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:list")),
     x_user_language: str = Header("zh", alias="X-User-Language"),
 ) -> PlatformListResponse:
     """
     List platforms.
 
     Retrieve a paginated list of communication platforms with optional filtering.
+    Requires platforms:list permission.
     """
     logger.info(f"User {current_user.username} listing platforms")
 
@@ -260,13 +261,14 @@ async def get_platform_info(
 async def create_platform(
     platform_data: PlatformCreate,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:create")),
     x_user_language: str = Header("zh", alias="X-User-Language"),
 ) -> PlatformResponse:
     """
     Create platform.
 
     Create a new communication platform configuration.
+    Requires platforms:create permission.
     """
     logger.info(f"User {current_user.username} creating platform: {platform_data.name or '[auto]'}")
 
@@ -308,10 +310,10 @@ async def create_platform(
 async def get_platform(
     platform_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:read")),
     x_user_language: str = Header("zh", alias="X-User-Language"),
 ) -> PlatformResponse:
-    """Get platform details."""
+    """Get platform details. Requires platforms:read permission."""
     logger.info(f"User {current_user.username} getting platform: {platform_id}")
 
     platform = (
@@ -339,13 +341,14 @@ async def update_platform(
     platform_id: UUID,
     platform_data: PlatformUpdate,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:update")),
     x_user_language: str = Header("zh", alias="X-User-Language"),
 ) -> PlatformResponse:
     """
     Update platform.
 
     Update platform configuration and settings.
+    Requires platforms:update permission.
     """
     logger.info(f"User {current_user.username} updating platform: {platform_id}")
 
@@ -401,12 +404,13 @@ async def update_platform(
 async def delete_platform(
     platform_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:delete")),
 ) -> None:
     """
     Delete platform (soft delete).
 
     Soft delete a platform. This also affects all visitors associated with this platform.
+    Requires platforms:delete permission.
     """
     logger.info(f"User {current_user.username} deleting platform: {platform_id}")
 
@@ -437,9 +441,9 @@ async def delete_platform(
 async def regenerate_platform_api_key(
     platform_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:update")),
 ) -> PlatformAPIKeyResponse:
-    """Regenerate the API key for a platform."""
+    """Regenerate the API key for a platform. Requires platforms:update permission."""
     logger.info(f"User {current_user.username} regenerating API key for platform: {platform_id}")
 
     platform = (
@@ -475,10 +479,10 @@ async def regenerate_platform_api_key(
 async def enable_platform(
     platform_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:update")),
     x_user_language: str = Header("zh", alias="X-User-Language"),
 ) -> PlatformResponse:
-    """Enable a platform (set is_active=True)."""
+    """Enable a platform (set is_active=True). Requires platforms:update permission."""
     logger.info("User %s enabling platform %s", current_user.username, str(platform_id))
 
     platform = (
@@ -507,10 +511,10 @@ async def enable_platform(
 async def disable_platform(
     platform_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:update")),
     x_user_language: str = Header("zh", alias="X-User-Language"),
 ) -> PlatformResponse:
-    """Disable a platform (set is_active=False)."""
+    """Disable a platform (set is_active=False). Requires platforms:update permission."""
     logger.info("User %s disabling platform %s", current_user.username, str(platform_id))
 
     platform = (
@@ -540,10 +544,10 @@ async def disable_platform(
 async def enable_ai_for_platform(
     platform_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:update")),
     x_user_language: str = Header("zh", alias="X-User-Language"),
 ) -> PlatformResponse:
-    """Enable AI for a platform (set ai_disabled=False)."""
+    """Enable AI for a platform (set ai_disabled=False). Requires platforms:update permission."""
     logger.info("User %s enabling AI for platform %s", current_user.username, str(platform_id))
 
     platform = (
@@ -572,10 +576,10 @@ async def enable_ai_for_platform(
 async def disable_ai_for_platform(
     platform_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:update")),
     x_user_language: str = Header("zh", alias="X-User-Language"),
 ) -> PlatformResponse:
-    """Disable AI for a platform (set ai_disabled=True)."""
+    """Disable AI for a platform (set ai_disabled=True). Requires platforms:update permission."""
     logger.info("User %s disabling AI for platform %s", current_user.username, str(platform_id))
 
     platform = (
@@ -605,10 +609,10 @@ async def upload_platform_logo(
     platform_id: UUID,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("platforms:update")),
     x_user_language: str = Header("zh", alias="X-User-Language"),
 ) -> PlatformResponse:
-    """Upload or replace the logo image for a platform (staff-only).
+    """Upload or replace the logo image for a platform. Requires platforms:update permission.
 
     - Auth: JWT staff via get_current_active_user
     - File: multipart/form-data field 'file'

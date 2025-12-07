@@ -32,7 +32,7 @@ import PlatformConfigPage from '../pages/PlatformConfigPage';
 import SettingsLayout from '../pages/SettingsLayout';
 
 import GeneralSettings from '../components/settings/GeneralSettings';
-
+import StaffSettings from '../components/settings/StaffSettings';
 import ModelProvidersSettings from '../components/settings/ModelProvidersSettings';
 import AboutSettings from '../components/settings/AboutSettings';
 import MarkdownTestPage from '../pages/MarkdownTestPage';
@@ -79,7 +79,7 @@ export const router = createBrowserRouter([
           { index: true, element: <Navigate to="/settings/general" replace /> },
 
           { path: 'general', element: <GeneralSettings /> },
-
+          { path: 'staff', element: <StaffSettings /> },
           { path: 'providers', element: <ModelProvidersSettings /> },
           { path: 'about', element: <AboutSettings /> }
         ]

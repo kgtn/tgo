@@ -9,7 +9,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, foreign
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.database import Base
-from app.models.assignment import VisitorAssignment
 from app.models.platform import Platform
 from app.models.project import Project
 from app.models.visitor_ai_insight import VisitorAIInsight
@@ -162,13 +161,6 @@ class Visitor(Base):
         primaryjoin="foreign(Visitor.platform_id) == Platform.id",
         foreign_keys="Visitor.platform_id",
         back_populates="visitors",
-        lazy="select"
-    )
-
-    assignments: Mapped[List["VisitorAssignment"]] = relationship(
-        "VisitorAssignment",
-        back_populates="visitor",
-        cascade="all, delete-orphan",
         lazy="select"
     )
 

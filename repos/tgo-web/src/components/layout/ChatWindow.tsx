@@ -3,11 +3,13 @@ import ChatHeader from '../chat/ChatHeader';
 import MessagesList from '../chat/MessagesList';
 import MessageInput from '../chat/MessageInput';
 import EmptyState from '../chat/EmptyState';
+import DevModeToolbar from '../chat/DevModeToolbar';
 import { useHistoricalMessages } from '@/hooks/useHistoricalMessages';
 import { useWuKongIMWebSocket } from '@/hooks/useWuKongIMWebSocket';
 import { useChatStore } from '@/stores/chatStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useChannelStore } from '@/stores/channelStore';
+import { useAppSettingsStore } from '@/stores/appSettingsStore';
 import type { Chat, Message, ChannelVisitorExtra } from '@/types';
 import { PlatformType } from '@/types';
 import { chatMessagesApiService } from '@/services/chatMessagesApi';
@@ -47,6 +49,9 @@ const ChatWindow: React.FC<ChatWindowProps> = React.memo(({ activeChat, onSendMe
 
   // State for message sending
   const [isSending, setIsSending] = useState(false);
+
+  // Dev mode state
+  const devMode = useAppSettingsStore(state => state.devMode);
 
   // Get current user info for message attribution
   const user = useAuthStore(state => state.user);
@@ -276,6 +281,36 @@ const ChatWindow: React.FC<ChatWindowProps> = React.memo(({ activeChat, onSendMe
   // We want to re-run when target changes or conversation changes
   }, [isWuKongIMChat, channelId, channelType, targetLoc, loadMessageContext, clearHistoricalMessages, setLoadingHistory, setTargetMessageLocation, showToast]);
 
+  // Handle dev mode test message sending (simulates AI assistant response)
+  const handleDevModeMessage = useCallback((content: string, isFromAssistant?: boolean) => {
+    if (!channelId || typeof channelType !== 'number') {
+      console.warn('Cannot send dev mode message without active channel');
+      return;
+    }
+
+    const nowId = `dev-${Date.now()}`;
+    const devMessage: Message = {
+      id: nowId,
+      // Use 'system' type for AI assistant messages in dev mode
+      type: "staff",
+      content: content,
+      timestamp: new Date().toISOString(),
+      messageId: nowId,
+      clientMsgNo: nowId,
+      messageSeq: Date.now(), // Use timestamp as sequence for ordering
+      fromUid: isFromAssistant ? 'dev-assistant' : (user?.id ? `${user.id}-staff` : 'unknown-staff'),
+      channelId,
+      channelType,
+      payloadType: 1 as any,
+      // has_stream_data enables MarkdownContent rendering which supports UI Widget parsing
+      metadata: { isDevMode: true, isAIResponse: isFromAssistant, has_stream_data: true },
+    };
+
+    // Add message to chat store
+    addMessage(devMessage);
+    updateConversationLastMessage(channelId, channelType, devMessage);
+  }, [channelId, channelType, user, addMessage, updateConversationLastMessage]);
+
   return (
     <main className="flex-grow flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Chat Header */}
@@ -301,6 +336,7 @@ const ChatWindow: React.FC<ChatWindowProps> = React.memo(({ activeChat, onSendMe
           onSuggestionClick={handleSuggestionClick}
           scrollToSeq={scrollToSeq}
           onScrolledToSeq={() => setScrollToSeq(null)}
+          onSendMessage={handleSendMessage}
         />
       </div>
 
@@ -309,6 +345,11 @@ const ChatWindow: React.FC<ChatWindowProps> = React.memo(({ activeChat, onSendMe
         onSendMessage={handleSendMessage}
         isSending={isSending}
       />
+
+      {/* Dev Mode Toolbar - only shown when dev mode is enabled */}
+      {devMode && (
+        <DevModeToolbar onSendMessage={handleDevModeMessage} />
+      )}
     </main>
   );
 });

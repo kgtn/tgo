@@ -13,9 +13,12 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.logging import get_logger
-from app.models import Project, Staff
+from app.models import Project, Staff, Permission, RolePermission, ProjectRolePermission
 
 logger = get_logger("security")
+
+# Admin role constant - admins have all permissions
+ADMIN_ROLE = "admin"
 
 # Supported user languages
 UserLanguage = Literal["zh", "en"]
@@ -318,4 +321,170 @@ async def get_authenticated_project(
     logger.debug(f"Authenticated via JWT for project: {project.id}")
 
     return project, api_key_for_forwarding
+
+
+def check_user_permission(
+    db: Session,
+    user: Staff,
+    permission: str,
+) -> bool:
+    """
+    Check if user has the specified permission.
+    
+    Uses MERGE mode: Final permissions = Global RolePermission + Project ProjectRolePermission
+    Projects can only ADD permissions, not disable global ones.
+    
+    Args:
+        db: Database session
+        user: Staff user to check
+        permission: Permission code in resource:action format (e.g., "staff:create")
+    
+    Returns:
+        True if user has permission, False otherwise
+    """
+    # Admin has all permissions
+    if user.role == ADMIN_ROLE:
+        return True
+    
+    # Parse permission code
+    try:
+        resource, action = permission.split(":")
+    except ValueError:
+        logger.warning(f"Invalid permission format: {permission}")
+        return False
+    
+    # Check global RolePermission (inherited by all projects)
+    has_global_permission = db.query(RolePermission).join(Permission).filter(
+        RolePermission.role == user.role,
+        Permission.resource == resource,
+        Permission.action == action,
+    ).first()
+    
+    if has_global_permission:
+        return True
+    
+    # Check project-specific ProjectRolePermission (additional permissions)
+    has_project_permission = db.query(ProjectRolePermission).join(Permission).filter(
+        ProjectRolePermission.role == user.role,
+        ProjectRolePermission.project_id == user.project_id,
+        Permission.resource == resource,
+        Permission.action == action,
+    ).first()
+    
+    return has_project_permission is not None
+
+
+def require_permission(permission: str):
+    """
+    Create a dependency that requires the specified permission.
+    
+    This is a dependency factory that creates a FastAPI dependency
+    to check if the current user has the specified permission.
+    
+    Args:
+        permission: Permission code in resource:action format (e.g., "staff:create")
+    
+    Returns:
+        A FastAPI dependency function
+    
+    Example:
+        ```python
+        @router.post("/staff")
+        async def create_staff(
+            current_user: Staff = Depends(require_permission("staff:create")),
+        ):
+            # Only users with staff:create permission can access
+            pass
+        ```
+    """
+    async def permission_dependency(
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+        db: Session = Depends(get_db),
+    ) -> Staff:
+        """Check user has required permission."""
+        # First authenticate the user
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+        
+        try:
+            payload = verify_token(credentials.credentials)
+            if payload is None:
+                raise credentials_exception
+            
+            username: str = payload.get("sub")
+            if username is None:
+                raise credentials_exception
+                
+        except JWTError:
+            raise credentials_exception
+        
+        # Get user from database
+        user = db.query(Staff).filter(
+            Staff.username == username,
+            Staff.deleted_at.is_(None)
+        ).first()
+        
+        if user is None:
+            raise credentials_exception
+        
+        # Check if user is active
+        if user.deleted_at is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Inactive user"
+            )
+        
+        # Check permission
+        if not check_user_permission(db, user, permission):
+            logger.warning(
+                f"Permission denied: user {user.username} lacks permission {permission}"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied: {permission}"
+            )
+        
+        return user
+    
+    return permission_dependency
+
+
+def require_admin():
+    """
+    Create a dependency that requires admin role.
+    
+    This is a convenience function for endpoints that should only
+    be accessible by admin users.
+    
+    Returns:
+        A FastAPI dependency function
+    
+    Example:
+        ```python
+        @router.delete("/staff/{staff_id}")
+        async def delete_staff(
+            current_user: Staff = Depends(require_admin()),
+        ):
+            # Only admin users can access
+            pass
+        ```
+    """
+    async def admin_dependency(
+        current_user: Staff = Depends(get_current_active_user),
+    ) -> Staff:
+        """Check user is admin."""
+        if current_user.role != ADMIN_ROLE:
+            logger.warning(
+                f"Admin required: user {current_user.username} is not admin"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin permission required"
+            )
+        return current_user
+    
+    return admin_dependency
 

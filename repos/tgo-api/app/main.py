@@ -8,7 +8,7 @@ from fastapi.openapi.utils import get_openapi
 
 from app.api.v1.router import api_router
 from app.core.config import settings
-from app.core.dev_data import  log_startup_banner
+from app.core.dev_data import log_startup_banner, ensure_permissions_seed
 from app.core.exceptions import (
     TGOAPIException,
     general_exception_handler,
@@ -127,6 +127,13 @@ async def startup_event():
     # Ensure platform types seeded (idempotent)
     try:
         ensure_platform_types_seed()
+    except Exception:
+        # best-effort; don't block startup
+        pass
+
+    # Ensure permission definitions seeded (idempotent)
+    try:
+        ensure_permissions_seed()
     except Exception:
         # best-effort; don't block startup
         pass

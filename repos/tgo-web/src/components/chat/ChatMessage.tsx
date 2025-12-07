@@ -23,6 +23,8 @@ import AIErrorMessage from './messages/AIErrorMessage';
 interface ChatMessageProps {
   message: Message;
   onSuggestionClick?: (suggestion: string) => void;
+  /** 发送消息回调（用于 Widget 中的 msg:// 协议） */
+  onSendMessage?: (message: string) => void;
 }
 
 /**
@@ -37,19 +39,20 @@ const MessageContent: React.FC<{
   isRichText: boolean;
   isImage: boolean;
   isFile: boolean;
-}> = ({ message, isStaff, streamError, streamErrorText, isStreamLoading, isRichText, isImage, isFile }) => {
+  onSendMessage?: (message: string) => void;
+}> = ({ message, isStaff, streamError, streamErrorText, isStreamLoading, isRichText, isImage, isFile, onSendMessage }) => {
   if (streamError) return <AIErrorMessage isStaff={isStaff} errorText={streamErrorText} />;
   if (isStreamLoading) return <LoadingMessage isStaff={isStaff} />;
-  if (isRichText) return <RichTextMessage message={message} isStaff={isStaff} />;
+  if (isRichText) return <RichTextMessage message={message} isStaff={isStaff} onSendMessage={onSendMessage} />;
   if (isImage) return <ImageMessage message={message} isStaff={isStaff} />;
   if (isFile) return <FileMessage message={message} isStaff={isStaff} />;
-  return <TextMessage message={message} isStaff={isStaff} />;
+  return <TextMessage message={message} isStaff={isStaff} onSendMessage={onSendMessage} />;
 };
 
 /**
  * Individual chat message component
  */
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick, onSendMessage }) => {
   const { t } = useTranslation();
   const user = useAuthStore(state => state.user);
   const currentUid = React.useMemo(() => (user?.id ? `${user.id}-staff` : null), [user?.id]);
@@ -171,6 +174,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick })
     );
   };
 
+
   // Visitor/AI message (left side)
   if (!isOwnMessage) {
     return (
@@ -197,6 +201,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick })
             isRichText={isRichText}
             isImage={isImage}
             isFile={isFile}
+            onSendMessage={onSendMessage}
           />
         </div>
         <AIInfoCard aiInfo={message.aiInfo} />
@@ -218,6 +223,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick })
           isRichText={isRichText}
           isImage={isImage}
           isFile={isFile}
+          onSendMessage={onSendMessage}
         />
         {isSending && (
           <div className="relative self-center text-gray-400 dark:text-gray-500 mr-2" title={t('chat.messages.sending', '发送中...')}>

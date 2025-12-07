@@ -259,6 +259,7 @@ async def create_admin(
         username=ADMIN_USERNAME,
         password_hash=password_hash,
         nickname=admin_data.nickname or "Administrator",
+        name=admin_data.nickname or "Administrator",
         role=StaffRole.ADMIN,  # Admin is a regular user role
         status=StaffStatus.OFFLINE,
     )

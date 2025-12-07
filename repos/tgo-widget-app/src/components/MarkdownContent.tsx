@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Marked, RendererObject, RendererThis, Tokens } from 'marked';
 import { markedHighlight } from "marked-highlight";
 import hljs from 'highlight.js/lib/core';
@@ -24,6 +24,8 @@ import css from 'highlight.js/lib/languages/css';
 import scss from 'highlight.js/lib/languages/scss';
 import plaintext from 'highlight.js/lib/languages/plaintext';
 import DOMPurify from 'dompurify';
+import { replaceUIWidgetsWithPlaceholders, type ParsedUIBlock } from '../utils/uiWidgetParser';
+import { WidgetRenderer } from './widgets';
 
 // Register languages
 hljs.registerLanguage('javascript', javascript);
@@ -56,6 +58,12 @@ hljs.registerLanguage('plaintext', plaintext);
 interface MarkdownContentProps {
   content: string;
   className?: string;
+  /** 当 UI Widget 中的操作按钮被点击时触发（非标准 URI 或向后兼容） */
+  onWidgetAction?: (action: string, payload?: Record<string, unknown>) => void;
+  /** 发送消息回调（用于 msg:// 协议） */
+  onSendMessage?: (message: string) => void;
+  /** 复制成功回调 */
+  onCopySuccess?: (text: string) => void;
 }
 
 const headingClassMap: Record<number, string> = {
@@ -265,23 +273,36 @@ const preprocessStreamingMarkdown = (markdown: string): string => {
   return processed;
 };
 
-const renderMarkdownToHtml = (markdown: string): string => {
+const renderMarkdownToHtml = (markdown: string, allowWidgetPlaceholders = false): string => {
   if (!markdown) return '';
 
   // Pre-process for streaming content
   const processedMarkdown = preprocessStreamingMarkdown(markdown);
 
-  const cached = markdownCache.get(processedMarkdown);
+  // Use different cache key when widget placeholders are allowed
+  const cacheKey = allowWidgetPlaceholders ? `widget:${processedMarkdown}` : processedMarkdown;
+  const cached = markdownCache.get(cacheKey);
   if (cached) {
     return cached;
   }
 
   const parsed = marked.parse(processedMarkdown) as string;
+  
+  // Configure DOMPurify to allow data-ui-widget attribute when needed
+  const sanitizeConfig: { USE_PROFILES: { html: boolean }; ADD_ATTR?: string[] } = { 
+    USE_PROFILES: { html: true },
+  };
+  
+  if (allowWidgetPlaceholders) {
+    // Allow data-ui-widget attribute for widget placeholders
+    sanitizeConfig.ADD_ATTR = ['data-ui-widget'];
+  }
+  
   const sanitized = typeof window !== 'undefined'
-    ? DOMPurify.sanitize(parsed, { USE_PROFILES: { html: true } })
+    ? String(DOMPurify.sanitize(parsed, sanitizeConfig))
     : parsed;
 
-  markdownCache.set(processedMarkdown, sanitized);
+  markdownCache.set(cacheKey, sanitized);
   if (markdownCache.size > MARKDOWN_CACHE_LIMIT) {
     const firstKey = markdownCache.keys().next().value;
     if (firstKey) {
@@ -295,18 +316,137 @@ const renderMarkdownToHtml = (markdown: string): string => {
 /**
  * Markdown Content Renderer Component
  * Renders markdown content using Marked with caching and sanitization for performance & safety
+ * Supports custom tgo-ui-widget code blocks for structured data rendering
  */
-const MarkdownContent: React.FC<MarkdownContentProps> = ({ content, className = '' }) => {
-  const html = useMemo(() => renderMarkdownToHtml(content || ''), [content]);
+const MarkdownContent: React.FC<MarkdownContentProps> = ({ 
+  content, 
+  className = '', 
+  onWidgetAction,
+  onSendMessage,
+  onCopySuccess,
+}) => {
+  // 解析 UI Widget 并生成占位符
+  const { processedContent, widgetBlocks } = useMemo(() => {
+    const { content: processed, blocks } = replaceUIWidgetsWithPlaceholders(content || '');
+    return { processedContent: processed, widgetBlocks: blocks };
+  }, [content]);
+
+  const hasWidgets = widgetBlocks.size > 0;
+
+  // 渲染 Markdown 内容（当有 Widget 时允许占位符属性）
+  const html = useMemo(() => {
+    return renderMarkdownToHtml(processedContent, hasWidgets);
+  }, [processedContent, hasWidgets]);
+
+  // 处理 Widget 操作
+  const handleWidgetAction = useCallback((action: string, payload?: Record<string, unknown>) => {
+    if (onWidgetAction) {
+      onWidgetAction(action, payload);
+    } else {
+      console.log('Widget action:', action, payload);
+    }
+  }, [onWidgetAction]);
+
   const combinedClassName = className
     ? `markdown-content ${className}`.trim()
     : 'markdown-content';
 
+  // 如果没有 UI Widget，直接渲染 HTML
+  if (widgetBlocks.size === 0) {
+    return (
+      <div
+        className={combinedClassName}
+        dangerouslySetInnerHTML={{ __html: html }}
+      />
+    );
+  }
+
+  // 有 UI Widget 时，需要将 HTML 分割并插入 Widget 组件
   return (
-    <div
-      className={combinedClassName}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
+    <div className={combinedClassName}>
+      <MarkdownWithWidgets
+        html={html}
+        widgetBlocks={widgetBlocks}
+        onAction={handleWidgetAction}
+        onSendMessage={onSendMessage}
+        onCopySuccess={onCopySuccess}
+      />
+    </div>
+  );
+};
+
+/**
+ * 带有 UI Widget 的 Markdown 渲染器
+ * 将 HTML 按占位符分割，并在适当位置插入 Widget 组件
+ */
+const MarkdownWithWidgets: React.FC<{
+  html: string;
+  widgetBlocks: Map<string, ParsedUIBlock>;
+  onAction: (action: string, payload?: Record<string, unknown>) => void;
+  onSendMessage?: (message: string) => void;
+  onCopySuccess?: (text: string) => void;
+}> = ({ html, widgetBlocks, onAction, onSendMessage, onCopySuccess }) => {
+  // 将 HTML 按 widget 占位符分割
+  const parts = useMemo(() => {
+    const result: Array<{ type: 'html' | 'widget'; content: string; blockId?: string }> = [];
+    const regex = /<div data-ui-widget="([^"]+)"><\/div>/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(html)) !== null) {
+      // 添加占位符之前的 HTML
+      if (match.index > lastIndex) {
+        const htmlContent = html.slice(lastIndex, match.index);
+        if (htmlContent.trim()) {
+          result.push({ type: 'html', content: htmlContent });
+        }
+      }
+
+      // 添加 Widget 占位符
+      result.push({ type: 'widget', content: '', blockId: match[1] });
+      lastIndex = match.index + match[0].length;
+    }
+
+    // 添加最后一段 HTML
+    if (lastIndex < html.length) {
+      const htmlContent = html.slice(lastIndex);
+      if (htmlContent.trim()) {
+        result.push({ type: 'html', content: htmlContent });
+      }
+    }
+
+    return result;
+  }, [html]);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (part.type === 'html') {
+          return (
+            <div
+              key={`html-${index}`}
+              dangerouslySetInnerHTML={{ __html: part.content }}
+            />
+          );
+        }
+
+        // Widget 类型
+        const block = part.blockId ? widgetBlocks.get(part.blockId) : null;
+        if (!block) {
+          return null;
+        }
+
+        return (
+          <WidgetRenderer
+            key={`widget-${part.blockId}`}
+            data={block.data}
+            onAction={onAction}
+            onSendMessage={onSendMessage}
+            onCopySuccess={onCopySuccess}
+          />
+        );
+      })}
+    </>
   );
 };
 

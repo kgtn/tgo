@@ -21,9 +21,11 @@ const StreamingCursor: React.FC<{ isWhite?: boolean }> = ({ isWhite }) => (
 export interface MessageComponentProps {
   message: Message;
   isStaff: boolean; // true for staff (right), false for visitor (left)
+  /** 发送消息回调（用于 Widget 中的 msg:// 协议） */
+  onSendMessage?: (message: string) => void;
 }
 
-const TextMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) => {
+const TextMessage: React.FC<MessageComponentProps> = ({ message, isStaff, onSendMessage }) => {
   const typedPayload = message.payload as any | undefined;
   // Prefer message.content for streaming updates; fall back to payload content
   const textContent: string =
@@ -42,12 +44,13 @@ const TextMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) => {
 
   const hasLink = (message as any).hasLink;
 
+
   if (isStaff) {
     return (
       <div className="bg-blue-500 dark:bg-blue-600 text-white p-3 rounded-lg rounded-tr-none shadow-sm overflow-hidden max-w-full">
         {shouldRenderMarkdown ? (
           <>
-            <MarkdownContent content={textContent} className="text-sm markdown-white" />
+            <MarkdownContent content={textContent} className="text-sm markdown-white" onSendMessage={onSendMessage} />
             {isStreaming && <StreamingCursor isWhite />}
           </>
         ) : (
@@ -71,7 +74,7 @@ const TextMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) => {
     <div className="bg-white dark:bg-gray-700 p-3 rounded-lg rounded-tl-none shadow-sm border border-gray-100 dark:border-gray-600 overflow-hidden max-w-full">
       {shouldRenderMarkdown ? (
         <>
-          <MarkdownContent content={textContent} className="text-sm dark:text-gray-200" />
+          <MarkdownContent content={textContent} className="text-sm dark:text-gray-200" onSendMessage={onSendMessage} />
           {isStreaming && <StreamingCursor />}
         </>
       ) : (

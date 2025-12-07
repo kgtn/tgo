@@ -54,6 +54,11 @@ class Staff(Base):
         nullable=False,
         comment="Hashed password for authentication (bcrypt, argon2, etc.)"
     )
+    name: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="Staff real name"
+    )
     nickname: Mapped[Optional[str]] = mapped_column(
         String(100),
         nullable=True,
@@ -63,6 +68,11 @@ class Staff(Base):
         String(255),
         nullable=True,
         comment="Staff avatar URL"
+    )
+    description: Mapped[Optional[str]] = mapped_column(
+        String(500),
+        nullable=True,
+        comment="Staff description for LLM assignment prompts"
     )
     role: Mapped[str] = mapped_column(
         String(20),
@@ -101,27 +111,6 @@ class Staff(Base):
         lazy="select"
     )
     
-    assigned_visitors: Mapped[List["VisitorAssignment"]] = relationship(
-        "VisitorAssignment",
-        foreign_keys="VisitorAssignment.assigned_staff_id",
-        back_populates="assigned_staff",
-        lazy="select"
-    )
-    
-    previous_assignments: Mapped[List["VisitorAssignment"]] = relationship(
-        "VisitorAssignment",
-        foreign_keys="VisitorAssignment.previous_staff_id",
-        back_populates="previous_staff",
-        lazy="select"
-    )
-    
-    created_assignments: Mapped[List["VisitorAssignment"]] = relationship(
-        "VisitorAssignment",
-        foreign_keys="VisitorAssignment.assigned_by_staff_id",
-        back_populates="assigned_by_staff",
-        lazy="select"
-    )
-
     # Constraints
     __table_args__ = (
         CheckConstraint(

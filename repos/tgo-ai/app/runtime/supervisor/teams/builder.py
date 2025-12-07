@@ -152,12 +152,17 @@ class AgnoTeamBuilder:
             ("visitor_info", self._create_visitor_info_tool),
             ("visitor_sentiment", self._create_visitor_sentiment_tool),
             ("visitor_tag", self._create_visitor_tag_tool),
+            ("ui_templates", self._create_ui_template_tools),
         ]
 
         for tool_name, creator in tool_creators:
-            tool = creator(tool_context)
-            if tool is not None:
-                tools.append(tool)
+            result = creator(tool_context)
+            if result is not None:
+                # Handle both single tool and list of tools
+                if isinstance(result, list):
+                    tools.extend(result)
+                else:
+                    tools.append(result)
 
         return tools
 
@@ -195,6 +200,47 @@ class AgnoTeamBuilder:
             return create_visitor_tag_tool(**ctx)
         except Exception as exc:  # noqa: BLE001
             self._logger.warning("Failed to add visitor tag tool", error=str(exc))
+            return None
+
+    def _create_ui_template_tools(self, ctx: Dict[str, Any]) -> Optional[List[Any]]:
+        """Create UI template tools for structured data rendering.
+
+        Args:
+            ctx: Tool context (not used for UI templates but kept for consistency).
+
+        Returns:
+            List of UI template tool functions, or None if creation fails.
+        """
+        try:
+            from app.ui_templates.tools import get_ui_template, render_ui, list_ui_templates
+
+            # Create function wrappers for UI template operations
+            def ui_get_template(template_name: str) -> str:
+                """获取指定 UI 模板的详细格式说明。当需要展示订单、产品、物流等结构化数据时使用。
+
+                Args:
+                    template_name: 模板名称 (order/product/product_list/logistics/price_comparison)
+                """
+                return get_ui_template(template_name)
+
+            def ui_render(template_name: str, data: dict) -> str:
+                """渲染 UI 模板，验证数据格式并返回格式化的 Markdown。
+
+                Args:
+                    template_name: 模板名称
+                    data: 要渲染的数据字典
+                """
+                return render_ui(template_name, data)
+
+            def ui_list_templates() -> str:
+                """列出所有可用的 UI 模板及其简短描述。"""
+                return list_ui_templates()
+
+            self._logger.debug("UI template tools created for team")
+            return [ui_get_template, ui_render, ui_list_templates]
+
+        except Exception as exc:  # noqa: BLE001
+            self._logger.warning("Failed to create UI template tools", error=str(exc))
             return None
 
     def _setup_memory(

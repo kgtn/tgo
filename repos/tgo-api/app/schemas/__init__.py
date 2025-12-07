@@ -20,14 +20,6 @@ from app.schemas.ai import (
     TeamWithDetailsResponse,
     ToggleEnabledRequest,
 )
-from app.schemas.assignment import (
-    AssignmentCreate,
-    AssignmentInDB,
-    AssignmentListParams,
-    AssignmentListResponse,
-    AssignmentResponse,
-    AssignmentUpdate,
-)
 from app.schemas.mcp import (
     BulkInstallRequest,
     CreateCustomToolRequest,
@@ -159,6 +151,18 @@ from app.schemas.tag import (
     TagUpdate,
     VisitorTagCreate,
     VisitorTagResponse,
+)
+from app.schemas.visitor_assignment_rule import (
+    VisitorAssignmentRuleCreate,
+    VisitorAssignmentRuleUpdate,
+    VisitorAssignmentRuleResponse,
+)
+from app.schemas.visitor_assignment_history import (
+    VisitorAssignmentHistoryCreate,
+    VisitorAssignmentHistoryResponse,
+    VisitorAssignmentHistoryDetailResponse,
+    VisitorAssignmentHistoryListParams,
+    VisitorAssignmentHistoryListResponse,
 )
 from app.schemas.visitor import (
     VisitorCreate,
@@ -295,13 +299,6 @@ __all__ = [
     "VisitorListParams",
     "VisitorListResponse",
     "VisitorAvatarUploadResponse",
-    # Assignment schemas
-    "AssignmentCreate",
-    "AssignmentUpdate",
-    "AssignmentInDB",
-    "AssignmentResponse",
-    "AssignmentListParams",
-    "AssignmentListResponse",
     # Tag schemas
     "TagCreate",
     "TagUpdate",
@@ -311,6 +308,16 @@ __all__ = [
     "TagListResponse",
     "VisitorTagCreate",
     "VisitorTagResponse",
+    # Visitor Assignment Rule schemas
+    "VisitorAssignmentRuleCreate",
+    "VisitorAssignmentRuleUpdate",
+    "VisitorAssignmentRuleResponse",
+    # Visitor Assignment History schemas
+    "VisitorAssignmentHistoryCreate",
+    "VisitorAssignmentHistoryResponse",
+    "VisitorAssignmentHistoryDetailResponse",
+    "VisitorAssignmentHistoryListParams",
+    "VisitorAssignmentHistoryListResponse",
     # AI schemas
     "TeamCreateRequest",
     "TeamUpdateRequest",

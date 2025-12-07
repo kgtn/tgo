@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.logging import get_logger
-from app.core.security import get_current_active_user, get_user_language, UserLanguage
+from app.core.security import get_current_active_user, get_user_language, UserLanguage, require_permission
 from app.models import Staff, Tag, Visitor, VisitorTag
 from app.schemas import (
     TagCreate,
@@ -30,13 +30,14 @@ router = APIRouter()
 async def list_tags(
     params: TagListParams = Depends(),
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("tags:list")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> TagListResponse:
     """
     List tags.
     
     Retrieve a paginated list of tags with optional filtering by category and search.
+    Requires tags:list permission.
     """
     logger.info(f"User {current_user.username} listing tags")
     
@@ -79,7 +80,7 @@ async def list_tags(
 async def create_tag(
     tag_data: TagCreate,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("tags:create")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> TagResponse:
     """
@@ -87,6 +88,7 @@ async def create_tag(
     
     Create a new tag for categorization. Tag ID is automatically generated
     as Base64 encoded string from name and category.
+    Requires tags:create permission.
     """
     logger.info(f"User {current_user.username} creating tag: {tag_data.name}")
     
@@ -129,10 +131,10 @@ async def create_tag(
 async def get_tag(
     tag_id: str,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("tags:read")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> TagResponse:
-    """Get tag details."""
+    """Get tag details. Requires tags:read permission."""
     logger.info(f"User {current_user.username} getting tag: {tag_id}")
     
     tag = db.query(Tag).filter(
@@ -156,7 +158,7 @@ async def update_tag(
     tag_id: str,
     tag_data: TagUpdate,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("tags:update")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> TagResponse:
     """
@@ -164,6 +166,7 @@ async def update_tag(
     
     Update tag properties like weight, color, description, and name_zh.
     Name and category cannot be changed as they determine the tag ID.
+    Requires tags:update permission.
     """
     logger.info(f"User {current_user.username} updating tag: {tag_id}")
     
@@ -199,12 +202,13 @@ async def update_tag(
 async def delete_tag(
     tag_id: str,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("tags:delete")),
 ) -> None:
     """
     Delete tag (soft delete).
     
     Soft delete a tag. This also removes all visitor-tag associations.
+    Requires tags:delete permission.
     """
     logger.info(f"User {current_user.username} deleting tag: {tag_id}")
     
@@ -235,12 +239,13 @@ async def delete_tag(
 async def create_visitor_tag(
     visitor_tag_data: VisitorTagCreate,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("tags:create")),
 ) -> VisitorTagResponse:
     """
     Create visitor-tag association.
     
     Associate a tag with a visitor for categorization purposes.
+    Requires tags:create permission.
     """
     logger.info(f"User {current_user.username} creating visitor-tag association")
     
@@ -303,13 +308,13 @@ async def create_visitor_tag(
 async def delete_visitor_tag(
     visitor_tag_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("tags:delete")),
 ) -> None:
     """
     Delete visitor-tag association (hard delete).
 
     Permanently remove the association between a visitor and a tag.
-    This action cannot be undone.
+    This action cannot be undone. Requires tags:delete permission.
     """
     logger.info(f"User {current_user.username} deleting visitor-tag association: {visitor_tag_id}")
 
@@ -339,7 +344,7 @@ async def delete_visitor_tag_by_ids(
     visitor_id: UUID,
     tag_id: str,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("tags:delete")),
 ) -> None:
     """
     Delete visitor-tag association by visitor ID and tag ID (hard delete).
@@ -347,7 +352,7 @@ async def delete_visitor_tag_by_ids(
     Permanently remove the association between a specific visitor and a specific tag.
     This endpoint allows deletion using the visitor_id and tag_id directly,
     without needing to know the visitor_tag association ID.
-    This action cannot be undone.
+    This action cannot be undone. Requires tags:delete permission.
     """
     logger.info(
         f"User {current_user.username} deleting visitor-tag association "

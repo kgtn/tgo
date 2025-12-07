@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, NavLink } from 'react-router-dom';
 import { Settings as SettingsIcon } from 'lucide-react';
-import { FiSettings, FiCpu } from 'react-icons/fi';
+import { FiSettings, FiCpu, FiUsers } from 'react-icons/fi';
 import SettingsSidebar from '@/components/settings/SettingsSidebar';
 
 const SettingsLayout: React.FC = () => {
@@ -10,11 +10,13 @@ const SettingsLayout: React.FC = () => {
 
   const items: Array<{ id: string; label: string }> = [
     { id: 'general', label: t('settings.menu.general', '\u901a\u7528') },
+    { id: 'staff', label: t('settings.menu.staff', '\u4eba\u5de5\u5750\u5e2d') },
     { id: 'providers', label: t('settings.menu.providers', '\u6a21\u578b\u63d0\u4f9b\u5546') },
   ];
 
   const iconMap: Record<string, React.ReactNode> = {
     general: <FiSettings className="w-4 h-4" />,
+    staff: <FiUsers className="w-4 h-4" />,
     providers: <FiCpu className="w-4 h-4" />,
   };
 

@@ -46,6 +46,8 @@ export interface MessagesListProps {
   scrollToSeq?: number | null;
   /** Callback when the component finished scrolling/highlighting */
   onScrolledToSeq?: () => void;
+  /** 发送消息回调（用于 Widget 中的 msg:// 协议） */
+  onSendMessage?: (message: string) => void;
 }
 
 /**
@@ -68,7 +70,8 @@ const MessagesListComponent: React.FC<MessagesListProps> = ({
   onRetry,
   onSuggestionClick,
   scrollToSeq,
-  onScrolledToSeq
+  onScrolledToSeq,
+  onSendMessage
 }) => {
   const { t } = useTranslation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -275,6 +278,24 @@ const MessagesListComponent: React.FC<MessagesListProps> = ({
     };
   }, [scrollToBottom]);
 
+  // Listen for message sent events (e.g., from Widget msg:// actions)
+  // Always scroll to bottom when user sends a message
+  useEffect(() => {
+    const handleMessageSent = () => {
+      if (!messagesContainerRef.current) return;
+      // Use requestAnimationFrame to ensure DOM is updated before scrolling
+      requestAnimationFrame(() => {
+        scrollToBottom(true); // Smooth scroll
+        isUserAtBottomRef.current = true;
+      });
+    };
+
+    window.addEventListener('chat:message-sent', handleMessageSent as EventListener);
+    return () => {
+      window.removeEventListener('chat:message-sent', handleMessageSent as EventListener);
+    };
+  }, [scrollToBottom]);
+
   // Additional failsafe: ensure scroll to bottom on initial load using useLayoutEffect
   // This runs synchronously after all DOM mutations but before browser paint
   useLayoutEffect(() => {
@@ -368,8 +389,8 @@ const MessagesListComponent: React.FC<MessagesListProps> = ({
       }
     }
   }, [hasMoreHistory, hasMoreNewerHistory, isLoadingHistory, isLoadingMore, isLoadingMoreNewer, onLoadMore, onLoadMoreNewer]);
-
   if (isWuKongIMChat) {
+    console.log('combinedMessages--->', combinedMessages);
     return (
       <div
         className="h-full overflow-y-auto p-6 space-y-6"
@@ -432,6 +453,7 @@ const MessagesListComponent: React.FC<MessagesListProps> = ({
                 <ChatMessage
                   message={message}
                   onSuggestionClick={onSuggestionClick}
+                  onSendMessage={onSendMessage}
                 />
               </div>
             ))}
@@ -473,6 +495,7 @@ const arePropsEqual = (prevProps: MessagesListProps, nextProps: MessagesListProp
   if (prevProps.onRetry !== nextProps.onRetry) changes.push('onRetry');
   if (prevProps.onSuggestionClick !== nextProps.onSuggestionClick) changes.push('onSuggestionClick');
   if (prevProps.scrollToSeq !== nextProps.scrollToSeq) changes.push('scrollToSeq');
+  if (prevProps.onSendMessage !== nextProps.onSendMessage) changes.push('onSendMessage');
 
   // Skip re-render when no observable prop changed (shallow reference equality)
   return changes.length === 0;

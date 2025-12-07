@@ -7,7 +7,6 @@ from app.api.v1.endpoints import (
     ai_models,
     ai_teams,
     ai_tools,
-    assignments,
     diagnostics,
     docs,
     email,
@@ -23,6 +22,7 @@ from app.api.v1.endpoints import (
     staff,
     tags,
     visitors,
+    visitor_assignment_rules,
     chat,
     channels,
     search,
@@ -69,9 +69,9 @@ api_router.include_router(
 )
 
 api_router.include_router(
-    assignments.router,
-    prefix="/assignments",
-    tags=["Assignments"]
+    visitor_assignment_rules.router,
+    prefix="/visitor-assignment-rules",
+    tags=["Visitor Assignment Rules"]
 )
 
 api_router.include_router(

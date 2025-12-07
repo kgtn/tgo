@@ -263,7 +263,7 @@ export interface PaginationMetadata {
   limit: number;
   offset: number;
   has_next: boolean;
-  has_previous: boolean;
+  has_prev: boolean;
 }
 
 // Agent Query Parameters
@@ -397,7 +397,7 @@ export interface PaginationMetadata {
   limit: number;
   offset: number;
   has_next: boolean;
-  has_previous: boolean;
+  has_prev: boolean;
 }
 
 // New meta pagination object for project tools API
@@ -1156,7 +1156,7 @@ export interface SearchPagination {
   page_size: number;
   total: number;
   has_next: boolean;
-  has_previous: boolean;
+  has_prev: boolean;
 }
 
 export interface MessageSearchResult {
@@ -1198,3 +1198,6 @@ export interface UnifiedSearchResponse {
   visitor_pagination: SearchPagination | null;
   message_pagination: SearchPagination | null;
 }
+
+// UI Widget types
+export * from './ui-widget';

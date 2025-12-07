@@ -56,6 +56,7 @@ export interface StaffCreateRequest {
   role?: 'user' | 'agent';
   status?: 'online' | 'offline' | 'busy';
   agent_id?: string | null;
+  description?: string | null;
 }
 
 export interface StaffResponse {
@@ -64,9 +65,10 @@ export interface StaffResponse {
   username: string;
   nickname: string | null;
   avatar_url: string | null;
-  role: 'user' | 'agent';
+  role: 'user' | 'admin' | 'agent';
   status: 'online' | 'offline' | 'busy';
   agent_id: string | null;
+  description: string | null;
   created_at: string;
   updated_at: string;
 }

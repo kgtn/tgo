@@ -717,7 +717,7 @@
           "Staff"
         ],
         "summary": "List Staff",
-        "description": "List staff members.\n\nRetrieve a paginated list of staff members with optional filtering.",
+        "description": "List staff members.\n\nRetrieve a paginated list of staff members with optional filtering.\nRequires staff:list permission.",
         "operationId": "list_staff_v1_staff_get",
         "security": [
           {
@@ -836,7 +836,7 @@
           "Staff"
         ],
         "summary": "Create Staff",
-        "description": "Create staff member.\n\nCreate a new staff member or AI agent. For AI agents, validates agent_id\nwith AI Service and publishes agent creation event.",
+        "description": "Create staff member.\n\nCreate a new staff member. Requires staff:create permission (admin only by default).\nOnly staff members with 'user' role can be created through this endpoint.",
         "operationId": "create_staff_v1_staff_post",
         "security": [
           {
@@ -883,7 +883,7 @@
           "Staff"
         ],
         "summary": "Get Staff",
-        "description": "Get staff member details.",
+        "description": "Get staff member details. Requires staff:read permission.",
         "operationId": "get_staff_v1_staff__staff_id__get",
         "security": [
           {
@@ -930,7 +930,7 @@
           "Staff"
         ],
         "summary": "Update Staff",
-        "description": "Update staff member.\n\nUpdate staff member information. For AI agents, validates agent_id changes\nwith AI Service and publishes agent update event.",
+        "description": "Update staff member.\n\nUpdate staff member information. Requires staff:update permission.",
         "operationId": "update_staff_v1_staff__staff_id__patch",
         "security": [
           {
@@ -987,7 +987,7 @@
           "Staff"
         ],
         "summary": "Delete Staff",
-        "description": "Delete staff member (soft delete).\n\nSoft delete a staff member. For AI agents, publishes agent deletion event\nfor AI Service cleanup.",
+        "description": "Delete staff member (soft delete).\n\nSoft delete a staff member. Requires staff:delete permission.",
         "operationId": "delete_staff_v1_staff__staff_id__delete",
         "security": [
           {
@@ -1299,7 +1299,7 @@
           "Visitors"
         ],
         "summary": "List Visitors",
-        "description": "List visitors.\n\nRetrieve a paginated list of visitors with optional filtering by platform,\nonline status, and search query.",
+        "description": "List visitors.\n\nRetrieve a paginated list of visitors with optional filtering by platform,\nonline status, and search query. Requires visitors:list permission.",
         "operationId": "list_visitors_v1_visitors_get",
         "security": [
           {
@@ -1421,7 +1421,7 @@
           "Visitors"
         ],
         "summary": "Create Visitor",
-        "description": "Create visitor.\n\nCreate a new visitor record. Requires either platform_id or platform_type.\nIf platform_type is provided, uses the default platform of that type.",
+        "description": "Create visitor.\n\nCreate a new visitor record. Requires either platform_id or platform_type.\nIf platform_type is provided, uses the default platform of that type.\nRequires visitors:create permission.",
         "operationId": "create_visitor_v1_visitors_post",
         "security": [
           {
@@ -1606,7 +1606,7 @@
           "Visitors"
         ],
         "summary": "Get Visitor By Channel",
-        "description": "Get visitor details by channel identifiers.\n\nLogic:\n- channel_type == CHANNEL_TYPE_CUSTOMER_SERVICE (251): channel_id format is \"{visitor_uuid}-vtr\"\n- channel_type == 1: channel_id is the visitor_id directly\n- otherwise: 400 unsupported channel type",
+        "description": "Get visitor details by channel identifiers. Requires visitors:read permission.\n\nLogic:\n- channel_type == CHANNEL_TYPE_CUSTOMER_SERVICE (251): channel_id format is \"{visitor_uuid}-vtr\"\n- channel_type == 1: channel_id is the visitor_id directly\n- otherwise: 400 unsupported channel type",
         "operationId": "get_visitor_by_channel_v1_visitors_by_channel_get",
         "security": [
           {
@@ -1739,7 +1739,7 @@
           "Visitors"
         ],
         "summary": "Get Visitor",
-        "description": "Get visitor details.",
+        "description": "Get visitor details. Requires visitors:read permission.",
         "operationId": "get_visitor_v1_visitors__visitor_id__get",
         "security": [
           {
@@ -1801,7 +1801,7 @@
           "Visitors"
         ],
         "summary": "Update Visitor",
-        "description": "Update visitor.\n\nUpdate visitor information including contact details and activity status.",
+        "description": "Update visitor.\n\nUpdate visitor information including contact details and activity status.\nRequires visitors:update permission.",
         "operationId": "update_visitor_v1_visitors__visitor_id__patch",
         "security": [
           {
@@ -1874,7 +1874,7 @@
           "Visitors"
         ],
         "summary": "Delete Visitor",
-        "description": "Delete visitor (soft delete).\n\nSoft delete a visitor record. This also removes all associated assignments and tags.",
+        "description": "Delete visitor (soft delete).\n\nSoft delete a visitor record. This also removes all associated assignments and tags.\nRequires visitors:delete permission.",
         "operationId": "delete_visitor_v1_visitors__visitor_id__delete",
         "security": [
           {
@@ -1916,7 +1916,7 @@
           "Visitors"
         ],
         "summary": "Set Visitor Attributes",
-        "description": "Set visitor profile attributes including custom fields.",
+        "description": "Set visitor profile attributes including custom fields. Requires visitors:update permission.",
         "operationId": "set_visitor_attributes_v1_visitors__visitor_id__attributes_put",
         "security": [
           {
@@ -1991,7 +1991,7 @@
           "Visitors"
         ],
         "summary": "Enable Ai For Visitor",
-        "description": "Enable AI for a visitor (set ai_disabled=False).",
+        "description": "Enable AI for a visitor (set ai_disabled=False). Requires visitors:update permission.",
         "operationId": "enable_ai_for_visitor_v1_visitors__visitor_id__enable_ai_post",
         "security": [
           {
@@ -2056,7 +2056,7 @@
           "Visitors"
         ],
         "summary": "Disable Ai For Visitor",
-        "description": "Disable AI for a visitor (set ai_disabled=True).",
+        "description": "Disable AI for a visitor (set ai_disabled=True). Requires visitors:update permission.",
         "operationId": "disable_ai_for_visitor_v1_visitors__visitor_id__disable_ai_post",
         "security": [
           {
@@ -2284,143 +2284,56 @@
         }
       }
     },
-    "/v1/assignments": {
+    "/v1/visitor-assignment-rules": {
       "get": {
         "tags": [
-          "Assignments"
+          "Visitor Assignment Rules"
         ],
-        "summary": "List Assignments",
-        "description": "List assignments.\n\nRetrieve a paginated list of visitor assignments with optional filtering.",
-        "operationId": "list_assignments_v1_assignments_get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "visitor_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Visitor Id"
-            }
-          },
-          {
-            "name": "assigned_staff_id",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string",
-                  "format": "uuid"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Assigned Staff Id"
-            }
-          },
-          {
-            "name": "assignment_type",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "$ref": "#/components/schemas/AssignmentType"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Assignment Type"
-            }
-          },
-          {
-            "name": "limit",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 20,
-              "title": "Limit"
-            }
-          },
-          {
-            "name": "offset",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "default": 0,
-              "title": "Offset"
-            }
-          }
-        ],
+        "summary": "Get Visitor Assignment Rule",
+        "description": "Get visitor assignment rule for current project.\n\nReturns the assignment rule configuration for the current project.\nIf no rule exists, returns a default configuration with is_enabled=False.\nThe effective_prompt field contains the actual prompt to use (custom or system default).\nRequires visitor_assignment_rules:read permission.",
+        "operationId": "get_visitor_assignment_rule_v1_visitor_assignment_rules_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AssignmentListResponse"
+                  "$ref": "#/components/schemas/VisitorAssignmentRuleResponse"
                 }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Assignments"
-        ],
-        "summary": "Create Assignment",
-        "description": "Create assignment.\n\nCreate a new visitor assignment. Validates visitor and staff existence,\nand publishes assignment event for AI Service coordination.",
-        "operationId": "create_assignment_v1_assignments_post",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssignmentCreate"
               }
             }
           }
         },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Visitor Assignment Rules"
+        ],
+        "summary": "Update Visitor Assignment Rule",
+        "description": "Update or create visitor assignment rule for current project.\n\nThis endpoint performs an upsert operation:\n- If a rule exists for the project, it updates the existing rule\n- If no rule exists, it creates a new one\n\nOnly provided fields will be updated (PATCH-like behavior).\nRequires visitor_assignment_rules:update permission.",
+        "operationId": "update_visitor_assignment_rule_v1_visitor_assignment_rules_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisitorAssignmentRuleUpdate"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
-          "201": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AssignmentResponse"
+                  "$ref": "#/components/schemas/VisitorAssignmentRuleResponse"
                 }
               }
             }
@@ -2435,113 +2348,41 @@
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
       }
     },
-    "/v1/assignments/{assignment_id}": {
+    "/v1/visitor-assignment-rules/default-prompt": {
       "get": {
         "tags": [
-          "Assignments"
+          "Visitor Assignment Rules"
         ],
-        "summary": "Get Assignment",
-        "description": "Get assignment details.",
-        "operationId": "get_assignment_v1_assignments__assignment_id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "assignment_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Assignment Id"
-            }
-          }
-        ],
+        "summary": "Get Default Prompt",
+        "description": "Get the system default prompt for visitor assignment.\n\nThis endpoint returns the default prompt that will be used when\nno custom prompt is configured for the project.\nRequires visitor_assignment_rules:read permission.",
+        "operationId": "get_default_prompt_v1_visitor_assignment_rules_default_prompt_get",
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AssignmentResponse"
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Default Prompt V1 Visitor Assignment Rules Default Prompt Get"
                 }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "Assignments"
-        ],
-        "summary": "Update Assignment",
-        "description": "Update assignment.\n\nUpdate assignment notes or other mutable fields.",
-        "operationId": "update_assignment_v1_assignments__assignment_id__patch",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "assignment_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "title": "Assignment Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AssignmentUpdate"
               }
             }
           }
         },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AssignmentResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
+        "security": [
+          {
+            "HTTPBearer": []
           }
-        }
+        ]
       }
     },
     "/v1/tags": {
@@ -2550,7 +2391,7 @@
           "Tags"
         ],
         "summary": "List Tags",
-        "description": "List tags.\n\nRetrieve a paginated list of tags with optional filtering by category and search.",
+        "description": "List tags.\n\nRetrieve a paginated list of tags with optional filtering by category and search.\nRequires tags:list permission.",
         "operationId": "list_tags_v1_tags_get",
         "security": [
           {
@@ -2655,7 +2496,7 @@
           "Tags"
         ],
         "summary": "Create Tag",
-        "description": "Create tag.\n\nCreate a new tag for categorization. Tag ID is automatically generated\nas Base64 encoded string from name and category.",
+        "description": "Create tag.\n\nCreate a new tag for categorization. Tag ID is automatically generated\nas Base64 encoded string from name and category.\nRequires tags:create permission.",
         "operationId": "create_tag_v1_tags_post",
         "security": [
           {
@@ -2720,7 +2561,7 @@
           "Tags"
         ],
         "summary": "Get Tag",
-        "description": "Get tag details.",
+        "description": "Get tag details. Requires tags:read permission.",
         "operationId": "get_tag_v1_tags__tag_id__get",
         "security": [
           {
@@ -2782,7 +2623,7 @@
           "Tags"
         ],
         "summary": "Update Tag",
-        "description": "Update tag.\n\nUpdate tag properties like weight, color, description, and name_zh.\nName and category cannot be changed as they determine the tag ID.",
+        "description": "Update tag.\n\nUpdate tag properties like weight, color, description, and name_zh.\nName and category cannot be changed as they determine the tag ID.\nRequires tags:update permission.",
         "operationId": "update_tag_v1_tags__tag_id__patch",
         "security": [
           {
@@ -2854,7 +2695,7 @@
           "Tags"
         ],
         "summary": "Delete Tag",
-        "description": "Delete tag (soft delete).\n\nSoft delete a tag. This also removes all visitor-tag associations.",
+        "description": "Delete tag (soft delete).\n\nSoft delete a tag. This also removes all visitor-tag associations.\nRequires tags:delete permission.",
         "operationId": "delete_tag_v1_tags__tag_id__delete",
         "security": [
           {
@@ -2895,7 +2736,7 @@
           "Tags"
         ],
         "summary": "Create Visitor Tag",
-        "description": "Create visitor-tag association.\n\nAssociate a tag with a visitor for categorization purposes.",
+        "description": "Create visitor-tag association.\n\nAssociate a tag with a visitor for categorization purposes.\nRequires tags:create permission.",
         "operationId": "create_visitor_tag_v1_tags_visitor_tags_post",
         "requestBody": {
           "content": {
@@ -2942,7 +2783,7 @@
           "Tags"
         ],
         "summary": "Delete Visitor Tag",
-        "description": "Delete visitor-tag association (hard delete).\n\nPermanently remove the association between a visitor and a tag.\nThis action cannot be undone.",
+        "description": "Delete visitor-tag association (hard delete).\n\nPermanently remove the association between a visitor and a tag.\nThis action cannot be undone. Requires tags:delete permission.",
         "operationId": "delete_visitor_tag_v1_tags_visitor_tags__visitor_tag_id__delete",
         "security": [
           {
@@ -2984,7 +2825,7 @@
           "Tags"
         ],
         "summary": "Delete Visitor Tag By Ids",
-        "description": "Delete visitor-tag association by visitor ID and tag ID (hard delete).\n\nPermanently remove the association between a specific visitor and a specific tag.\nThis endpoint allows deletion using the visitor_id and tag_id directly,\nwithout needing to know the visitor_tag association ID.\nThis action cannot be undone.",
+        "description": "Delete visitor-tag association by visitor ID and tag ID (hard delete).\n\nPermanently remove the association between a specific visitor and a specific tag.\nThis endpoint allows deletion using the visitor_id and tag_id directly,\nwithout needing to know the visitor_tag association ID.\nThis action cannot be undone. Requires tags:delete permission.",
         "operationId": "delete_visitor_tag_by_ids_v1_tags_visitors__visitor_id__tags__tag_id__delete",
         "security": [
           {
@@ -3035,7 +2876,7 @@
           "Platforms"
         ],
         "summary": "List Platform Types",
-        "description": "List available platform type definitions.",
+        "description": "List available platform type definitions. Requires platforms:list permission.",
         "operationId": "list_platform_types_v1_platforms_types_get",
         "security": [
           {
@@ -3088,7 +2929,7 @@
           "Platforms"
         ],
         "summary": "List Platforms",
-        "description": "List platforms.\n\nRetrieve a paginated list of communication platforms with optional filtering.",
+        "description": "List platforms.\n\nRetrieve a paginated list of communication platforms with optional filtering.\nRequires platforms:list permission.",
         "operationId": "list_platforms_v1_platforms_get",
         "security": [
           {
@@ -3187,7 +3028,7 @@
           "Platforms"
         ],
         "summary": "Create Platform",
-        "description": "Create platform.\n\nCreate a new communication platform configuration.",
+        "description": "Create platform.\n\nCreate a new communication platform configuration.\nRequires platforms:create permission.",
         "operationId": "create_platform_v1_platforms_post",
         "security": [
           {
@@ -3322,7 +3163,7 @@
           "Platforms"
         ],
         "summary": "Get Platform",
-        "description": "Get platform details.",
+        "description": "Get platform details. Requires platforms:read permission.",
         "operationId": "get_platform_v1_platforms__platform_id__get",
         "security": [
           {
@@ -3379,7 +3220,7 @@
           "Platforms"
         ],
         "summary": "Update Platform",
-        "description": "Update platform.\n\nUpdate platform configuration and settings.",
+        "description": "Update platform.\n\nUpdate platform configuration and settings.\nRequires platforms:update permission.",
         "operationId": "update_platform_v1_platforms__platform_id__patch",
         "security": [
           {
@@ -3446,7 +3287,7 @@
           "Platforms"
         ],
         "summary": "Delete Platform",
-        "description": "Delete platform (soft delete).\n\nSoft delete a platform. This also affects all visitors associated with this platform.",
+        "description": "Delete platform (soft delete).\n\nSoft delete a platform. This also affects all visitors associated with this platform.\nRequires platforms:delete permission.",
         "operationId": "delete_platform_v1_platforms__platform_id__delete",
         "security": [
           {
@@ -3488,7 +3329,7 @@
           "Platforms"
         ],
         "summary": "Regenerate Platform Api Key",
-        "description": "Regenerate the API key for a platform.",
+        "description": "Regenerate the API key for a platform. Requires platforms:update permission.",
         "operationId": "regenerate_platform_api_key_v1_platforms__platform_id__regenerate_api_key_post",
         "security": [
           {
@@ -3537,7 +3378,7 @@
           "Platforms"
         ],
         "summary": "Enable Platform",
-        "description": "Enable a platform (set is_active=True).",
+        "description": "Enable a platform (set is_active=True). Requires platforms:update permission.",
         "operationId": "enable_platform_v1_platforms__platform_id__enable_post",
         "security": [
           {
@@ -3596,7 +3437,7 @@
           "Platforms"
         ],
         "summary": "Disable Platform",
-        "description": "Disable a platform (set is_active=False).",
+        "description": "Disable a platform (set is_active=False). Requires platforms:update permission.",
         "operationId": "disable_platform_v1_platforms__platform_id__disable_post",
         "security": [
           {
@@ -3655,7 +3496,7 @@
           "Platforms"
         ],
         "summary": "Enable Ai For Platform",
-        "description": "Enable AI for a platform (set ai_disabled=False).",
+        "description": "Enable AI for a platform (set ai_disabled=False). Requires platforms:update permission.",
         "operationId": "enable_ai_for_platform_v1_platforms__platform_id__enable_ai_post",
         "security": [
           {
@@ -3714,7 +3555,7 @@
           "Platforms"
         ],
         "summary": "Disable Ai For Platform",
-        "description": "Disable AI for a platform (set ai_disabled=True).",
+        "description": "Disable AI for a platform (set ai_disabled=True). Requires platforms:update permission.",
         "operationId": "disable_ai_for_platform_v1_platforms__platform_id__disable_ai_post",
         "security": [
           {
@@ -3773,7 +3614,7 @@
           "Platforms"
         ],
         "summary": "Upload Platform Logo",
-        "description": "Upload or replace the logo image for a platform (staff-only).\n\n- Auth: JWT staff via get_current_active_user\n- File: multipart/form-data field 'file'\n- Validates MIME type and file size; stores under PLATFORM_LOGO_UPLOAD_DIR/{platform_id}/",
+        "description": "Upload or replace the logo image for a platform. Requires platforms:update permission.\n\n- Auth: JWT staff via get_current_active_user\n- File: multipart/form-data field 'file'\n- Validates MIME type and file size; stores under PLATFORM_LOGO_UPLOAD_DIR/{platform_id}/",
         "operationId": "upload_platform_logo_v1_platforms__platform_id__logo_post",
         "security": [
           {
@@ -11804,238 +11645,6 @@
         "title": "AgentWithDetailsResponse",
         "description": "Schema for agent response with additional details."
       },
-      "AssignmentCreate": {
-        "properties": {
-          "visitor_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Visitor Id",
-            "description": "Visitor to assign"
-          },
-          "assigned_staff_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assigned Staff Id",
-            "description": "Staff member to assign (null for unassign)"
-          },
-          "previous_staff_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Previous Staff Id",
-            "description": "Previously assigned staff member (for reassign)"
-          },
-          "assigned_by_staff_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assigned By Staff Id",
-            "description": "Staff member making the assignment"
-          },
-          "assignment_type": {
-            "$ref": "#/components/schemas/AssignmentType",
-            "description": "Type of assignment operation"
-          },
-          "notes": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Notes",
-            "description": "Assignment notes"
-          }
-        },
-        "type": "object",
-        "required": [
-          "visitor_id",
-          "assignment_type"
-        ],
-        "title": "AssignmentCreate",
-        "description": "Schema for creating an assignment."
-      },
-      "AssignmentListResponse": {
-        "properties": {
-          "data": {
-            "items": {
-              "$ref": "#/components/schemas/AssignmentResponse"
-            },
-            "type": "array",
-            "title": "Data",
-            "description": "List of assignments"
-          },
-          "pagination": {
-            "$ref": "#/components/schemas/PaginationMetadata",
-            "description": "Pagination metadata"
-          }
-        },
-        "type": "object",
-        "required": [
-          "data",
-          "pagination"
-        ],
-        "title": "AssignmentListResponse",
-        "description": "Schema for assignment list response."
-      },
-      "AssignmentResponse": {
-        "properties": {
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At",
-            "description": "Creation timestamp"
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Updated At",
-            "description": "Last update timestamp"
-          },
-          "visitor_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Visitor Id",
-            "description": "Visitor to assign"
-          },
-          "assigned_staff_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assigned Staff Id",
-            "description": "Staff member to assign (null for unassign)"
-          },
-          "previous_staff_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Previous Staff Id",
-            "description": "Previously assigned staff member (for reassign)"
-          },
-          "assigned_by_staff_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assigned By Staff Id",
-            "description": "Staff member making the assignment"
-          },
-          "assignment_type": {
-            "$ref": "#/components/schemas/AssignmentType",
-            "description": "Type of assignment operation"
-          },
-          "notes": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Notes",
-            "description": "Assignment notes"
-          },
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id",
-            "description": "Assignment ID"
-          },
-          "project_id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Project Id",
-            "description": "Associated project ID"
-          },
-          "timestamp": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Timestamp",
-            "description": "When assignment was made"
-          }
-        },
-        "type": "object",
-        "required": [
-          "created_at",
-          "updated_at",
-          "visitor_id",
-          "assignment_type",
-          "id",
-          "project_id",
-          "timestamp"
-        ],
-        "title": "AssignmentResponse",
-        "description": "Schema for assignment response."
-      },
-      "AssignmentType": {
-        "type": "string",
-        "enum": [
-          "assign",
-          "reassign",
-          "unassign",
-          "auto_assign"
-        ],
-        "title": "AssignmentType",
-        "description": "Assignment type enumeration."
-      },
-      "AssignmentUpdate": {
-        "properties": {
-          "notes": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Notes",
-            "description": "Updated assignment notes"
-          }
-        },
-        "type": "object",
-        "title": "AssignmentUpdate",
-        "description": "Schema for updating an assignment."
-      },
       "BatchFileUploadResponse": {
         "properties": {
           "summary": {
@@ -17035,6 +16644,19 @@
             "title": "Avatar Url",
             "description": "Staff avatar URL"
           },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Staff description for LLM assignment prompts"
+          },
           "role": {
             "$ref": "#/components/schemas/StaffRole",
             "description": "Staff role: user or agent",
@@ -17171,6 +16793,18 @@
             ],
             "title": "Avatar Url",
             "description": "Staff avatar URL"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Staff description for LLM assignment prompts"
           },
           "role": {
             "$ref": "#/components/schemas/StaffRole",
@@ -17414,6 +17048,19 @@
             ],
             "title": "Avatar Url",
             "description": "Updated avatar URL"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Updated description for LLM assignment prompts"
           },
           "role": {
             "anyOf": [
@@ -19103,6 +18750,149 @@
         ],
         "title": "VisitorActivityType",
         "description": "Supported visitor activity types."
+      },
+      "VisitorAssignmentRuleResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "Rule ID"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id",
+            "description": "Associated project ID"
+          },
+          "ai_provider_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Provider Id",
+            "description": "AI provider ID"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Model name"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt",
+            "description": "Custom prompt"
+          },
+          "effective_prompt": {
+            "type": "string",
+            "title": "Effective Prompt",
+            "description": "Effective prompt (custom or default)"
+          },
+          "is_enabled": {
+            "type": "boolean",
+            "title": "Is Enabled",
+            "description": "Whether enabled"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "effective_prompt",
+          "is_enabled",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "VisitorAssignmentRuleResponse",
+        "description": "Schema for visitor assignment rule response."
+      },
+      "VisitorAssignmentRuleUpdate": {
+        "properties": {
+          "ai_provider_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Provider Id",
+            "description": "Updated AI provider ID"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model",
+            "description": "Updated model name"
+          },
+          "prompt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt",
+            "description": "Updated prompt for assignment analysis"
+          },
+          "is_enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Enabled",
+            "description": "Updated enabled status"
+          }
+        },
+        "type": "object",
+        "title": "VisitorAssignmentRuleUpdate",
+        "description": "Schema for updating a visitor assignment rule."
       },
       "VisitorAttributesUpdate": {
         "properties": {

@@ -1,6 +1,5 @@
 """SQLAlchemy ORM models."""
 
-from app.models.assignment import AssignmentType, VisitorAssignment
 from app.models.platform import Platform, PlatformType, PlatformTypeDefinition
 from app.models.project import Project
 from app.models.system_setup import SystemSetup
@@ -20,6 +19,9 @@ from app.models.ai_provider import AIProvider
 from app.models.ai_model import AIModel
 from app.models.project_ai_config import ProjectAIConfig
 from app.models.project_onboarding import ProjectOnboardingProgress
+from app.models.permission import Permission, RolePermission, ProjectRolePermission
+from app.models.visitor_assignment_rule import VisitorAssignmentRule, DEFAULT_ASSIGNMENT_PROMPT
+from app.models.visitor_assignment_history import VisitorAssignmentHistory, AssignmentSource
 
 __all__ = [
     # Models
@@ -28,7 +30,6 @@ __all__ = [
     "PlatformTypeDefinition",
     "Staff",
     "Visitor",
-    "VisitorAssignment",
     "VisitorAIProfile",
     "VisitorAIInsight",
     "VisitorSystemInfo",
@@ -44,10 +45,16 @@ __all__ = [
     "ProjectAIConfig",
     "ProjectOnboardingProgress",
     "SystemSetup",
+    "Permission",
+    "RolePermission",
+    "ProjectRolePermission",
+    "VisitorAssignmentRule",
+    "DEFAULT_ASSIGNMENT_PROMPT",
+    "VisitorAssignmentHistory",
     # Enums
     "PlatformType",
     "StaffRole",
     "StaffStatus",
-    "AssignmentType",
+    "AssignmentSource",
     "TagCategory",
 ]

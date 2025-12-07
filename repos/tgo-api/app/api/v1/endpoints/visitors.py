@@ -33,7 +33,7 @@ from app.utils.encoding import (
 
 from app.core.database import get_db
 from app.core.logging import get_logger
-from app.core.security import get_current_active_user, get_user_language, UserLanguage
+from app.core.security import get_current_active_user, get_user_language, UserLanguage, require_permission
 from app.models import (
     Platform,
     Staff,
@@ -515,14 +515,14 @@ async def list_visitors(
     request: Request,
     params: VisitorListParams = Depends(),
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("visitors:list")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> VisitorListResponse:
     """
     List visitors.
 
     Retrieve a paginated list of visitors with optional filtering by platform,
-    online status, and search query.
+    online status, and search query. Requires visitors:list permission.
     """
     logger.info(f"User {current_user.username} listing visitors")
 
@@ -565,7 +565,7 @@ async def list_visitors(
             "limit": params.limit,
             "offset": params.offset,
             "has_next": params.offset + params.limit < total,
-            "has_previous": params.offset > 0,
+            "has_prev": params.offset > 0,
         }
     )
 
@@ -575,7 +575,7 @@ async def create_visitor(
     request: Request,
     visitor_data: VisitorCreate,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("visitors:create")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> VisitorResponse:
     """
@@ -583,6 +583,7 @@ async def create_visitor(
 
     Create a new visitor record. Requires either platform_id or platform_type.
     If platform_type is provided, uses the default platform of that type.
+    Requires visitors:create permission.
     """
     logger.info(f"User {current_user.username} creating visitor: {visitor_data.platform_open_id}")
 
@@ -958,10 +959,10 @@ async def get_visitor_by_channel(
     channel_id: str,
     channel_type: int,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("visitors:read")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> VisitorResponse:
-    """Get visitor details by channel identifiers.
+    """Get visitor details by channel identifiers. Requires visitors:read permission.
 
     Logic:
     - channel_type == CHANNEL_TYPE_CUSTOMER_SERVICE (251): channel_id format is "{visitor_uuid}-vtr"
@@ -1040,10 +1041,10 @@ async def get_visitor(
     request: Request,
     visitor_id: str,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("visitors:read")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> VisitorResponse:
-    """Get visitor details."""
+    """Get visitor details. Requires visitors:read permission."""
     logger.info(f"User {current_user.username} getting visitor: {visitor_id}")
 
     # Try to parse visitor_id as UUID for database query
@@ -1196,10 +1197,10 @@ async def set_visitor_attributes(
     visitor_id: UUID,
     attributes: VisitorAttributesUpdate,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("visitors:update")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> VisitorResponse:
-    """Set visitor profile attributes including custom fields."""
+    """Set visitor profile attributes including custom fields. Requires visitors:update permission."""
     logger.info(f"User {current_user.username} setting attributes for visitor: {visitor_id}")
 
     visitor_query = db.query(Visitor).filter(
@@ -1306,13 +1307,14 @@ async def update_visitor(
     visitor_id: UUID,
     visitor_data: VisitorUpdate,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("visitors:update")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> VisitorResponse:
     """
     Update visitor.
 
     Update visitor information including contact details and activity status.
+    Requires visitors:update permission.
     """
     logger.info(f"User {current_user.username} updating visitor: {visitor_id}")
 
@@ -1359,10 +1361,10 @@ async def enable_ai_for_visitor(
     request: Request,
     visitor_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("visitors:update")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> VisitorResponse:
-    """Enable AI for a visitor (set ai_disabled=False)."""
+    """Enable AI for a visitor (set ai_disabled=False). Requires visitors:update permission."""
     logger.info("User %s enabling AI for visitor %s", current_user.username, str(visitor_id))
 
     visitor = (
@@ -1396,10 +1398,10 @@ async def disable_ai_for_visitor(
     request: Request,
     visitor_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("visitors:update")),
     user_language: UserLanguage = Depends(get_user_language),
 ) -> VisitorResponse:
-    """Disable AI for a visitor (set ai_disabled=True)."""
+    """Disable AI for a visitor (set ai_disabled=True). Requires visitors:update permission."""
     logger.info("User %s disabling AI for visitor %s", current_user.username, str(visitor_id))
 
     visitor = (
@@ -1432,12 +1434,13 @@ async def disable_ai_for_visitor(
 async def delete_visitor(
     visitor_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("visitors:delete")),
 ) -> None:
     """
     Delete visitor (soft delete).
 
     Soft delete a visitor record. This also removes all associated assignments and tags.
+    Requires visitors:delete permission.
     """
     logger.info(f"User {current_user.username} deleting visitor: {visitor_id}")
 

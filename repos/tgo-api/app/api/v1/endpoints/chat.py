@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.v1.endpoints.visitors import _create_visitor_with_channel
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import get_current_active_user, verify_token
+from app.core.security import get_current_active_user, verify_token, require_permission
 from app.models import ChannelMember, ChatFile, Platform, Staff, Visitor
 from app.schemas import ChatFileUploadResponse, StaffSendPlatformMessageRequest
 from app.schemas.chat import (
@@ -664,9 +664,9 @@ async def chat_completion(req: ChatCompletionRequest, db: Session = Depends(get_
 async def staff_send_platform_message(
     req: StaffSendPlatformMessageRequest,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("chat:send")),
 ) -> Response:
-    """Send message via platform service."""
+    """Send message via platform service. Requires chat:send permission."""
     if req.channel_type != CHANNEL_TYPE_CUSTOMER_SERVICE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1163,9 +1163,9 @@ async def chat_completion_openai_compatible(
 async def staff_team_chat(
     req: StaffTeamChatRequest,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("chat:send")),
 ) -> StaffTeamChatResponse:
-    """Staff chat with AI team or agent.
+    """Staff chat with AI team or agent. Requires chat:send permission.
 
     - Auth: JWT token (staff authentication)
     - Behavior: Publishes message to Kafka

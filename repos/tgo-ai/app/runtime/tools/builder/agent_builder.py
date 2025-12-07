@@ -39,6 +39,9 @@ UNEDITABLE_SYSTEM_PROMPT = (
 
 DEFAULT_SYSTEM_PROMPT = "You are a helpful assistant that has access to a variety of tools."
 
+# Flag to control UI template injection (can be configured per project/agent)
+UI_TEMPLATES_ENABLED = True
+
 
 class AgentBuilder:
     """Constructs Agno agents with optional RAG and MCP tooling."""
@@ -68,8 +71,15 @@ class AgentBuilder:
             request.user_id,
             internal_agent=internal_agent,
         )
+
+        # Add UI template tools if enabled
+        enable_ui_templates = getattr(config, 'enable_ui_templates', True) and UI_TEMPLATES_ENABLED
+        if enable_ui_templates:
+            ui_tools = self._build_ui_template_tools()
+            tools.extend(ui_tools)
+
         model = self._initialize_model(config)
-        instructions = self._compose_system_prompt(config.system_prompt)
+        instructions = self._compose_system_prompt(config.system_prompt, enable_ui_templates)
         enable_memory = request.enable_memory or bool(config.enable_memory)
         self._logger.debug(
             "Creating agent",
@@ -134,8 +144,35 @@ class AgentBuilder:
 
         return merged
 
-    def _compose_system_prompt(self, configured_prompt: Optional[str]) -> str:
+    def _compose_system_prompt(
+        self,
+        configured_prompt: Optional[str],
+        enable_ui_templates: bool = True,
+    ) -> str:
+        """Compose the final system prompt with optional UI template catalog.
+
+        Args:
+            configured_prompt: The base system prompt from configuration.
+            enable_ui_templates: Whether to inject UI template catalog.
+
+        Returns:
+            Composed system prompt string.
+        """
         prompt = configured_prompt or DEFAULT_SYSTEM_PROMPT
+
+        # Inject UI template catalog if enabled
+        if enable_ui_templates and UI_TEMPLATES_ENABLED:
+            try:
+                from app.ui_templates import generate_template_catalog
+                ui_catalog = generate_template_catalog()
+                if ui_catalog:
+                    prompt = f"{prompt}\n\n{ui_catalog}"
+            except Exception as exc:  # noqa: BLE001
+                self._logger.warning(
+                    "Failed to inject UI template catalog",
+                    error=str(exc),
+                )
+
         return f"{prompt}{UNEDITABLE_SYSTEM_PROMPT}"
 
     def resolve_model_instance(self, config: Optional[AgentConfig] = None) -> Any:
@@ -199,6 +236,53 @@ class AgentBuilder:
                 )
 
         return tools
+
+    def _build_ui_template_tools(self) -> List[Any]:
+        """Build UI template tools for structured data rendering.
+
+        Returns:
+            List of UI template tool functions.
+        """
+        try:
+            from app.ui_templates.tools import get_ui_template, render_ui, list_ui_templates
+
+            # Create function tools for the UI template operations
+            tools = []
+
+            # We use simple function wrappers that can be called by the LLM
+            def ui_get_template(template_name: str) -> str:
+                """获取指定 UI 模板的详细格式说明。当需要展示订单、产品、物流等结构化数据时使用。
+
+                Args:
+                    template_name: 模板名称 (order/product/product_list/logistics/price_comparison)
+                """
+                return get_ui_template(template_name)
+
+            def ui_render(template_name: str, data: dict) -> str:
+                """渲染 UI 模板，验证数据格式并返回格式化的 Markdown。
+
+                Args:
+                    template_name: 模板名称
+                    data: 要渲染的数据字典
+                """
+                return render_ui(template_name, data)
+
+            def ui_list_templates() -> str:
+                """列出所有可用的 UI 模板及其简短描述。"""
+                return list_ui_templates()
+
+            tools.extend([ui_get_template, ui_render, ui_list_templates])
+
+            self._logger.debug("UI template tools added", tool_count=len(tools))
+            return tools
+
+        except Exception as exc:  # noqa: BLE001
+            self._logger.warning(
+                "Failed to build UI template tools",
+                error=str(exc),
+                error_type=type(exc).__name__,
+            )
+            return []
 
     async def _build_rag_tools(self, rag_config: Optional[RagConfig]) -> List[Any]:
         if not rag_config or not rag_config.rag_url or not rag_config.collections:

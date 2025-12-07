@@ -77,13 +77,6 @@ class Project(Base):
         lazy="select"
     )
 
-    visitor_assignments: Mapped[List["VisitorAssignment"]] = relationship(
-        "VisitorAssignment",
-        back_populates="project",
-        cascade="all, delete-orphan",
-        lazy="select"
-    )
-
     tags: Mapped[List["Tag"]] = relationship(
         "Tag",
         back_populates="project",
@@ -120,6 +113,13 @@ class Project(Base):
         lazy="select",
     )
 
+    visitor_assignment_rule: Mapped[Optional["VisitorAssignmentRule"]] = relationship(
+        "VisitorAssignmentRule",
+        back_populates="project",
+        uselist=False,
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
 
     def __repr__(self) -> str:
         """String representation of the project."""

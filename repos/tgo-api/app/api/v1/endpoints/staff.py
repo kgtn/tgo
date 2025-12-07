@@ -15,7 +15,9 @@ from app.core.security import (
     authenticate_user,
     create_access_token,
     get_current_active_user,
-    get_password_hash
+    get_password_hash,
+    require_permission,
+    require_admin,
 )
 from app.models import Staff
 from app.schemas import (
@@ -118,12 +120,13 @@ async def login_staff(
 async def list_staff(
     params: StaffListParams = Depends(),
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("staff:list")),
 ) -> StaffListResponse:
     """
     List staff members.
     
     Retrieve a paginated list of staff members with optional filtering.
+    Requires staff:list permission.
     """
     logger.info(f"User {current_user.username} listing staff members")
     
@@ -155,7 +158,7 @@ async def list_staff(
             "limit": params.limit,
             "offset": params.offset,
             "has_next": params.offset + params.limit < total,
-            "has_previous": params.offset > 0,
+            "has_prev": params.offset > 0,
         }
     )
 
@@ -164,15 +167,22 @@ async def list_staff(
 async def create_staff(
     staff_data: StaffCreate,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("staff:create")),
 ) -> StaffResponse:
     """
     Create staff member.
     
-    Create a new staff member or AI agent. For AI agents, validates agent_id
-    with AI Service and publishes agent creation event.
+    Create a new staff member. Requires staff:create permission (admin only by default).
+    Only staff members with 'user' role can be created through this endpoint.
     """
     logger.info(f"User {current_user.username} creating staff: {staff_data.username}")
+    
+    # Only allow creating staff with 'user' role
+    if staff_data.role != "user":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can only create staff members with 'user' role"
+        )
     
     # Check if username already exists
     existing_staff = db.query(Staff).filter(
@@ -194,8 +204,10 @@ async def create_staff(
         project_id=current_user.project_id,
         username=staff_data.username,
         password_hash=password_hash,
+        name=staff_data.name,
         nickname=staff_data.nickname,
         avatar_url=staff_data.avatar_url,
+        description=staff_data.description,
         role=staff_data.role,
         status=staff_data.status,
     )
@@ -213,9 +225,9 @@ async def create_staff(
 async def get_staff(
     staff_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("staff:read")),
 ) -> StaffResponse:
-    """Get staff member details."""
+    """Get staff member details. Requires staff:read permission."""
     logger.info(f"User {current_user.username} getting staff: {staff_id}")
     
     staff = db.query(Staff).filter(
@@ -238,13 +250,12 @@ async def update_staff(
     staff_id: UUID,
     staff_data: StaffUpdate,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("staff:update")),
 ) -> StaffResponse:
     """
     Update staff member.
     
-    Update staff member information. For AI agents, validates agent_id changes
-    with AI Service and publishes agent update event.
+    Update staff member information. Requires staff:update permission.
     """
     logger.info(f"User {current_user.username} updating staff: {staff_id}")
     
@@ -284,13 +295,12 @@ async def update_staff(
 async def delete_staff(
     staff_id: UUID,
     db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
+    current_user: Staff = Depends(require_permission("staff:delete")),
 ) -> None:
     """
     Delete staff member (soft delete).
     
-    Soft delete a staff member. For AI agents, publishes agent deletion event
-    for AI Service cleanup.
+    Soft delete a staff member. Requires staff:delete permission.
     """
     logger.info(f"User {current_user.username} deleting staff: {staff_id}")
     

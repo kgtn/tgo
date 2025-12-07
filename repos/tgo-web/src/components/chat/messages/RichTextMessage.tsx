@@ -21,9 +21,11 @@ import 'yet-another-react-lightbox/styles.css';
 export interface MessageComponentProps {
   message: Message;
   isStaff: boolean;
+  /** 发送消息回调（用于 Widget 中的 msg:// 协议） */
+  onSendMessage?: (message: string) => void;
 }
 
-const RichTextMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) => {
+const RichTextMessage: React.FC<MessageComponentProps> = ({ message, isStaff, onSendMessage }) => {
   const typedPayload = message.payload as any | undefined;
   const isStream = Boolean(message.metadata?.has_stream_data);
   // Prefer live message.content when streaming; otherwise fall back to payload content
@@ -220,7 +222,7 @@ const RichTextMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) 
   const textBubble = isStaff ? (
     <div ref={rtTextRef} className="inline-block bg-blue-500 dark:bg-blue-600 text-white p-3 rounded-lg rounded-tr-none shadow-sm">
       {shouldRenderMarkdown ? (
-        <MarkdownContent content={richContent} className="text-sm markdown-white" />
+        <MarkdownContent content={richContent} className="text-sm markdown-white" onSendMessage={onSendMessage} />
       ) : (
         <p className="text-sm">{richContent}</p>
       )}
@@ -228,7 +230,7 @@ const RichTextMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) 
   ) : (
     <div ref={rtTextRef} className="inline-block bg-white dark:bg-gray-700 p-3 rounded-lg rounded-tl-none shadow-sm border border-gray-100 dark:border-gray-600">
       {shouldRenderMarkdown ? (
-        <MarkdownContent content={richContent} className="text-sm dark:text-gray-200" />
+        <MarkdownContent content={richContent} className="text-sm dark:text-gray-200" onSendMessage={onSendMessage} />
       ) : (
         <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{richContent}</p>
       )}

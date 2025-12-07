@@ -164,17 +164,17 @@ export class AIAgentsTransformUtils {
     formData: import('@/types').CreateAgentFormData,
     availableTools?: ToolSummary[],
   ): AgentCreateRequest {
-    // Transform MCP tools to the API format
+    // Transform MCP tools to the API format (always pass array, never null)
     const tools = formData.mcpTools.length > 0 ?
       AIAgentsTransformUtils.transformMCPToolsToAgentTools(
         formData.mcpTools,
         formData.mcpToolConfigs,
         availableTools,
-      ) : null;
+      ) : [];
 
-    // Transform knowledge bases to collections (UUID strings)
+    // Transform knowledge bases to collections (UUID strings, always pass array, never null)
     const collections = formData.knowledgeBases && formData.knowledgeBases.length > 0 ?
-      formData.knowledgeBases : null;
+      formData.knowledgeBases : [];
 
     // Split UI model value (providerId:modelName) into separate fields
     const rawModel = formData.llmModel || '';
@@ -303,17 +303,17 @@ export class AIAgentsTransformUtils {
       }) as ToolSummary[];
     }
 
-    // Transform MCP tools to the API format
+    // Transform MCP tools to the API format (always pass array, never null)
     const tools = agent.mcpTools && agent.mcpTools.length > 0 ?
       AIAgentsTransformUtils.transformMCPToolsToAgentTools(
         agent.mcpTools,
         agent.mcpToolConfigs || {},
         resolvedAvailableTools,
-      ) : null;
+      ) : [];
 
-    // Transform knowledge bases to collections (UUID strings)
+    // Transform knowledge bases to collections (UUID strings, always pass array, never null)
     const collections = agent.knowledgeBases && agent.knowledgeBases.length > 0 ?
-      agent.knowledgeBases : null;
+      agent.knowledgeBases : [];
 
     // Split UI model value (providerId:modelName) if present
     const rawModel = agent.llmModel || '';

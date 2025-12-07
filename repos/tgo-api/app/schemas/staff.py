@@ -19,6 +19,11 @@ class StaffBase(BaseSchema):
         max_length=50,
         description="Staff username for login"
     )
+    name: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Staff real name"
+    )
     nickname: Optional[str] = Field(
         None,
         max_length=100,
@@ -28,6 +33,11 @@ class StaffBase(BaseSchema):
         None,
         max_length=255,
         description="Staff avatar URL"
+    )
+    description: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Staff description for LLM assignment prompts"
     )
     role: StaffRole = Field(
         default=StaffRole.USER,
@@ -57,6 +67,11 @@ class StaffCreate(StaffBase):
 class StaffUpdate(BaseSchema):
     """Schema for updating a staff member."""
     
+    name: Optional[str] = Field(
+        None,
+        max_length=100,
+        description="Updated real name"
+    )
     nickname: Optional[str] = Field(
         None,
         max_length=100,
@@ -66,6 +81,11 @@ class StaffUpdate(BaseSchema):
         None,
         max_length=255,
         description="Updated avatar URL"
+    )
+    description: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="Updated description for LLM assignment prompts"
     )
     role: Optional[StaffRole] = Field(
         None,
@@ -101,8 +121,10 @@ class StaffResponse(BaseSchema):
     id: UUID = Field(..., description="Staff ID")
     project_id: UUID = Field(..., description="Associated project ID")
     username: str = Field(..., description="Staff username")
+    name: Optional[str] = Field(None, description="Staff real name")
     nickname: Optional[str] = Field(None, description="Staff display name")
     avatar_url: Optional[str] = Field(None, description="Staff avatar URL")
+    description: Optional[str] = Field(None, description="Staff description for LLM assignment prompts")
     role: StaffRole = Field(..., description="Staff role")
     status: StaffStatus = Field(..., description="Staff status")
     created_at: datetime = Field(..., description="Creation timestamp")

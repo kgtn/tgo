@@ -72,6 +72,12 @@ class EventType(str, Enum):
     TEAM_MEMBER_TOOL_CALL_STARTED = "team_member_tool_call_started"
     TEAM_MEMBER_TOOL_CALL_COMPLETED = "team_member_tool_call_completed"
 
+    # UI Block events (for rich UI rendering)
+    UI_BLOCK_STARTED = "ui_block_started"  # Start of a tgo-ui-widget block
+    UI_BLOCK_CONTENT = "ui_block_content"  # Partial content of UI block (streaming)
+    UI_BLOCK_COMPLETED = "ui_block_completed"  # UI block fully received and parsed
+    UI_BLOCK_ERROR = "ui_block_error"  # UI block parsing/validation error
+
 
 class EventSeverity(str, Enum):
     """Event severity levels."""
@@ -307,6 +313,53 @@ class ConsolidationProgressData(BaseEventData):
     conflicts_resolved: int = 0
 
 
+class UIBlockStartedData(BaseEventData):
+    """Data for UI block started events."""
+
+    block_id: str = Field(..., description="Unique identifier for this UI block")
+    template_type: Optional[str] = Field(
+        default=None,
+        description="Expected template type (if known from context)",
+    )
+    agent_id: Optional[str] = Field(default=None, description="Agent that generated the block")
+    agent_name: Optional[str] = Field(default=None, description="Name of the agent")
+
+
+class UIBlockContentData(BaseEventData):
+    """Data for UI block content streaming events."""
+
+    block_id: str = Field(..., description="Unique identifier for this UI block")
+    content_chunk: str = Field(..., description="Partial JSON content of the UI block")
+    chunk_index: int = Field(..., description="Index of this chunk")
+    is_final: bool = Field(default=False, description="Whether this is the final chunk")
+
+
+class UIBlockCompletedData(BaseEventData):
+    """Data for UI block completed events."""
+
+    block_id: str = Field(..., description="Unique identifier for this UI block")
+    template_type: str = Field(..., description="Template type from the parsed JSON")
+    data: Dict[str, Any] = Field(..., description="Parsed and validated UI block data")
+    raw_content: str = Field(..., description="Raw JSON content of the UI block")
+    is_valid: bool = Field(default=True, description="Whether the data passed validation")
+    validation_errors: Optional[List[str]] = Field(
+        default=None,
+        description="Validation error messages if any",
+    )
+
+
+class UIBlockErrorData(BaseEventData):
+    """Data for UI block error events."""
+
+    block_id: str = Field(..., description="Unique identifier for this UI block")
+    error_type: str = Field(..., description="Type of error (parse_error, validation_error, etc.)")
+    error_message: str = Field(..., description="Error message")
+    partial_content: Optional[str] = Field(
+        default=None,
+        description="Partial content received before error",
+    )
+
+
 class StreamingEvent(BaseModel):
     """A single streaming event in the coordination workflow."""
     
@@ -336,6 +389,10 @@ class StreamingEvent(BaseModel):
         TeamMemberEventData,
         TeamMemberContentData,
         TeamMemberToolCallData,
+        UIBlockStartedData,
+        UIBlockContentData,
+        UIBlockCompletedData,
+        UIBlockErrorData,
         BaseEventData
     ] = Field(..., description="Event-specific data")
     
