@@ -172,6 +172,17 @@ from app.schemas.visitor_session import (
     VisitorSessionDetailResponse,
     VisitorSessionListParams,
 )
+from app.schemas.visitor_waiting_queue import (
+    WaitingStatusEnum,
+    QueueSourceEnum,
+    QueueUrgencyEnum,
+    WaitingQueueResponse,
+    WaitingQueueDetailResponse,
+    WaitingQueueListResponse,
+    WaitingQueueListParams,
+    AcceptVisitorRequest,
+    AcceptVisitorResponse,
+)
 from app.schemas.visitor import (
     VisitorCreate,
     VisitorAttributesUpdate,
@@ -333,6 +344,16 @@ __all__ = [
     "VisitorSessionResponse",
     "VisitorSessionDetailResponse",
     "VisitorSessionListParams",
+    # Visitor Waiting Queue schemas
+    "WaitingStatusEnum",
+    "QueueSourceEnum",
+    "QueueUrgencyEnum",
+    "WaitingQueueResponse",
+    "WaitingQueueDetailResponse",
+    "WaitingQueueListResponse",
+    "WaitingQueueListParams",
+    "AcceptVisitorRequest",
+    "AcceptVisitorResponse",
     # AI schemas
     "TeamCreateRequest",
     "TeamUpdateRequest",

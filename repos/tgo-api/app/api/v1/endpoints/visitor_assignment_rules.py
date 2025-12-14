@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.logging import get_logger
 from app.core.security import get_current_active_user, require_permission
@@ -125,19 +126,26 @@ async def update_visitor_assignment_rule(
         rule.updated_at = datetime.utcnow()
         logger.info(f"Updated visitor assignment rule {rule.id}")
     else:
-        # Create new rule
+        # Parse default weekdays from config if not provided
+        default_weekdays = [
+            int(d.strip()) 
+            for d in settings.ASSIGNMENT_RULE_DEFAULT_WEEKDAYS.split(",") 
+            if d.strip().isdigit()
+        ]
+        
+        # Create new rule with config defaults
         rule = VisitorAssignmentRule(
             project_id=current_user.project_id,
             ai_provider_id=rule_data.ai_provider_id,
             model=rule_data.model,
             prompt=rule_data.prompt,
             llm_assignment_enabled=rule_data.llm_assignment_enabled if rule_data.llm_assignment_enabled is not None else True,
-            timezone=rule_data.timezone if rule_data.timezone is not None else "Asia/Shanghai",
-            service_weekdays=rule_data.service_weekdays,
-            service_start_time=rule_data.service_start_time,
-            service_end_time=rule_data.service_end_time,
-            max_concurrent_chats=rule_data.max_concurrent_chats if rule_data.max_concurrent_chats is not None else 10,
-            auto_close_hours=rule_data.auto_close_hours if rule_data.auto_close_hours is not None else 48,
+            timezone=rule_data.timezone if rule_data.timezone is not None else settings.ASSIGNMENT_RULE_DEFAULT_TIMEZONE,
+            service_weekdays=rule_data.service_weekdays if rule_data.service_weekdays is not None else default_weekdays,
+            service_start_time=rule_data.service_start_time if rule_data.service_start_time is not None else settings.ASSIGNMENT_RULE_DEFAULT_START_TIME,
+            service_end_time=rule_data.service_end_time if rule_data.service_end_time is not None else settings.ASSIGNMENT_RULE_DEFAULT_END_TIME,
+            max_concurrent_chats=rule_data.max_concurrent_chats if rule_data.max_concurrent_chats is not None else settings.ASSIGNMENT_RULE_DEFAULT_MAX_CONCURRENT_CHATS,
+            auto_close_hours=rule_data.auto_close_hours if rule_data.auto_close_hours is not None else settings.ASSIGNMENT_RULE_DEFAULT_AUTO_CLOSE_HOURS,
         )
         db.add(rule)
         logger.info(f"Created new visitor assignment rule for project {current_user.project_id}")

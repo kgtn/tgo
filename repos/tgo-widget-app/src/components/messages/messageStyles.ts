@@ -102,3 +102,25 @@ export const FileAction = styled.a`
   &:hover{ background: var(--bg-tertiary, #f3f4f6); }
 `;
 
+// System message (WeChat-style centered notification)
+export const SystemMessageWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 4px 0;
+`;
+
+export const SystemMessageInner = styled.span`
+  display: inline-block;
+  max-width: 80%;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: var(--text-secondary, #6b7280);
+  background: var(--bg-system-msg, rgba(0, 0, 0, 0.04));
+  border-radius: 4px;
+  text-align: center;
+  line-height: 1.5;
+  word-break: break-word;
+`;
+

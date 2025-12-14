@@ -19,6 +19,8 @@ interface ChannelStoreState {
   updateVisitorOnlineStatus: (channel_id: string, channel_type: number, is_online: boolean, last_offline_iso?: string | null) => void;
   /** Update avatar on cached channel info (no fetch). */
   updateChannelAvatar: (channel_id: string, channel_type: number, avatar: string) => void;
+  /** Update extra fields on cached channel info (no fetch). */
+  updateChannelExtra: (channel_id: string, channel_type: number, extraUpdates: Record<string, any>) => void;
   clear: () => void;
 }
 
@@ -164,6 +166,22 @@ export const useChannelStore = create<ChannelStoreState>((set, get) => ({
       if (nextInfo.extra && typeof nextInfo.extra === 'object') {
         nextInfo.extra = { ...nextInfo.extra, avatar_url: avatar };
       }
+      return {
+        channels: { ...state.channels, [key]: nextInfo }
+      } as any;
+    });
+  },
+
+  updateChannelExtra: (channel_id: string, channel_type: number, extraUpdates: Record<string, any>) => {
+    if (!channel_id || !Number.isFinite(channel_type)) return;
+    const key = getChannelKey(channel_id, channel_type);
+    set((state) => {
+      const prev = state.channels[key];
+      if (!prev) return {} as any;
+      
+      const prevExtra: any = prev.extra ?? {};
+      const nextExtra = { ...prevExtra, ...extraUpdates };
+      const nextInfo: ChannelInfo = { ...prev, extra: nextExtra };
       return {
         channels: { ...state.channels, [key]: nextInfo }
       } as any;

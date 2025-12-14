@@ -1,10 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import ChatList from '../components/layout/ChatList';
 import ChatWindow from '../components/layout/ChatWindow';
 import VisitorPanel from '../components/layout/VisitorPanel';
 import { useChatStore, chatSelectors } from '@/stores';
+import { useChannelStore } from '@/stores/channelStore';
 import { getChannelKey } from '@/utils/channelUtils';
+import type { ChatTabType } from '@/components/chat/ChatListTabs';
+import type { ChannelVisitorExtra } from '@/types';
 
 /**
  * Chat page component - contains the original chat interface
@@ -21,30 +24,61 @@ const ChatPage: React.FC = () => {
   const location = useLocation();
   const locationState = location.state as ChatPageLocationState | null;
   
+  // Tab state management
+  const [activeTab, setActiveTab] = useState<ChatTabType>('mine');
+  
+  // Refresh trigger for ChatList (increment to trigger refresh)
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  
+  // Deleted chat channel (to notify ChatList to remove from local state)
+  const [deletedChatChannel, setDeletedChatChannel] = useState<{ channelId: string; channelType: number } | null>(null);
+  
+  // Callback for when a visitor is accepted - switch to "mine" tab and refresh lists
+  const handleAcceptVisitor = useCallback(() => {
+    setActiveTab('mine');
+    // Trigger refresh of chat lists
+    setRefreshTrigger(prev => prev + 1);
+  }, []);
+  
+  // Helper to check if we should clear unread for a channel
+  // Don't clear unread if service_status is 'queued'
+  const shouldClearUnreadForChannel = useCallback((channelId: string, channelType: number): boolean => {
+    const channelStore = useChannelStore.getState();
+    const channelInfo = channelStore.getChannel(channelId, channelType);
+    const extra = channelInfo?.extra as ChannelVisitorExtra | undefined;
+    const serviceStatus = extra?.service_status;
+    // Don't clear unread if visitor is in queued status
+    return serviceStatus !== 'queued';
+  }, []);
+  
   const activeChat = useChatStore(chatSelectors.activeChat);
   const setActiveChat = useChatStore(state => state.setActiveChat);
   const chats = useChatStore(state => state.chats);
-  const syncConversationsIfNeeded = useChatStore(state => state.syncConversationsIfNeeded);
   const loadHistoricalMessages = useChatStore(state => state.loadHistoricalMessages);
   const clearConversationUnread = useChatStore(state => state.clearConversationUnread);
+  
+  // Callback for when a chat is ended - remove from list and select the next chat
+  const handleEndChatSuccess = useCallback((endedChannelId: string, endedChannelType: number) => {
+    // Notify ChatList to remove the chat from local state
+    setDeletedChatChannel({ channelId: endedChannelId, channelType: endedChannelType });
+    
+    // Clear the deleted channel after a short delay (to allow ChatList to process)
+    setTimeout(() => setDeletedChatChannel(null), 100);
+  }, []);
 
   // Track if we're syncing from URL to prevent loops
   const isSyncingFromUrl = useRef(false);
   // Track if initial URL sync has been attempted
   const hasAttemptedUrlSync = useRef(false);
 
-  // 页面加载时仅在未同步过时同步对话（之后由 WebSocket 实时消息更新）
-  useEffect(() => {
-    syncConversationsIfNeeded();
-  }, [syncConversationsIfNeeded]);
+  // Note: 会话列表的加载由 ChatList.tsx 根据当前 tab 处理，不再需要在这里调用 syncConversationsIfNeeded
 
   const createChatByChannel = useChatStore(state => state.createChatByChannel);
-  const isSyncing = useChatStore(state => state.isSyncing);
 
-  // 从 URL 参数定位会话（仅在 URL 变化或同步完成时执行一次）
+  // 从 URL 参数定位会话（仅在 URL 变化时执行一次）
   useEffect(() => {
-    // Only attempt URL sync once per URL change, after sync is complete
-    if (urlChannelType && urlChannelId && !isSyncing && !hasAttemptedUrlSync.current) {
+    // Only attempt URL sync once per URL change
+    if (urlChannelType && urlChannelId && !hasAttemptedUrlSync.current) {
       hasAttemptedUrlSync.current = true;
       const targetChannelType = parseInt(urlChannelType, 10);
       
@@ -66,8 +100,8 @@ const ChatPage: React.FC = () => {
         isSyncingFromUrl.current = true;
         setActiveChat(targetChat);
         loadHistoricalMessages(targetChat.channelId, targetChat.channelType);
-        // Clear unread
-        if ((targetChat.unreadCount || 0) > 0) {
+        // Clear unread (but not if service_status is 'queued')
+        if ((targetChat.unreadCount || 0) > 0 && shouldClearUnreadForChannel(targetChat.channelId, targetChat.channelType)) {
           clearConversationUnread(targetChat.channelId, targetChat.channelType);
         }
         isSyncingFromUrl.current = false;
@@ -84,7 +118,7 @@ const ChatPage: React.FC = () => {
         isSyncingFromUrl.current = false;
       }
     }
-  }, [urlChannelType, urlChannelId, isSyncing, setActiveChat, loadHistoricalMessages, clearConversationUnread, createChatByChannel, locationState]);
+  }, [urlChannelType, urlChannelId, setActiveChat, loadHistoricalMessages, clearConversationUnread, createChatByChannel, locationState, shouldClearUnreadForChannel]);
 
   // Reset URL sync flag when URL params change
   useEffect(() => {
@@ -106,19 +140,41 @@ const ChatPage: React.FC = () => {
 
   const handleChatSelect = (chat: any): void => {
     const prev = activeChat;
+    
+    // Don't clear unread for unassigned tab (no API call)
+    const isUnassignedTab = activeTab === 'unassigned';
 
     // Clear unread for the conversation we're leaving (if different)
-    if (prev && !(prev.channelId === chat.channelId && prev.channelType === chat.channelType)) {
-      const prevInList = chats.find(c => c.channelId === prev.channelId && c.channelType === prev.channelType);
-      if ((prevInList?.unreadCount || 0) > 0) {
+    // Use activeChat's unreadCount directly since chats store might not be in sync
+    if (!isUnassignedTab && prev && !(prev.channelId === chat.channelId && prev.channelType === chat.channelType)) {
+      if ((prev.unreadCount || 0) > 0 && shouldClearUnreadForChannel(prev.channelId, prev.channelType)) {
         clearConversationUnread(prev.channelId, prev.channelType);
       }
     }
 
     // Clear unread for the clicked/active conversation
-    const clickedInList = chats.find(c => c.channelId === chat.channelId && c.channelType === chat.channelType);
-    if ((clickedInList?.unreadCount || 0) > 0) {
-      clearConversationUnread(chat.channelId, chat.channelType);
+    // Use the chat object directly (passed from ChatList) since it has the actual unreadCount
+    if (!isUnassignedTab) {
+      const unreadCount = chat.unreadCount || 0;
+      const shouldClear = shouldClearUnreadForChannel(chat.channelId, chat.channelType);
+      console.log('🔔 handleChatSelect: Clear unread check', {
+        channelId: chat.channelId,
+        channelType: chat.channelType,
+        unreadCount,
+        shouldClear,
+        isUnassignedTab,
+      });
+      if (unreadCount > 0 && shouldClear) {
+        console.log('🔔 handleChatSelect: Calling clearConversationUnread');
+        clearConversationUnread(chat.channelId, chat.channelType);
+      }
+    }
+    
+    // For unassigned tab, force refresh channel info
+    // This ensures we get the latest visitor info when selecting an unassigned conversation
+    if (isUnassignedTab && chat.channelId && chat.channelType != null) {
+      const channelStore = useChannelStore.getState();
+      channelStore.refreshChannel({ channel_id: chat.channelId, channel_type: chat.channelType });
     }
 
     setActiveChat(chat);
@@ -134,11 +190,18 @@ const ChatPage: React.FC = () => {
   // When returning focus to the tab/window, clear unread for the currently open conversation
   useEffect(() => {
     const onFocus = () => {
-      const { activeChat: cur, chats: curChats, clearConversationUnread: clearFn } = useChatStore.getState() as any;
+      const { activeChat: cur, clearConversationUnread: clearFn } = useChatStore.getState() as any;
       if (cur?.channelId && cur.channelType != null) {
-        const found = curChats.find((c: any) => c.channelId === cur.channelId && c.channelType === cur.channelType);
-        if ((found?.unreadCount || 0) > 0) {
-          clearFn(cur.channelId, cur.channelType);
+        // Use activeChat's unreadCount directly
+        if ((cur.unreadCount || 0) > 0) {
+          // Check if we should clear unread (not if service_status is 'queued')
+          const channelStore = useChannelStore.getState();
+          const channelInfo = channelStore.getChannel(cur.channelId, cur.channelType);
+          const extra = channelInfo?.extra as ChannelVisitorExtra | undefined;
+          const serviceStatus = extra?.service_status;
+          if (serviceStatus !== 'queued') {
+            clearFn(cur.channelId, cur.channelType);
+          }
         }
       }
     };
@@ -155,18 +218,24 @@ const ChatPage: React.FC = () => {
     <div className="flex h-full w-full bg-gray-50 dark:bg-gray-900">
       {/* Chat List */}
       <ChatList
-        activeChat={activeChat}
+        activeChat={activeChat ?? undefined}
         onChatSelect={handleChatSelect}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        refreshTrigger={refreshTrigger}
+        deletedChatChannel={deletedChatChannel}
       />
 
       {/* Main Chat Window */}
       <ChatWindow
         key={activeChat ? getChannelKey(activeChat.channelId, activeChat.channelType) : 'no-active'}
-        activeChat={activeChat}
+        activeChat={activeChat ?? undefined}
+        onAcceptVisitor={handleAcceptVisitor}
+        onEndChatSuccess={handleEndChatSuccess}
       />
 
       {/* Visitor Info Panel - 仅在非 AI 会话（非 agent 和非 team）时显示 */}
-      {!isAIChat && <VisitorPanel activeChat={activeChat} />}
+      {!isAIChat && <VisitorPanel activeChat={activeChat ?? undefined} />}
     </div>
   );
 };

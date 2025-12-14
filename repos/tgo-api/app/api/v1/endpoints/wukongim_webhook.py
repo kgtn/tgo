@@ -468,14 +468,7 @@ async def wukongim_webhook(request: Request, background_tasks: BackgroundTasks) 
     event = request.query_params.get("event")
     logger.info("WuKongIM webhook received", extra={"event": event})
 
-    if event == "msg.notify":
-        try:
-            body = await request.json()
-        except Exception as exc:  # pragma: no cover - malformed payload
-            logger.error("Failed to parse WuKongIM webhook payload: %s", exc)
-            return {"code": 400, "message": "invalid payload"}
-        await _process_msg_notify(body)
-    elif event == "user.onlinestatus":
+    if event == "user.onlinestatus":
         try:
             body = await request.json()
         except Exception as exc:

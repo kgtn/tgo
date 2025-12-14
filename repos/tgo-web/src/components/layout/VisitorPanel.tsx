@@ -103,7 +103,7 @@ const toExtendedVisitorFromChannel = (extra: ChannelVisitorExtra): ExtendedVisit
       name: extra.name || '',
       email: extra.email || '',
       phone: extra.phone_number || '',
-      nickname: extra.nickname || '',
+      nickname: extra.display_nickname || '',
       company: extra.company || '',
       jobTitle: extra.job_title || '',
       source: extra.source || '',
@@ -761,6 +761,7 @@ const VisitorPanel: React.FC<VisitorPanelProps> = ({ activeChat }) => {
           })()}
           onAvatarClick={handleAvatarClick}
           isUploading={isUploadingAvatar}
+          visitorId={channelId || visitor.id}
         />
 
       </div>

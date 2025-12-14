@@ -22,11 +22,16 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field, model_validator
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.v1.endpoints.visitors import _create_visitor_with_channel
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import get_current_active_user, verify_token, require_permission
-from app.models import ChannelMember, ChatFile, Platform, Staff, Visitor
+from app.models import (
+    ChannelMember,
+    ChatFile,
+    Platform,
+    Staff,
+    Visitor,
+)
 from app.schemas import ChatFileUploadResponse, StaffSendPlatformMessageRequest
 from app.schemas.chat import (
     OpenAIChatCompletionChunk,
@@ -40,7 +45,12 @@ from app.schemas.chat import (
 )
 from app.schemas.messages import IncomingMessagePayload
 from app.services import platform_stream_bus
+from app.services.chat_service import get_or_create_visitor
+from app.services.transfer_service import transfer_to_staff
+from app.models import AssignmentSource
+from app.services.ai_client import AIServiceClient
 from app.services.kafka_producer import publish_incoming_message
+from app.services.wukongim_client import wukongim_client
 from app.utils.const import CHANNEL_TYPE_CUSTOMER_SERVICE, MEMBER_TYPE_STAFF
 from app.utils.encoding import build_visitor_channel_id, parse_visitor_channel_id
 
@@ -60,6 +70,7 @@ class ChatCompletionRequest(BaseModel):
     - from_uid identifies the end-user on the client platform
     - message is the chat input to be completed by AI
     - timeout_seconds bounds the SSE stream duration
+    - wukongim_only: if True, only send to WuKongIM without returning stream to client
     """
     api_key: str
     message: str
@@ -73,6 +84,9 @@ class ChatCompletionRequest(BaseModel):
     )
     expected_output: Optional[str] = Field(
         None, description="Expected output format or description for the AI agent"
+    )
+    wukongim_only: bool = Field(
+        False, description="If True, only send to WuKongIM without returning stream response to client"
     )
 
 
@@ -176,120 +190,120 @@ def _check_ai_disabled(platform: Platform, visitor: Optional[Visitor]) -> bool:
     return False
 
 
-def _get_staff_info(channel_id: str, db: Session) -> tuple[Optional[str], Optional[str]]:
-    """Get staff information for a channel.
 
+async def _forward_ai_event_to_wukongim(
+    event_type: str,
+    data: Dict[str, Any],
+    channel_id: str,
+    channel_type: int,
+    client_msg_no: str,
+    from_uid: str,
+) -> Optional[str]:
+    """Forward AI event to WuKongIM.
+    
+    Args:
+        event_type: The AI event type (team_run_started, team_run_content, workflow_completed)
+        data: The event data
+        channel_id: WuKongIM channel ID
+        channel_type: WuKongIM channel type
+        client_msg_no: Client message number for correlation
+        from_uid: Sender UID
+        
     Returns:
-        tuple[Optional[str], Optional[str]]: (staff_id, staff_cid)
+        The content chunk if event_type is team_run_content, None otherwise
     """
+    import logging
+    logger = logging.getLogger("chat")
+    
     try:
-        cm = (
-            db.query(ChannelMember)
-            .filter(
-                ChannelMember.channel_id == channel_id,
-                ChannelMember.member_type == MEMBER_TYPE_STAFF,
-                ChannelMember.deleted_at.is_(None),
+        if event_type == "team_run_started":
+            await wukongim_client.send_event(
+                channel_id=channel_id,
+                channel_type=channel_type,
+                event_type="___TextMessageStart",
+                data='{"type":100}',
+                client_msg_no=client_msg_no,
+                from_uid=from_uid,
+                force=True,
             )
-            .first()
-        )
-        if cm:
-            staff_id = str(cm.member_id)
-            staff_cid = f"{staff_id}-staff"
-            return staff_id, staff_cid
-    except Exception:
-        pass
-
-    return None, None
-
-
-async def _publish_and_subscribe(
-    payload: IncomingMessagePayload,
-    client_msg_no: str
-) -> tuple[asyncio.Queue, Any]:
-    """Publish message to Kafka and subscribe to response stream.
-
-    Args:
-        payload: The message payload to publish
-        client_msg_no: The client message number for correlation
-
-    Returns:
-        tuple[asyncio.Queue, Callable]: (event_queue, unsubscribe_function)
-
-    Raises:
-        HTTPException: If message publishing fails
-    """
-    queue, unsubscribe = await platform_stream_bus.subscribe(client_msg_no)
-
-    ok = await publish_incoming_message(payload)
-    if not ok:
-        unsubscribe()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to publish message"
-        )
-
-    return queue, unsubscribe
-
-
-async def _wait_for_event(
-    queue: asyncio.Queue,
-    timeout_seconds: int,
-    collect_content: bool = False
-) -> str:
-    """Wait for workflow completion event from the queue.
-
-    Args:
-        queue: The event queue to read from
-        timeout_seconds: Maximum time to wait for completion
-        collect_content: Whether to collect content from team_run_content events
-
-    Returns:
-        str: Collected completion text (empty if collect_content=False)
-
-    Raises:
-        HTTPException: If timeout occurs or error event is received
-    """
-    completion_text = ""
-    deadline = time.monotonic() + timeout_seconds
-
-    while True:
-        timeout_left = deadline - time.monotonic()
-        if timeout_left <= 0:
-            raise HTTPException(
-                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-                detail="AI response timeout"
-            )
-
-        try:
-            event = await asyncio.wait_for(queue.get(), timeout=timeout_left)
-        except asyncio.TimeoutError:
-            raise HTTPException(
-                status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-                detail="AI response timeout"
-            )
-
-        if isinstance(event, dict):
-            event_type = event.get("event_type")
-
-            # Collect text tokens if requested
-            if collect_content and (event_type == "team_run_content"):
-                data = event.get("data", {})
-                content = data.get("content", "") or data.get("content_chunk", "")
-                completion_text += content
-
-            # Check for completion
-            elif event_type == "workflow_completed":
-                return completion_text
-
-            # Handle errors
-            elif event_type == "error":
-                error_msg = event.get("data", {}).get("message", "Unknown error")
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"AI processing error: {error_msg}"
+        elif event_type == "team_run_content":
+            chunk_text = data.get("content")
+            if chunk_text is not None:
+                await wukongim_client.send_event(
+                    channel_id=channel_id,
+                    channel_type=channel_type,
+                    event_type="___TextMessageContent",
+                    data=str(chunk_text),
+                    client_msg_no=client_msg_no,
+                    from_uid=from_uid,
                 )
+                return chunk_text
+        elif event_type == "workflow_completed":
+            await wukongim_client.send_event(
+                channel_id=channel_id,
+                channel_type=channel_type,
+                data="",
+                event_type="___TextMessageEnd",
+                client_msg_no=client_msg_no,
+                from_uid=from_uid,
+            )
+    except Exception as e:
+        logger.warning(f"Failed to forward AI event to WuKongIM: {e}")
+    
+    return None
 
-    return completion_text
+
+async def _process_ai_stream_to_wukongim(
+    ai_client: AIServiceClient,
+    message: str,
+    project_id: str,
+    team_id: str,
+    session_id: str,
+    user_id: str,
+    channel_id: str,
+    channel_type: int,
+    client_msg_no: str,
+    from_uid: str,
+    system_message: Optional[str] = None,
+    expected_output: Optional[str] = None,
+) -> None:
+    """Process AI stream and forward all events to WuKongIM (no client response).
+    
+    Used for wukongim_only mode.
+    """
+    import logging
+    logger = logging.getLogger("chat")
+    
+    try:
+        async for _, event_payload in ai_client.run_supervisor_agent_stream(
+            message=message,
+            project_id=project_id,
+            team_id=team_id,
+            session_id=session_id,
+            user_id=user_id,
+            enable_memory=True,
+            system_message=system_message,
+            expected_output=expected_output,
+        ):
+            if not isinstance(event_payload, dict):
+                continue
+
+            event_type = event_payload.get("event_type", "team_run_content")
+            data = event_payload.get("data") or {}
+
+            await _forward_ai_event_to_wukongim(
+                event_type=event_type,
+                data=data,
+                channel_id=channel_id,
+                channel_type=channel_type,
+                client_msg_no=client_msg_no,
+                from_uid=from_uid,
+            )
+
+            if event_type == "workflow_completed":
+                break
+    except Exception as e:
+        logger.error(f"AI processing error: {e}")
 
 
 def _extract_messages_from_openai_format(
@@ -377,111 +391,6 @@ def _build_openai_completion_response(
     )
 
 
-async def _generate_openai_stream_chunks(
-    queue: asyncio.Queue,
-    unsubscribe: Any,
-    completion_id: str,
-    created_timestamp: int,
-    model: str,
-    timeout_seconds: int = 120
-):
-    """Generate OpenAI-compatible streaming chunks from event queue.
-
-    Yields:
-        str: SSE-formatted chunk strings
-    """
-    try:
-        # Send initial chunk with role
-        initial_chunk = OpenAIChatCompletionChunk(
-            id=completion_id,
-            object="chat.completion.chunk",
-            created=created_timestamp,
-            model=model,
-            choices=[
-                OpenAIChatCompletionChunkChoice(
-                    index=0,
-                    delta=OpenAIChatCompletionDelta(role="assistant", content=""),
-                    finish_reason=None,
-                )
-            ],
-        )
-        yield f"data: {initial_chunk.model_dump_json()}\n\n"
-
-        deadline = time.monotonic() + timeout_seconds
-
-        while True:
-            timeout_left = deadline - time.monotonic()
-            if timeout_left <= 0:
-                break
-
-            try:
-                event = await asyncio.wait_for(queue.get(), timeout=timeout_left)
-            except asyncio.TimeoutError:
-                break
-
-            if isinstance(event, dict):
-                event_type = event.get("event_type")
-
-                if event_type == "team_run_content":
-                    data = event.get("data", {})
-                    content = data.get("content", "") 
-                    if content:
-                        chunk = OpenAIChatCompletionChunk(
-                            id=completion_id,
-                            object="chat.completion.chunk",
-                            created=created_timestamp,
-                            model=model,
-                            choices=[
-                                OpenAIChatCompletionChunkChoice(
-                                    index=0,
-                                    delta=OpenAIChatCompletionDelta(content=content),
-                                    finish_reason=None,
-                                )
-                            ],
-                        )
-                        yield f"data: {chunk.model_dump_json()}\n\n"
-
-                elif event_type == "workflow_completed":
-                    final_chunk = OpenAIChatCompletionChunk(
-                        id=completion_id,
-                        object="chat.completion.chunk",
-                        created=created_timestamp,
-                        model=model,
-                        choices=[
-                            OpenAIChatCompletionChunkChoice(
-                                index=0,
-                                delta=OpenAIChatCompletionDelta(),
-                                finish_reason="stop",
-                            )
-                        ],
-                    )
-                    yield f"data: {final_chunk.model_dump_json()}\n\n"
-                    break
-
-                elif event_type == "error":
-                    error_chunk = OpenAIChatCompletionChunk(
-                        id=completion_id,
-                        object="chat.completion.chunk",
-                        created=created_timestamp,
-                        model=model,
-                        choices=[
-                            OpenAIChatCompletionChunkChoice(
-                                index=0,
-                                delta=OpenAIChatCompletionDelta(),
-                                finish_reason="error",
-                            )
-                        ],
-                    )
-                    yield f"data: {error_chunk.model_dump_json()}\n\n"
-                    break
-
-        yield "data: [DONE]\n\n"
-
-    except asyncio.CancelledError:
-        raise
-    finally:
-        unsubscribe()
-
 
 def _sanitize_filename(name: str, limit: int = 100) -> str:
     """Sanitize filename for safe storage."""
@@ -549,106 +458,144 @@ async def chat_completion(req: ChatCompletionRequest, db: Session = Depends(get_
     # 1) Validate Platform API key and get project
     platform, project = _validate_platform_and_project(req.api_key, db)
 
-    # 2) Query visitor by platform_open_id
-    visitor = (
-        db.query(Visitor)
-        .filter(
-            Visitor.platform_id == platform.id,
-            Visitor.platform_open_id == req.from_uid,
-            Visitor.deleted_at.is_(None),
-        )
-        .first()
+    # 2) Get or create visitor (handles status reset if CLOSED)
+    visitor = await get_or_create_visitor(
+        db=db,
+        platform=platform,
+        platform_open_id=req.from_uid,
+        nickname=req.from_uid,
     )
 
     # 3) Prepare correlation and session IDs
-    client_msg_no = f"plat_{uuid4().hex}"
 
     if req.channel_id:
         channel_id_enc = req.channel_id
     else:
-        if visitor:
-            channel_id_enc = build_visitor_channel_id(visitor.id)
-        else:
-            channel_id_enc = build_visitor_channel_id(req.from_uid)
+        channel_id_enc = build_visitor_channel_id(visitor.id)
 
     channel_type = req.channel_type if req.channel_type is not None else CHANNEL_TYPE_CUSTOMER_SERVICE
     session_id = f"{channel_id_enc}@{channel_type}"
 
-    # 4) Check AI disabled status
+    # 3.5) If visitor is unassigned, try to assign staff
+    if visitor.is_unassigned:
+        transfer_result = await transfer_to_staff(
+            db=db,
+            visitor_id=visitor.id,
+            project_id=project.id,
+            source=AssignmentSource.RULE,
+            visitor_message=req.message,
+            add_to_queue_if_no_staff=True,
+            ai_disabled=visitor.ai_disabled,
+        )
+        
+        # Only return error response if transfer failed
+        if not transfer_result.success:
+            async def transfer_error_gen():
+                yield _sse_format({
+                    "event_type": "error",
+                    "data": {
+                        "message": transfer_result.message,
+                        "visitor_id": str(visitor.id),
+                    },
+                })
+            return StreamingResponse(transfer_error_gen(), media_type="text/event-stream")
+        
+        # Notify visitor profile updated on successful transfer
+        await wukongim_client.send_visitor_profile_updated(
+            visitor_id=str(visitor.id),
+            channel_id=channel_id_enc,
+            channel_type=channel_type,
+        )
+        # Continue to AI processing regardless of assignment result
+
+    # 4) Prepare visitor UID for WuKongIM forwarding
+    visitor_uid = f"{visitor.id}-vtr"
+
+    # 5) Check AI disabled status
     ai_disabled = _check_ai_disabled(platform, visitor)
 
-    # 5) Get staff info if available
-    staff_id, staff_cid = _get_staff_info(channel_id_enc, db)
-
-    # 6) Build payload
-    payload = IncomingMessagePayload(
-        from_uid=req.from_uid,
-        channel_id=channel_id_enc,
-        channel_type=channel_type,
-        platform_type=platform.type,
-        message_text=req.message,
-        project_id=str(platform.project_id),
-        project_api_key=project.api_key,
-        client_msg_no=client_msg_no,
-        session_id=session_id,
-        received_at=int(time.time() * 1000),
-        source="platform_sse",
-        extra=req.extra or {},
-        staff_id=staff_id,
-        staff_cid=staff_cid,
-        team_id=project.default_team_id,
-        system_message=req.system_message,
-        expected_output=req.expected_output,
-        ai_disabled=ai_disabled,
-    )
-
-    # 7) Conditional AI processing behavior
+    # 6) If AI is disabled, return appropriate response
     if ai_disabled:
-        ok = await publish_incoming_message(payload)
-
         async def disabled_gen():
-            if not ok:
-                yield _sse_format({"event_type": "error", "data": {"message": "failed to publish message"}})
-            else:
-                yield _sse_format({
-                    "event_type": "ai_disabled",
-                    "data": {"message": "AI responses are disabled for this visitor/platform"},
-                })
+            yield _sse_format({
+                "event_type": "ai_disabled",
+                "data": {"message": "AI responses are disabled for this visitor/platform"},
+            })
         return StreamingResponse(disabled_gen(), media_type="text/event-stream")
 
-    # 8) AI is enabled: subscribe then publish and stream
-    queue, unsubscribe = await platform_stream_bus.subscribe(client_msg_no)
+    # 7) AI is enabled: directly call AI service and stream response
+    ai_client = AIServiceClient()
+    team_id = str(project.default_team_id) if project.default_team_id else "default"
+    response_client_msg_no = f"ai_{uuid4().hex}"
 
-    async def event_generator() -> Any:
+    # 8) If wukongim_only=True, process in background and return immediately
+    if req.wukongim_only:
+        asyncio.create_task(_process_ai_stream_to_wukongim(
+            ai_client=ai_client,
+            message=req.message,
+            project_id=str(project.id),
+            team_id=team_id,
+            session_id=session_id,
+            user_id=req.from_uid,
+            channel_id=channel_id_enc,
+            channel_type=channel_type,
+            client_msg_no=response_client_msg_no,
+            from_uid=visitor_uid,
+            system_message=req.system_message,
+            expected_output=req.expected_output,
+        ))
+        
+        async def accepted_gen():
+            yield _sse_format({
+                "event_type": "accepted",
+                "data": {"message": "Request accepted, processing in background"},
+            })
+        return StreamingResponse(accepted_gen(), media_type="text/event-stream")
+
+    # 9) Normal mode: stream response to client
+    async def ai_event_generator() -> Any:
         try:
-            deadline = time.monotonic() + float(req.timeout_seconds or 120)
-            while True:
-                timeout_left = deadline - time.monotonic()
-                if timeout_left <= 0:
-                    yield _sse_format({"event_type": "timeout", "data": {"message": "stream timeout"}})
-                    break
-                try:
-                    event = await asyncio.wait_for(queue.get(), timeout=timeout_left)
-                except asyncio.TimeoutError:
-                    yield _sse_format({"event_type": "timeout", "data": {"message": "stream timeout"}})
+            async for _, event_payload in ai_client.run_supervisor_agent_stream(
+                message=req.message,
+                project_id=str(project.id),
+                team_id=team_id,
+                session_id=session_id,
+                user_id=req.from_uid,
+                enable_memory=True,
+                system_message=req.system_message,
+                expected_output=req.expected_output,
+            ):
+                if not isinstance(event_payload, dict):
+                    continue
+
+                event_type = event_payload.get("event_type", "team_run_content")
+                event_payload.setdefault("event_type", event_type)
+                data = event_payload.get("data") or {}
+
+                # Forward AI events to WuKongIM
+                await _forward_ai_event_to_wukongim(
+                    event_type=event_type,
+                    data=data,
+                    channel_id=channel_id_enc,
+                    channel_type=channel_type,
+                    client_msg_no=response_client_msg_no,
+                    from_uid=visitor_uid,
+                )
+
+                yield _sse_format(event_payload)
+
+                if event_type == "workflow_completed":
                     break
 
-                yield _sse_format(event)
-
-                if isinstance(event, dict) and event.get("event_type") == "workflow_completed":
-                    break
         except asyncio.CancelledError:
             raise
-        finally:
-            unsubscribe()
+        except Exception as e:
+            yield _sse_format({
+                "event_type": "error",
+                "data": {"message": f"AI service error: {str(e)}"},
+            })
 
-    ok = await publish_incoming_message(payload)
-    if not ok:
-        async def error_gen():
-            yield _sse_format({"event_type": "error", "data": {"message": "failed to publish message"}})
-        return StreamingResponse(error_gen(), media_type="text/event-stream")
-
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(ai_event_generator(), media_type="text/event-stream")
 
 
 @router.post(
@@ -1039,58 +986,60 @@ async def chat_completion_openai_compatible(
         req.messages, req.user
     )
 
-    # 3) Query visitor by platform_open_id to get visitor_id
-    visitor = (
-        db.query(Visitor)
-        .filter(
-            Visitor.platform_id == platform.id,
-            Visitor.platform_open_id == platform_open_id,
-            Visitor.deleted_at.is_(None),
-        )
-        .first()
+    # 3) Get or create visitor (handles status reset if CLOSED)
+    visitor = await get_or_create_visitor(
+        db=db,
+        platform=platform,
+        platform_open_id=platform_open_id,
     )
 
-    # 4) Auto-register visitor if not found
-    if not visitor:
-        visitor = await _create_visitor_with_channel(
-            db=db,
-            platform=platform,
-            platform_open_id=platform_open_id,
-        )
-
-    # 5) Prepare correlation and session IDs
+    # 4) Prepare correlation and session IDs
     client_msg_no = f"openai_{uuid4().hex}"
     channel_id_enc = build_visitor_channel_id(visitor.id)
     channel_type = CHANNEL_TYPE_CUSTOMER_SERVICE
     session_id = f"{channel_id_enc}@{channel_type}"
 
-    # 6) Get staff info if available
-    staff_id, staff_cid = _get_staff_info(channel_id_enc, db)
+    # 5) If visitor is unassigned, try to assign staff
+    if visitor.is_unassigned:
+        transfer_result = await transfer_to_staff(
+            db=db,
+            visitor_id=visitor.id,
+            project_id=project.id,
+            source=AssignmentSource.RULE,
+            visitor_message=user_message,
+            add_to_queue_if_no_staff=True,
+            ai_disabled=visitor.ai_disabled,
+        )
+        
+        if not transfer_result.success:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Transfer failed: {transfer_result.message}"
+            )
+        
+        # Notify visitor profile updated on successful transfer
+        await wukongim_client.send_visitor_profile_updated(
+            visitor_id=str(visitor.id),
+            channel_id=channel_id_enc,
+            channel_type=channel_type,
+        )
 
-    # 7) Build payload
-    payload = IncomingMessagePayload(
-        from_uid=str(visitor.id),
-        channel_id=channel_id_enc,
-        channel_type=channel_type,
-        platform_type=platform.type,
-        message_text=user_message,
-        project_id=str(platform.project_id),
-        project_api_key=project.api_key,
-        client_msg_no=client_msg_no,
-        session_id=session_id,
-        received_at=int(time.time() * 1000),
-        source="openai_compatible",
-        extra=None,
-        staff_id=staff_id,
-        staff_cid=staff_cid,
-        team_id=project.default_team_id,
-        system_message=system_message,
-        expected_output=None,
-        ai_disabled=False,
-    )
+    # 6) Prepare visitor UID for WuKongIM forwarding
+    visitor_uid = f"{visitor.id}-vtr"
 
-    # 8) Publish and subscribe to response stream
-    queue, unsubscribe = await _publish_and_subscribe(payload, client_msg_no)
+    # 7) Check AI disabled status
+    ai_disabled = _check_ai_disabled(platform, visitor)
+    
+    if ai_disabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="AI responses are disabled for this visitor/platform"
+        )
+
+    # 8) Call AI service directly
+    ai_client = AIServiceClient()
+    team_id = str(project.default_team_id) if project.default_team_id else "default"
+    response_client_msg_no = f"ai_{uuid4().hex}"
 
     # 9) Generate completion ID and timestamp
     completion_id = f"chatcmpl-{uuid4().hex[:24]}"
@@ -1099,15 +1048,70 @@ async def chat_completion_openai_compatible(
 
     # 10) Handle streaming vs non-streaming response
     if req.stream:
+        async def openai_stream_generator():
+            try:
+                async for _, event_payload in ai_client.run_supervisor_agent_stream(
+                    message=user_message,
+                    project_id=str(project.id),
+                    team_id=team_id,
+                    session_id=session_id,
+                    user_id=platform_open_id,
+                    enable_memory=True,
+                    system_message=system_message,
+                ):
+                    if not isinstance(event_payload, dict):
+                        continue
+
+                    event_type = event_payload.get("event_type", "team_run_content")
+                    data = event_payload.get("data") or {}
+
+                    # Forward AI events to WuKongIM
+                    chunk_text = await _forward_ai_event_to_wukongim(
+                        event_type=event_type,
+                        data=data,
+                        channel_id=channel_id_enc,
+                        channel_type=channel_type,
+                        client_msg_no=response_client_msg_no,
+                        from_uid=visitor_uid,
+                    )
+
+                    if event_type == "team_run_content" and chunk_text:
+                        chunk = OpenAIChatCompletionChunk(
+                            id=completion_id,
+                            created=created_timestamp,
+                            model=model_name,
+                            choices=[
+                                OpenAIChatCompletionChunkChoice(
+                                    index=0,
+                                    delta=OpenAIChatCompletionDelta(content=chunk_text),
+                                    finish_reason=None,
+                                )
+                            ],
+                        )
+                        yield f"data: {chunk.model_dump_json()}\n\n"
+                    elif event_type == "workflow_completed":
+                        final_chunk = OpenAIChatCompletionChunk(
+                            id=completion_id,
+                            created=created_timestamp,
+                            model=model_name,
+                            choices=[
+                                OpenAIChatCompletionChunkChoice(
+                                    index=0,
+                                    delta=OpenAIChatCompletionDelta(),
+                                    finish_reason="stop",
+                                )
+                            ],
+                        )
+                        yield f"data: {final_chunk.model_dump_json()}\n\n"
+                        yield "data: [DONE]\n\n"
+                        break
+
+            except Exception as e:
+                error_chunk = {"error": {"message": str(e), "type": "server_error"}}
+                yield f"data: {json.dumps(error_chunk)}\n\n"
+
         return StreamingResponse(
-            _generate_openai_stream_chunks(
-                queue=queue,
-                unsubscribe=unsubscribe,
-                completion_id=completion_id,
-                created_timestamp=created_timestamp,
-                model=model_name,
-                timeout_seconds=120
-            ),
+            openai_stream_generator(),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
@@ -1115,11 +1119,45 @@ async def chat_completion_openai_compatible(
             }
         )
 
-    # 11) Non-streaming response
+    # 11) Non-streaming response - collect all content
+    completion_text = ""
     try:
-        completion_text = await _wait_for_event(queue, timeout_seconds=120, collect_content=True)
-    finally:
-        unsubscribe()
+        async for _, event_payload in ai_client.run_supervisor_agent_stream(
+            message=user_message,
+            project_id=str(project.id),
+            team_id=team_id,
+            session_id=session_id,
+            user_id=platform_open_id,
+            enable_memory=True,
+            system_message=system_message,
+        ):
+            if not isinstance(event_payload, dict):
+                continue
+
+            event_type = event_payload.get("event_type", "team_run_content")
+            data = event_payload.get("data") or {}
+
+            # Forward AI events to WuKongIM and collect content
+            chunk_text = await _forward_ai_event_to_wukongim(
+                event_type=event_type,
+                data=data,
+                channel_id=channel_id_enc,
+                channel_type=channel_type,
+                client_msg_no=response_client_msg_no,
+                from_uid=visitor_uid,
+            )
+            
+            if chunk_text:
+                completion_text += chunk_text
+
+            if event_type == "workflow_completed":
+                break
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI service error: {str(e)}"
+        )
 
     # 12) Estimate token usage and build response
     prompt_tokens, completion_tokens, total_tokens = _estimate_token_usage(

@@ -88,6 +88,10 @@ export const STORAGE_KEYS = {
   UI: 'ui-store',
   PROVIDERS: 'providers-store',
   AUTH_TOKEN: 'tgo-auth-token',
+  // Split chat stores
+  CONVERSATION: 'conversation-store',
+  MESSAGE: 'message-store',
+  SYNC: 'sync-store',
 } as const;
 
 // ----------------------------------------------------------------------------
@@ -97,4 +101,24 @@ export const STORAGE_KEYS = {
 // This section is here to document the convention and avoid hardcoding
 // arbitrary strings. Prefer importing PlatformType where possible.
 export { PlatformType } from '@/types';
+
+// ----------------------------------------------------------------------------
+// WebSocket Event Types
+// ----------------------------------------------------------------------------
+
+/**
+ * WebSocket event type constants for real-time updates
+ */
+export const WS_EVENT_TYPE = {
+  /** Visitor profile updated (name, tags, etc.) */
+  VISITOR_PROFILE_UPDATED: 'visitor.profile.updated',
+  /** Visitor presence changed (online/offline) */
+  VISITOR_PRESENCE: 'visitor.presence',
+  /** Waiting queue updated (new visitor, assigned, etc.) */
+  QUEUE_UPDATED: 'queue.updated',
+  /** AI streaming text message end */
+  TEXT_MESSAGE_END: '___TextMessageEnd',
+} as const;
+
+export type WsEventType = typeof WS_EVENT_TYPE[keyof typeof WS_EVENT_TYPE];
 

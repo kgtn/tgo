@@ -10,28 +10,45 @@ import { useAuthStore } from '@/stores/authStore';
 import type { ChannelVisitorExtra, Message } from '@/types';
 import { MessagePayloadType, PlatformType } from '@/types';
 import { visitorApiService } from '@/services/visitorApi';
+import { conversationsApi } from '@/services/conversationsApi';
 import { useToast } from '@/hooks/useToast';
 import { showApiError, showSuccess } from '@/utils/toastHelpers';
 import Toggle from '@/components/ui/Toggle';
 import EmojiPickerPopover from '@/components/chat/EmojiPickerPopover';
 import { uploadChatImageWithProgress, uploadChatFileWithProgress } from '@/services/chatUploadApi';
 import { useWuKongIMWebSocket } from '@/hooks/useWuKongIMWebSocket';
+import { WsSendError } from '@/services/wukongimWebSocket';
 import { toAbsoluteApiUrl } from '@/utils/url';
 import { getFileIcon } from '@/utils/fileIcons';
 import { chatMessagesApiService } from '@/services/chatMessagesApi';
 import { APIError } from '@/services/api';
 
-import { Smile, Scissors, Image as ImageIcon, Folder, Pause } from 'lucide-react';
+import { Smile, Scissors, Image as ImageIcon, Folder, Pause, Loader2, UserPlus } from 'lucide-react';
 
 /**
- * Extract error message from error object (supports APIError and generic Error)
+ * Extract error message from error object (supports APIError, WsSendError and generic Error)
+ * @param error The error object
+ * @param t i18n translation function
+ * @param fallbackKey Fallback i18n key for unknown errors
+ * @param fallbackDefault Fallback default message
  */
-const getErrorMessage = (error: unknown): string => {
+const getErrorMessage = (
+  error: unknown, 
+  t?: (key: string, defaultValue: string) => string,
+  fallbackKey?: string,
+  fallbackDefault?: string
+): string => {
+  if (error instanceof WsSendError && t) {
+    return t(error.i18nKey, error.defaultMessage);
+  }
   if (error instanceof APIError) {
     return error.getUserMessage();
   }
   if (error instanceof Error) {
     return error.message;
+  }
+  if (t && fallbackKey && fallbackDefault) {
+    return t(fallbackKey, fallbackDefault);
   }
   return '上传失败';
 };
@@ -39,6 +56,7 @@ const getErrorMessage = (error: unknown): string => {
 interface MessageInputProps {
   onSendMessage?: (message: string) => void;
   isSending?: boolean;
+  onAcceptVisitor?: () => void;
 }
 
 /**
@@ -47,6 +65,7 @@ interface MessageInputProps {
 const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   isSending = false,
+  onAcceptVisitor,
 }) => {
   const { t } = useTranslation();
   const [message, setMessage] = useState<string>('');
@@ -140,7 +159,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   useEffect(() => {
     let switchFocusTimeout: number | undefined;
     if (activeChat && textareaRef.current) {
-      console.log('Conversation switched, focusing input for:', activeChat.visitorName);
+      console.log('Conversation switched, focusing input for:', activeChat.channelInfo?.name || activeChat.channelId);
       // Small delay to ensure the component is fully rendered
       switchFocusTimeout = window.setTimeout(() => {
         if (textareaRef.current) {
@@ -201,7 +220,18 @@ const MessageInput: React.FC<MessageInputProps> = ({
   );
   const visitorExtra = (channelInfo?.extra as ChannelVisitorExtra | undefined);
   const visitorId = visitorExtra?.id;
+  const serviceStatus = visitorExtra?.service_status;
+  const assignedStaffId = visitorExtra?.assigned_staff_id;
+  const isQueued = serviceStatus === 'queued';
+  const isClosed = serviceStatus === 'closed';
   const isAIDisabled = visitorExtra?.ai_disabled ?? false;
+  
+  // 获取分配坐席的频道信息（用于显示坐席名字）
+  const assignedStaffChannelId = assignedStaffId ? `${assignedStaffId}-staff` : undefined;
+  const assignedStaffChannelInfo = useChannelStore(state => 
+    assignedStaffChannelId ? state.getChannel(assignedStaffChannelId, 1) : undefined
+  );
+  const assignedStaffName = assignedStaffChannelInfo?.name;
   const isAIEnabled = !isAIDisabled;
   // agent/team 会话时不禁用手动输入
   const isManualDisabled = isAIChat ? false : isAIEnabled;
@@ -214,7 +244,42 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [isManualDisabled]);
 
+  // 当访客分配给其他坐席时，获取该坐席的频道信息以显示名字
+  const ensureChannel = useChannelStore(state => state.ensureChannel);
+  useEffect(() => {
+    if (assignedStaffChannelId && !assignedStaffChannelInfo) {
+      ensureChannel({ channel_id: assignedStaffChannelId, channel_type: 1 });
+    }
+  }, [assignedStaffChannelId, assignedStaffChannelInfo, ensureChannel]);
+
   const [isTogglingAI, setIsTogglingAI] = useState(false);
+  const [isAccepting, setIsAccepting] = useState(false);
+  
+  // Handle accepting a visitor from the waiting queue
+  const handleAcceptVisitor = useCallback(async () => {
+    if (!visitorId || isAccepting) return;
+    
+    try {
+      setIsAccepting(true);
+      await conversationsApi.acceptVisitor(visitorId);
+      
+      // Refresh channel info to get updated service_status
+      if (channelId && typeof channelType === 'number') {
+        const channelStore = useChannelStore.getState();
+        await channelStore.refreshChannel({ channel_id: channelId, channel_type: channelType });
+      }
+      
+      showSuccess(showToast, t('chat.input.accept.successTitle', '接入成功'), t('chat.input.accept.successMessage', '访客已成功接入'));
+      
+      // Notify parent to switch to "my" tab
+      onAcceptVisitor?.();
+    } catch (error) {
+      showApiError(showToast, error);
+    } finally {
+      setIsAccepting(false);
+    }
+  }, [visitorId, isAccepting, channelId, channelType, showToast, t, onAcceptVisitor]);
+
   // Image upload & send (WeChat-like)
   const user = useAuthStore(state => state.user);
   const addMessage = useChatStore(state => state.addMessage);
@@ -776,10 +841,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
           }
           if (!isConnected) throw new Error(t('chat.input.errors.websocketNotConnected.image', 'WebSocket 未连接，无法发送图片消息'));
           console.log("Sending image message via WebSocket", payload);
-          await sendWsMessage(channelId, channelType, payload);
+          await sendWsMessage(channelId, channelType, payload, nowId);
           updateMessageByClientMsgNo(nowId, { metadata: { ws_sent: true, ws_send_error: false } });
         } catch (err) {
-          const errMsg = err instanceof Error ? err.message : t('chat.input.errors.websocketFailed', 'WebSocket 发送失败，请检查网络连接');
+          const errMsg = getErrorMessage(err, t, 'chat.input.errors.websocketFailed', 'WebSocket 发送失败，请检查网络连接');
           updateMessageByClientMsgNo(nowId, { metadata: { ws_send_error: true, error_text: errMsg } });
           showApiError(showToast, err);
         }
@@ -882,10 +947,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
             }
           }
           if (!isConnected) throw new Error(t('chat.input.errors.websocketNotConnected.file', 'WebSocket 未连接，无法发送文件消息'));
-          await sendWsMessage(channelId, channelType, payload);
+          await sendWsMessage(channelId, channelType, payload, nowId);
           updateMessageByClientMsgNo(nowId, { metadata: { ws_sent: true, ws_send_error: false } });
         } catch (err) {
-          const errMsg = err instanceof Error ? err.message : t('chat.input.errors.websocketFailed', 'WebSocket 发送失败，请检查网络连接');
+          const errMsg = getErrorMessage(err, t, 'chat.input.errors.websocketFailed', 'WebSocket 发送失败，请检查网络连接');
           updateMessageByClientMsgNo(nowId, { metadata: { ws_send_error: true, error_text: errMsg } });
           showApiError(showToast, err);
         }
@@ -994,10 +1059,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
         }
         if (!isConnected) throw new Error(t('chat.input.errors.websocketNotConnected.message', 'WebSocket 未连接，无法发送消息'));
         console.log("Sending rich text with file message via WebSocket", payload);
-        await sendWsMessage(channelId, channelType, payload);
+        await sendWsMessage(channelId, channelType, payload, nowId);
         updateMessageByClientMsgNo(nowId, { metadata: { ws_sent: true, ws_send_error: false } });
       } catch (err) {
-        const errMsg = err instanceof Error ? err.message : t('chat.input.errors.websocketFailed', 'WebSocket 发送失败，请检查网络连接');
+        const errMsg = getErrorMessage(err, t, 'chat.input.errors.websocketFailed', 'WebSocket 发送失败，请检查网络连接');
         updateMessageByClientMsgNo(nowId, { metadata: { ws_send_error: true, error_text: errMsg } });
         showApiError(showToast, err);
       }
@@ -1112,10 +1177,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
       }
       if (!isConnected) throw new Error(t('chat.input.errors.websocketNotConnected.richText', 'WebSocket 未连接，无法发送图文消息'));
       console.log("Sending rich text with images message via WebSocket", payload);
-      await sendWsMessage(channelId, channelType, payload);
+      await sendWsMessage(channelId, channelType, payload, nowId);
       updateMessageByClientMsgNo(nowId, { metadata: { ws_sent: true, ws_send_error: false } });
     } catch (err) {
-      const errMsg = err instanceof Error ? err.message : t('chat.input.errors.websocketFailed', 'WebSocket 发送失败，请检查网络连接');
+      const errMsg = getErrorMessage(err, t, 'chat.input.errors.websocketFailed', 'WebSocket 发送失败，请检查网络连接');
       updateMessageByClientMsgNo(nowId, { metadata: { ws_send_error: true, error_text: errMsg } });
       showApiError(showToast, err);
     }
@@ -1128,6 +1193,65 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
     setMessage(e.target.value);
   };
+
+  // If visitor is in queued status, show accept button instead of input area
+  if (isQueued && visitorId) {
+    return (
+      <footer className="p-4 border-t border-gray-200/80 dark:border-gray-700/80 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg sticky bottom-0 z-10">
+        <div className="flex flex-col items-center justify-center py-6 space-y-3">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            {t('chat.input.accept.hint', '该访客正在等待接入')}
+          </p>
+          <button
+            onClick={handleAcceptVisitor}
+            disabled={isAccepting}
+            className="flex items-center space-x-2 px-6 py-2.5 bg-green-500 hover:bg-green-600 disabled:bg-green-400 text-white text-sm font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            {isAccepting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{t('chat.input.accept.accepting', '接入中...')}</span>
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-4 h-4" />
+                <span>{t('chat.input.accept.button', '接入访客')}</span>
+              </>
+            )}
+          </button>
+        </div>
+      </footer>
+    );
+  }
+
+  // If conversation is closed, don't show input area
+  if (isClosed) {
+    return (
+      <footer className="p-4 border-t border-gray-200/80 dark:border-gray-700/80 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg sticky bottom-0 z-10">
+        <div className="flex items-center justify-center py-4">
+          <p className="text-sm text-gray-400 dark:text-gray-500">
+            {t('chat.input.closed', '会话已结束')}
+          </p>
+        </div>
+      </footer>
+    );
+  }
+
+  // If visitor is assigned to another staff, don't show input area
+  // Only check when assignedStaffId exists and is not the current user
+  const isNotMyVisitor = assignedStaffId && user?.id && assignedStaffId !== user.id;
+  if (isNotMyVisitor) {
+    const staffDisplayName = assignedStaffName || t('chat.input.otherAgent', '其他坐席');
+    return (
+      <footer className="p-4 border-t border-gray-200/80 dark:border-gray-700/80 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg sticky bottom-0 z-10">
+        <div className="flex items-center justify-center py-4">
+          <p className="text-sm text-gray-400 dark:text-gray-500">
+            {t('chat.input.notMyVisitor', '该访客已分配给 {{name}}', { name: staffDisplayName })}
+          </p>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="p-4 border-t border-gray-200/80 dark:border-gray-700/80 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg sticky bottom-0 z-10">

@@ -167,26 +167,13 @@ async def unified_search(
                     detail="WuKongIM message search failed",
                 ) from exc
             else:
-                raw_messages = search_response.get("messages") or []
-                message_total = search_response.get("total")
-                response_limit = search_response.get("limit")
-                response_page = search_response.get("page")
-
-                try:
-                    message_total_int = int(message_total) if message_total is not None else len(raw_messages)
-                except (TypeError, ValueError):
-                    message_total_int = len(raw_messages)
-                try:
-                    response_limit_int = int(response_limit) if response_limit is not None else message_page_size
-                except (TypeError, ValueError):
-                    response_limit_int = message_page_size
-                try:
-                    response_page_int = int(response_page) if response_page is not None else message_page
-                except (TypeError, ValueError):
-                    response_page_int = message_page
+                raw_messages = search_response.messages
+                message_total_int = search_response.total
+                response_limit_int = message_page_size
+                response_page_int = message_page
 
                 for raw in raw_messages:
-                    normalized = _build_message_result(raw)
+                    normalized = _build_message_result(raw.model_dump())
                     messages.append(MessageSearchResult.model_validate(normalized))
                 message_pagination = SearchPagination(
                     page=response_page_int,

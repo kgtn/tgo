@@ -396,6 +396,41 @@ class AIServiceClient:
 
 
 
+    async def check_agents_exist(
+        self,
+        project_id: str,
+    ) -> bool:
+        """
+        Check if any agents exist for the specified project.
+        
+        Args:
+            project_id: Project ID to check
+            
+        Returns:
+            True if agents exist, False otherwise
+        """
+        try:
+            response = await self._make_request(
+                "GET",
+                "/api/v1/agents/exists",
+                params={"project_id": project_id},
+            )
+            data = await self._handle_response(response)
+            if isinstance(data, dict):
+                return data.get("exists", False)
+            return False
+        except HTTPException:
+            # If the check fails, assume agents exist to avoid blocking
+            logger.warning(
+                f"Failed to check agents existence for project {project_id}, assuming agents exist"
+            )
+            return True
+        except Exception as e:
+            logger.warning(
+                f"Unexpected error checking agents existence: {e}, assuming agents exist"
+            )
+            return True
+
     async def list_agents(
         self,
         project_id: str,

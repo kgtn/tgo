@@ -1,7 +1,7 @@
-import { WKIM, WKIMChannelType, WKIMEvent } from 'easyjssdk';
+import { WKIM, WKIMChannelType, WKIMEvent, ReasonCode } from 'easyjssdk';
 import { Message, WuKongIMMessage } from '../types';
 import { WuKongIMUtils } from './wukongimApi';
-import { CHANNEL_TYPE } from '@/constants';
+import { CHANNEL_TYPE, WS_EVENT_TYPE } from '@/constants';
 
 
 export interface WuKongIMWebSocketConfig {
@@ -16,6 +16,76 @@ export interface ConnectionStatus {
   error?: string;
 }
 
+/**
+ * WebSocket 发送消息的返回结果
+ */
+export interface WsSendResult {
+  messageId: string;
+  messageSeq: number;
+  reasonCode: ReasonCode;
+}
+
+/**
+ * ReasonCode 错误码对应的 i18n key 和默认消息
+ */
+export const REASON_CODE_I18N: Record<ReasonCode, { key: string; defaultMessage: string }> = {
+  [ReasonCode.Unknown]: { key: 'ws.error.unknown', defaultMessage: '未知错误' },
+  [ReasonCode.Success]: { key: 'ws.error.success', defaultMessage: '成功' },
+  [ReasonCode.AuthFail]: { key: 'ws.error.authFail', defaultMessage: '认证失败' },
+  [ReasonCode.SubscriberNotExist]: { key: 'ws.error.subscriberNotExist', defaultMessage: '订阅者不存在' },
+  [ReasonCode.InBlacklist]: { key: 'ws.error.inBlacklist', defaultMessage: '用户在黑名单中' },
+  [ReasonCode.ChannelNotExist]: { key: 'ws.error.channelNotExist', defaultMessage: '频道不存在' },
+  [ReasonCode.UserNotOnNode]: { key: 'ws.error.userNotOnNode', defaultMessage: '用户不在节点上' },
+  [ReasonCode.SenderOffline]: { key: 'ws.error.senderOffline', defaultMessage: '发送者离线' },
+  [ReasonCode.MsgKeyError]: { key: 'ws.error.msgKeyError', defaultMessage: '消息密钥错误' },
+  [ReasonCode.PayloadDecodeError]: { key: 'ws.error.payloadDecodeError', defaultMessage: '消息解码失败' },
+  [ReasonCode.ForwardSendPacketError]: { key: 'ws.error.forwardSendPacketError', defaultMessage: '转发消息失败' },
+  [ReasonCode.NotAllowSend]: { key: 'ws.error.notAllowSend', defaultMessage: '不允许发送消息' },
+  [ReasonCode.ConnectKick]: { key: 'ws.error.connectKick', defaultMessage: '连接被踢出' },
+  [ReasonCode.NotInWhitelist]: { key: 'ws.error.notInWhitelist', defaultMessage: '不在白名单中' },
+  [ReasonCode.QueryTokenError]: { key: 'ws.error.queryTokenError', defaultMessage: '查询 Token 失败' },
+  [ReasonCode.SystemError]: { key: 'ws.error.systemError', defaultMessage: '系统错误' },
+  [ReasonCode.ChannelIDError]: { key: 'ws.error.channelIDError', defaultMessage: '频道 ID 错误' },
+  [ReasonCode.NodeMatchError]: { key: 'ws.error.nodeMatchError', defaultMessage: '节点匹配错误' },
+  [ReasonCode.NodeNotMatch]: { key: 'ws.error.nodeNotMatch', defaultMessage: '节点不匹配' },
+  [ReasonCode.Ban]: { key: 'ws.error.ban', defaultMessage: '频道被禁' },
+  [ReasonCode.NotSupportHeader]: { key: 'ws.error.notSupportHeader', defaultMessage: '不支持的消息头' },
+  [ReasonCode.ClientKeyIsEmpty]: { key: 'ws.error.clientKeyIsEmpty', defaultMessage: '客户端密钥为空' },
+  [ReasonCode.RateLimit]: { key: 'ws.error.rateLimit', defaultMessage: '发送频率限制' },
+  [ReasonCode.NotSupportChannelType]: { key: 'ws.error.notSupportChannelType', defaultMessage: '不支持的频道类型' },
+  [ReasonCode.Disband]: { key: 'ws.error.disband', defaultMessage: '频道已解散' },
+  [ReasonCode.SendBan]: { key: 'ws.error.sendBan', defaultMessage: '发送被禁止' },
+};
+
+/**
+ * 获取 ReasonCode 对应的错误消息（用于非 React 环境，返回默认消息）
+ */
+export function getReasonCodeMessage(reasonCode: ReasonCode): string {
+  const info = REASON_CODE_I18N[reasonCode];
+  return info?.defaultMessage || `发送消息失败 (错误码: ${reasonCode})`;
+}
+
+/**
+ * 自定义错误类，包含 reasonCode 信息，供上层翻译使用
+ */
+export class WsSendError extends Error {
+  public readonly reasonCode: ReasonCode;
+  public readonly i18nKey: string;
+  public readonly defaultMessage: string;
+
+  constructor(reasonCode: ReasonCode) {
+    const info = REASON_CODE_I18N[reasonCode] || { 
+      key: 'ws.error.unknown', 
+      defaultMessage: `发送消息失败 (错误码: ${reasonCode})` 
+    };
+    super(info.defaultMessage);
+    this.name = 'WsSendError';
+    this.reasonCode = reasonCode;
+    this.i18nKey = info.key;
+    this.defaultMessage = info.defaultMessage;
+  }
+}
+
 export type MessageHandler = (message: Message) => void;
 export type ConnectionStatusHandler = (status: ConnectionStatus) => void;
 export type ErrorHandler = (error: any) => void;
@@ -26,6 +96,9 @@ export type VisitorPresenceHandler = (presence: VisitorPresenceEvent) => void;
 
 export type VisitorProfileUpdatedEvent = { visitorId?: string; channelId: string; channelType: number; raw?: any };
 export type VisitorProfileUpdatedHandler = (evt: VisitorProfileUpdatedEvent) => void;
+
+export type QueueUpdatedEvent = { raw?: any };
+export type QueueUpdatedHandler = (evt: QueueUpdatedEvent) => void;
 
 /**
  * WuKongIM WebSocket Service Manager
@@ -43,6 +116,7 @@ export class WuKongIMWebSocketService {
   private connectionStatusHandlers: ConnectionStatusHandler[] = [];
   private errorHandlers: ErrorHandler[] = [];
   private visitorProfileUpdatedHandlers: VisitorProfileUpdatedHandler[] = [];
+  private queueUpdatedHandlers: QueueUpdatedHandler[] = [];
 
   private streamMessageHandlers: StreamMessageHandler[] = [];
   private streamEndHandlers: StreamEndHandler[] = [];
@@ -219,18 +293,26 @@ export class WuKongIMWebSocketService {
 
   /**
    * Send a message through WebSocket
+   * @param channelId Target channel ID
+   * @param channelType Target channel type
+   * @param payload Message payload
+   * @param clientMsgNo Client message number for deduplication (required to match local message)
+   * @returns Promise with send result containing messageId, messageSeq, and reasonCode
+   * @throws Error if reasonCode is not Success or if connection fails
    */
   async sendMessage(
     channelId: string,
     channelType: number,
-    payload: any
-  ): Promise<any> {
+    payload: any,
+    clientMsgNo: string
+  ): Promise<WsSendResult> {
     console.log('🔌 WebSocket sendMessage called:', {
       hasIM: !!this.im,
       isConnected: this.connectionStatus.isConnected,
       isInitialized: this.isInitialized,
       channelId,
-      channelType
+      channelType,
+      clientMsgNo
     });
 
     // ENHANCED STATE CONSISTENCY CHECK
@@ -279,14 +361,31 @@ export class WuKongIMWebSocketService {
         channelId,
         channelType,
         wkimChannelType,
+        clientMsgNo,
         payloadType: typeof payload,
         payload: payload
       });
 
-      // Send message
-      const ack = await this.im!.send(channelId, wkimChannelType, payload);
-      console.log('🔌 WebSocket message sent successfully:', ack);
-      return ack;
+      // Send message with clientMsgNo in options to ensure server uses the same ID
+      const result = await this.im!.send(channelId, wkimChannelType, payload, { clientMsgNo });
+      
+      // Check reasonCode - Success = 1, other values indicate errors
+      if (result.reasonCode !== ReasonCode.Success) {
+        console.error('🔌 WebSocket send failed with reasonCode:', {
+          reasonCode: result.reasonCode,
+          messageId: result.messageId,
+          messageSeq: result.messageSeq
+        });
+        throw new WsSendError(result.reasonCode as ReasonCode);
+      }
+
+      console.log('🔌 WebSocket message sent successfully:', {
+        messageId: result.messageId,
+        messageSeq: result.messageSeq,
+        reasonCode: result.reasonCode
+      });
+      
+      return result as WsSendResult;
     } catch (error) {
       console.error('🔌 WebSocket send failed:', error);
 
@@ -545,7 +644,7 @@ export class WuKongIMWebSocketService {
           } else {
             this.notifyVisitorPresenceHandlers({ visitorId, channelId, channelType, isOnline, timestamp: ts, eventType: event.type, raw: payload });
           }
-        } else if (event.type === 'visitor.profile.updated') {
+        } else if (event.type === WS_EVENT_TYPE.VISITOR_PROFILE_UPDATED) {
           // Visitor profile updated -> refresh specific channel info
           let payload: any = null;
           try {
@@ -562,7 +661,17 @@ export class WuKongIMWebSocketService {
           } else {
             this.notifyVisitorProfileUpdatedHandlers({ visitorId, channelId, channelType, raw: payload });
           }
-        } else if (event.type === '___TextMessageEnd') {
+        } else if (event.type === WS_EVENT_TYPE.QUEUE_UPDATED) {
+          // Queue updated -> notify handlers to refresh unassigned count
+          let payload: any = null;
+          try {
+            payload = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+          } catch (e) {
+            console.warn('🔌 Failed to parse queue.updated data:', e);
+          }
+          console.log('🔌 Queue updated event received:', payload);
+          this.notifyQueueUpdatedHandlers({ raw: payload });
+        } else if (event.type === WS_EVENT_TYPE.TEXT_MESSAGE_END) {
           // AI streaming content ended
           console.log('🔌 Stream message ended:', { clientMsgNo: event.id });
           this.notifyStreamEndHandlers(event.id);
@@ -810,6 +919,37 @@ export class WuKongIMWebSocketService {
     };
   }
 
+  /**
+   * Notify queue updated handlers
+   */
+  private notifyQueueUpdatedHandlers(event: QueueUpdatedEvent): void {
+    console.log('🔌 Notifying queue updated handlers:', {
+      handlerCount: this.queueUpdatedHandlers.length
+    });
+
+    this.queueUpdatedHandlers.forEach(handler => {
+      try {
+        handler(event);
+      } catch (error) {
+        console.error('Queue updated handler error:', error);
+      }
+    });
+  }
+
+  /**
+   * Subscribe to queue updated events
+   */
+  onQueueUpdated(handler: QueueUpdatedHandler): () => void {
+    this.queueUpdatedHandlers.push(handler);
+    console.log('🔌 Queue updated handler registered, total:', this.queueUpdatedHandlers.length);
+    return () => {
+      const index = this.queueUpdatedHandlers.indexOf(handler);
+      if (index > -1) {
+        this.queueUpdatedHandlers.splice(index, 1);
+        console.log('🔌 Queue updated handler unregistered, remaining:', this.queueUpdatedHandlers.length);
+      }
+    };
+  }
 
   /**
    * Subscribe to stream messages (AI incremental updates)

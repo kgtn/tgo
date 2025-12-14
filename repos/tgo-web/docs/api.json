@@ -759,7 +759,7 @@
           "Staff"
         ],
         "summary": "List Staff",
-        "description": "List staff members.\n\nRetrieve a paginated list of staff members with optional filtering.\nRequires staff:list permission.",
+        "description": "List staff members.\n\nRetrieve a paginated list of staff members with optional filtering.\nRequires staff:list permission.\n\nReturns is_working field indicating if current time is within service hours.",
         "operationId": "list_staff_v1_staff_get",
         "security": [
           {
@@ -897,6 +897,129 @@
         },
         "responses": {
           "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/me": {
+      "get": {
+        "tags": [
+          "Staff"
+        ],
+        "summary": "Get Current Staff",
+        "description": "Get current staff member info.\n\nReturns the current authenticated staff member's information.\nIncludes is_working field based on VisitorAssignmentRule service hours.",
+        "operationId": "get_current_staff_v1_staff_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/staff/me/service-paused": {
+      "put": {
+        "tags": [
+          "Staff"
+        ],
+        "summary": "Toggle Service Paused Status",
+        "description": "Toggle current staff member's service paused status.",
+        "operationId": "toggle_my_service_paused_v1_staff_me_service_paused_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "paused",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean",
+              "title": "Paused"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/me/is-active": {
+      "put": {
+        "tags": [
+          "Staff"
+        ],
+        "summary": "Toggle Service Active Status",
+        "description": "Toggle current staff member's service active status (start/stop service).",
+        "operationId": "toggle_my_is_active_v1_staff_me_is_active_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "active",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean",
+              "title": "Active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -1065,6 +1188,122 @@
         }
       }
     },
+    "/v1/staff/{staff_id}/service-paused": {
+      "put": {
+        "tags": [
+          "Staff"
+        ],
+        "summary": "Set Staff Service Paused Status",
+        "description": "Set a staff member's service paused status. Requires staff:update permission.",
+        "operationId": "set_staff_service_paused_v1_staff__staff_id__service_paused_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "staff_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Staff Id"
+            }
+          },
+          {
+            "name": "paused",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean",
+              "title": "Paused"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/staff/{staff_id}/is-active": {
+      "put": {
+        "tags": [
+          "Staff"
+        ],
+        "summary": "Set Staff Service Active Status",
+        "description": "Set a staff member's service active status (start/stop service). Requires staff:update permission.",
+        "operationId": "set_staff_is_active_v1_staff__staff_id__is_active_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "staff_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Staff Id"
+            }
+          },
+          {
+            "name": "active",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "boolean",
+              "title": "Active"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/staff/wukongim/status": {
       "get": {
         "tags": [
@@ -1117,202 +1356,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WuKongIMOnlineStatusResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/v1/staff/wukongim/conversations/sync": {
-      "post": {
-        "tags": [
-          "Staff"
-        ],
-        "summary": "Sync WuKongIM Conversations",
-        "description": "Synchronize recent conversations from WuKongIM for the current staff member.",
-        "operationId": "sync_wukongim_conversations_v1_staff_wukongim_conversations_sync_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WuKongIMConversationSyncRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WuKongIMConversationSyncResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/v1/staff/wukongim/conversations/set-unread": {
-      "post": {
-        "tags": [
-          "Staff"
-        ],
-        "summary": "Set Conversation Unread Count",
-        "description": "Set the unread message count for a specific conversation.",
-        "operationId": "set_conversation_unread_v1_staff_wukongim_conversations_set_unread_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WuKongIMSetUnreadRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Set Conversation Unread V1 Staff Wukongim Conversations Set Unread Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/v1/staff/wukongim/conversations/delete": {
-      "post": {
-        "tags": [
-          "Staff"
-        ],
-        "summary": "Delete Conversation",
-        "description": "Delete a specific conversation from WuKongIM.",
-        "operationId": "delete_conversation_v1_staff_wukongim_conversations_delete_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WuKongIMDeleteConversationRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "type": "object",
-                  "title": "Response Delete Conversation V1 Staff Wukongim Conversations Delete Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/v1/staff/wukongim/channels/messages/sync": {
-      "post": {
-        "tags": [
-          "Staff"
-        ],
-        "summary": "Sync Channel Messages",
-        "description": "Synchronize messages from a specific WuKongIM channel.",
-        "operationId": "sync_channel_messages_v1_staff_wukongim_channels_messages_sync_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WuKongIMChannelMessageSyncRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WuKongIMChannelMessageSyncResponse"
                 }
               }
             }
@@ -2425,6 +2468,424 @@
             "HTTPBearer": []
           }
         ]
+      }
+    },
+    "/v1/visitor-waiting-queue": {
+      "get": {
+        "tags": [
+          "Visitor Waiting Queue"
+        ],
+        "summary": "获取等待队列列表",
+        "description": "获取当前项目的访客等待队列列表，支持分页和筛选。",
+        "operationId": "list_waiting_queue_v1_visitor_waiting_queue_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/WaitingStatusEnum"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按状态筛选",
+              "title": "Status"
+            },
+            "description": "按状态筛选"
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/QueueSourceEnum"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按来源筛选",
+              "title": "Source"
+            },
+            "description": "按来源筛选"
+          },
+          {
+            "name": "urgency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/QueueUrgencyEnum"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按紧急程度筛选",
+              "title": "Urgency"
+            },
+            "description": "按紧急程度筛选"
+          },
+          {
+            "name": "visitor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按访客ID筛选",
+              "title": "Visitor Id"
+            },
+            "description": "按访客ID筛选"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每页数量",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "每页数量"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "跳过数量",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "跳过数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitingQueueListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visitor-waiting-queue/waiting": {
+      "get": {
+        "tags": [
+          "Visitor Waiting Queue"
+        ],
+        "summary": "获取等待中的队列",
+        "description": "快捷接口：只返回状态为 waiting 的队列条目。",
+        "operationId": "list_waiting_only_v1_visitor_waiting_queue_waiting_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "urgency",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/QueueUrgencyEnum"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "按紧急程度筛选",
+              "title": "Urgency"
+            },
+            "description": "按紧急程度筛选"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每页数量",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "每页数量"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "跳过数量",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "跳过数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitingQueueListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visitor-waiting-queue/count": {
+      "get": {
+        "tags": [
+          "Visitor Waiting Queue"
+        ],
+        "summary": "获取等待队列数量",
+        "description": "获取当前项目等待中的访客数量。",
+        "operationId": "get_waiting_count_v1_visitor_waiting_queue_count_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Get Waiting Count V1 Visitor Waiting Queue Count Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/visitor-waiting-queue/{entry_id}": {
+      "get": {
+        "tags": [
+          "Visitor Waiting Queue"
+        ],
+        "summary": "获取队列条目详情",
+        "description": "根据ID获取单个队列条目的详细信息。",
+        "operationId": "get_queue_entry_v1_visitor_waiting_queue__entry_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitingQueueDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visitor-waiting-queue/accept": {
+      "post": {
+        "tags": [
+          "Visitor Waiting Queue"
+        ],
+        "summary": "接入访客",
+        "description": "客服接入等待队列中的访客。",
+        "operationId": "accept_visitor_v1_visitor_waiting_queue_accept_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AcceptVisitorRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptVisitorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/visitor-waiting-queue/{entry_id}/cancel": {
+      "post": {
+        "tags": [
+          "Visitor Waiting Queue"
+        ],
+        "summary": "取消队列条目",
+        "description": "取消等待队列中的条目（访客离开或其他原因）。",
+        "operationId": "cancel_queue_entry_v1_visitor_waiting_queue__entry_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Entry Id"
+            }
+          },
+          {
+            "name": "reason",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 255
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "取消原因",
+              "title": "Reason"
+            },
+            "description": "取消原因"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Cancel Queue Entry V1 Visitor Waiting Queue  Entry Id  Cancel Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/tags": {
@@ -9950,6 +10411,596 @@
         }
       }
     },
+    "/v1/conversations/my": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "同步我的会话列表",
+        "description": "同步当前客服在 WuKongIM 中的所有会话列表（包含历史会话），包含最近消息和频道信息。",
+        "operationId": "sync_my_conversations_v1_conversations_my_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "x-user-language",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-User-Language"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WuKongIMConversationSyncRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WuKongIMConversationWithChannelsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/all": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "获取所有服务过的访客会话",
+        "description": "获取当前客服服务过的所有访客会话列表（基于 VisitorSession 表，包括已关闭的会话），支持分页。",
+        "operationId": "sync_all_conversations_v1_conversations_all_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "msg_count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每个会话返回的最近消息数量",
+              "default": 20,
+              "title": "Msg Count"
+            },
+            "description": "每个会话返回的最近消息数量"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每页返回的会话数量",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "每页返回的会话数量"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "跳过的会话数量",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "跳过的会话数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WuKongIMConversationPaginatedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/waiting": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "获取等待中访客的会话",
+        "description": "获取所有等待中（未分配）访客的 WuKongIM 会话列表，用于客服查看待接入访客的对话内容，支持分页。",
+        "operationId": "sync_waiting_conversations_v1_conversations_waiting_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "msg_count",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每个会话返回的最近消息数量",
+              "default": 20,
+              "title": "Msg Count"
+            },
+            "description": "每个会话返回的最近消息数量"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "每页返回的会话数量",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "每页返回的会话数量"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "跳过的会话数量",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "跳过的会话数量"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WuKongIMConversationPaginatedResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/conversations/unread": {
+      "put": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "设置会话未读数",
+        "description": "设置指定会话的未读消息数量。",
+        "operationId": "set_conversation_unread_v1_conversations_unread_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WuKongIMSetUnreadRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Set Conversation Unread V1 Conversations Unread Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/conversations": {
+      "delete": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "删除会话",
+        "description": "从会话列表中删除指定的会话。",
+        "operationId": "delete_conversation_v1_conversations_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WuKongIMDeleteConversationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Delete Conversation V1 Conversations Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/conversations/messages": {
+      "post": {
+        "tags": [
+          "Conversations"
+        ],
+        "summary": "同步频道消息",
+        "description": "同步指定频道的历史消息记录。",
+        "operationId": "sync_channel_messages_v1_conversations_messages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WuKongIMChannelMessageSyncRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WuKongIMChannelMessageSyncResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/v1/sessions/{session_id}/close": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "通过会话ID关闭会话",
+        "description": "关闭指定的会话，更新会话状态和最后消息信息，并发送系统通知。",
+        "operationId": "close_session_by_id_v1_sessions__session_id__close_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorSessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions/visitor/{visitor_id}/close": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "通过访客ID关闭会话",
+        "description": "关闭指定访客当前进行中的会话。如果访客有多个进行中的会话，关闭最新的一个。",
+        "operationId": "close_session_by_visitor_id_v1_sessions_visitor__visitor_id__close_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "visitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visitor Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitorSessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions/{session_id}/transfer": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "转接会话",
+        "description": "将当前会话转接给另一个客服。",
+        "operationId": "transfer_session_v1_sessions__session_id__transfer_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferSessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/sessions/visitor/{visitor_id}/transfer": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "通过访客ID转接会话",
+        "description": "将指定访客的当前会话转接给另一个客服。",
+        "operationId": "transfer_session_by_visitor_id_v1_sessions_visitor__visitor_id__transfer_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "visitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visitor Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TransferSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TransferSessionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/search": {
       "get": {
         "tags": [
@@ -10805,6 +11856,126 @@
         "type": "object",
         "title": "AIProviderUpdate",
         "description": "Schema for updating an AI provider."
+      },
+      "AcceptVisitorRequest": {
+        "properties": {
+          "visitor_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Visitor Id",
+            "description": "Visitor ID to accept"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes",
+            "description": "Optional notes for the assignment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "visitor_id"
+        ],
+        "title": "AcceptVisitorRequest",
+        "description": "Request schema for accepting a visitor from queue."
+      },
+      "AcceptVisitorResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Whether the operation was successful"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Result message"
+          },
+          "entry_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Entry Id",
+            "description": "Queue entry ID"
+          },
+          "visitor_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Visitor Id",
+            "description": "Visitor ID"
+          },
+          "staff_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Staff Id",
+            "description": "Assigned staff ID"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "Session ID"
+          },
+          "channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Id",
+            "description": "Channel ID for communication"
+          },
+          "channel_type": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Type",
+            "description": "Channel type"
+          },
+          "wait_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wait Duration Seconds",
+            "description": "How long visitor waited"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "entry_id",
+          "visitor_id",
+          "staff_id"
+        ],
+        "title": "AcceptVisitorResponse",
+        "description": "Response schema after accepting a visitor."
       },
       "AddPageRequest": {
         "properties": {
@@ -12092,6 +13263,58 @@
         "title": "CancelByClientNoRequest",
         "description": "Request body for visitor-facing cancel endpoint (platform API key auth)."
       },
+      "ChannelInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Channel display name"
+          },
+          "avatar": {
+            "type": "string",
+            "title": "Avatar",
+            "description": "Channel avatar URL"
+          },
+          "channel_id": {
+            "type": "string",
+            "title": "Channel Id",
+            "description": "WuKongIM channel identifier"
+          },
+          "channel_type": {
+            "type": "integer",
+            "title": "Channel Type",
+            "description": "Channel type: 1 (personal), 251 (customer service)"
+          },
+          "entity_type": {
+            "type": "string",
+            "title": "Entity Type",
+            "description": "Entity type: 'visitor', 'staff', 'agent', or 'team'"
+          },
+          "extra": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra",
+            "description": "Additional entity-specific data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "avatar",
+          "channel_id",
+          "channel_type",
+          "entity_type"
+        ],
+        "title": "ChannelInfo",
+        "description": "Channel information schema for conversation response."
+      },
       "ChannelInfoResponse": {
         "properties": {
           "name": {
@@ -12261,6 +13484,12 @@
             ],
             "title": "Expected Output",
             "description": "Expected output format or description for the AI agent"
+          },
+          "wukongim_only": {
+            "type": "boolean",
+            "title": "Wukongim Only",
+            "description": "If True, only send to WuKongIM without returning stream response to client",
+            "default": false
           }
         },
         "type": "object",
@@ -12270,7 +13499,7 @@
           "from_uid"
         ],
         "title": "ChatCompletionRequest",
-        "description": "Request payload for streaming chat completion.\n\nNotes:\n- api_key refers to the Platform API key used by the client integration\n- from_uid identifies the end-user on the client platform\n- message is the chat input to be completed by AI\n- timeout_seconds bounds the SSE stream duration"
+        "description": "Request payload for streaming chat completion.\n\nNotes:\n- api_key refers to the Platform API key used by the client integration\n- from_uid identifies the end-user on the client platform\n- message is the chat input to be completed by AI\n- timeout_seconds bounds the SSE stream duration\n- wukongim_only: if True, only send to WuKongIM without returning stream to client"
       },
       "ChatFileUploadResponse": {
         "properties": {
@@ -16286,6 +17515,29 @@
         "title": "QAPairUpdateRequest",
         "description": "Schema for updating a QA pair."
       },
+      "QueueSourceEnum": {
+        "type": "string",
+        "enum": [
+          "ai_request",
+          "visitor",
+          "transfer",
+          "system",
+          "no_staff"
+        ],
+        "title": "QueueSourceEnum",
+        "description": "Queue entry source enumeration."
+      },
+      "QueueUrgencyEnum": {
+        "type": "string",
+        "enum": [
+          "low",
+          "normal",
+          "high",
+          "urgent"
+        ],
+        "title": "QueueUrgencyEnum",
+        "description": "Queue urgency level enumeration."
+      },
       "SearchMetadata": {
         "properties": {
           "query": {
@@ -16682,6 +17934,52 @@
         "title": "SkipOnboardingRequest",
         "description": "Request schema for skipping onboarding step(s)."
       },
+      "StaffBriefResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "Staff ID"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Staff name"
+          },
+          "username": {
+            "type": "string",
+            "title": "Username",
+            "description": "Staff username"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url",
+            "description": "Staff avatar URL"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "username"
+        ],
+        "title": "StaffBriefResponse",
+        "description": "Brief staff info for queue response."
+      },
       "StaffCancelRequest": {
         "properties": {
           "client_msg_no": {
@@ -16779,6 +18077,18 @@
             "$ref": "#/components/schemas/StaffStatus",
             "description": "Staff status: online, offline, busy",
             "default": "offline"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Whether staff is active for service (long-term switch)",
+            "default": true
+          },
+          "service_paused": {
+            "type": "boolean",
+            "title": "Service Paused",
+            "description": "Whether staff has temporarily paused accepting new visitors (short-term switch)",
+            "default": false
           },
           "password": {
             "type": "string",
@@ -17056,6 +18366,28 @@
             "$ref": "#/components/schemas/StaffStatus",
             "description": "Staff status"
           },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "description": "Whether staff is active for service (long-term switch)"
+          },
+          "service_paused": {
+            "type": "boolean",
+            "title": "Service Paused",
+            "description": "Whether staff has temporarily paused accepting new visitors (short-term switch)"
+          },
+          "is_working": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Working",
+            "description": "Whether staff is currently within service hours (computed field based on VisitorAssignmentRule)"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -17089,6 +18421,8 @@
           "username",
           "role",
           "status",
+          "is_active",
+          "service_paused",
           "created_at",
           "updated_at"
         ],
@@ -17351,6 +18685,30 @@
               }
             ],
             "description": "Updated status"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active",
+            "description": "Whether staff is active for service (long-term switch)"
+          },
+          "service_paused": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Paused",
+            "description": "Whether staff has temporarily paused accepting new visitors (short-term switch)"
           },
           "password": {
             "anyOf": [
@@ -18456,6 +19814,97 @@
         "type": "object",
         "title": "ToolUpdateRequest",
         "description": "Schema for updating an existing tool."
+      },
+      "TransferSessionRequest": {
+        "properties": {
+          "target_staff_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Target Staff Id",
+            "description": "ID of the staff to transfer the session to"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Reason for transfer"
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_staff_id"
+        ],
+        "title": "TransferSessionRequest",
+        "description": "Request schema for session transfer."
+      },
+      "TransferSessionResponse": {
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "title": "Success",
+            "description": "Whether the transfer was successful"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "Status message"
+          },
+          "old_session_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Old Session Id",
+            "description": "ID of the closed session"
+          },
+          "new_session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Session Id",
+            "description": "ID of the new session"
+          },
+          "visitor_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Visitor Id",
+            "description": "Visitor ID"
+          },
+          "from_staff_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "From Staff Id",
+            "description": "Original staff ID"
+          },
+          "to_staff_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "To Staff Id",
+            "description": "Target staff ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "success",
+          "message",
+          "old_session_id",
+          "visitor_id",
+          "from_staff_id",
+          "to_staff_id"
+        ],
+        "title": "TransferSessionResponse",
+        "description": "Response schema for session transfer."
       },
       "UnifiedSearchResponse": {
         "properties": {
@@ -19610,6 +21059,12 @@
             "title": "Is Online",
             "description": "Whether the visitor is currently online/active"
           },
+          "service_status": {
+            "type": "string",
+            "title": "Service Status",
+            "description": "Visitor service status: new, queued, active, closed",
+            "default": "new"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -19634,6 +21089,64 @@
         ],
         "title": "VisitorBasicResponse",
         "description": "Lightweight visitor response with essential fields only."
+      },
+      "VisitorBriefResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "Visitor ID"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Visitor name"
+          },
+          "nickname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nickname",
+            "description": "Visitor nickname"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url",
+            "description": "Visitor avatar URL"
+          },
+          "platform_open_id": {
+            "type": "string",
+            "title": "Platform Open Id",
+            "description": "Platform open ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "platform_open_id"
+        ],
+        "title": "VisitorBriefResponse",
+        "description": "Brief visitor info for queue response."
       },
       "VisitorCreate": {
         "properties": {
@@ -20299,6 +21812,12 @@
             "title": "Is Online",
             "description": "Whether the visitor is currently online/active"
           },
+          "service_status": {
+            "type": "string",
+            "title": "Service Status",
+            "description": "Visitor service status: new, queued, active, closed",
+            "default": "new"
+          },
           "platform_type": {
             "anyOf": [
               {
@@ -20333,6 +21852,19 @@
             ],
             "title": "Display Nickname",
             "description": "Display nickname based on client language (nickname_zh for zh, nickname for others)"
+          },
+          "assigned_staff_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Staff Id",
+            "description": "Currently assigned staff ID (from active session)"
           },
           "tags": {
             "items": {
@@ -20630,6 +22162,12 @@
             "title": "Is Online",
             "description": "Whether the visitor is currently online/active"
           },
+          "service_status": {
+            "type": "string",
+            "title": "Service Status",
+            "description": "Visitor service status: new, queued, active, closed",
+            "default": "new"
+          },
           "platform_type": {
             "anyOf": [
               {
@@ -20664,6 +22202,19 @@
             ],
             "title": "Display Nickname",
             "description": "Display nickname based on client language (nickname_zh for zh, nickname for others)"
+          },
+          "assigned_staff_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Staff Id",
+            "description": "Currently assigned staff ID (from active session)"
           },
           "tags": {
             "items": {
@@ -20729,6 +22280,156 @@
         ],
         "title": "VisitorResponse",
         "description": "Schema for visitor response with related entities."
+      },
+      "VisitorSessionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "Session ID"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id",
+            "description": "Project ID"
+          },
+          "visitor_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Visitor Id",
+            "description": "Visitor ID"
+          },
+          "staff_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Staff Id",
+            "description": "Staff member ID"
+          },
+          "platform_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform Id",
+            "description": "Platform ID"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Session status"
+          },
+          "closed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At",
+            "description": "When session was closed"
+          },
+          "duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Seconds",
+            "description": "Session duration in seconds"
+          },
+          "message_count": {
+            "type": "integer",
+            "title": "Message Count",
+            "description": "Total message count",
+            "default": 0
+          },
+          "visitor_message_count": {
+            "type": "integer",
+            "title": "Visitor Message Count",
+            "description": "Visitor message count",
+            "default": 0
+          },
+          "staff_message_count": {
+            "type": "integer",
+            "title": "Staff Message Count",
+            "description": "Staff message count",
+            "default": 0
+          },
+          "ai_message_count": {
+            "type": "integer",
+            "title": "Ai Message Count",
+            "description": "AI message count",
+            "default": 0
+          },
+          "last_message_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Message At",
+            "description": "Last message timestamp"
+          },
+          "last_message_seq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Message Seq",
+            "description": "Last message sequence number"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Session start timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "visitor_id",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "VisitorSessionResponse",
+        "description": "Schema for visitor session response."
       },
       "VisitorSystemInfoRequest": {
         "properties": {
@@ -21140,6 +22841,282 @@
         "type": "object",
         "title": "VisitorUpdate",
         "description": "Schema for updating a visitor."
+      },
+      "WaitingQueueDetailResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "Queue entry ID"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id",
+            "description": "Project ID"
+          },
+          "visitor_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Visitor Id",
+            "description": "Visitor ID"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id",
+            "description": "Associated session ID"
+          },
+          "assigned_staff_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned Staff Id",
+            "description": "Assigned staff ID"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "Queue entry source"
+          },
+          "urgency": {
+            "type": "string",
+            "title": "Urgency",
+            "description": "Urgency level"
+          },
+          "position": {
+            "type": "integer",
+            "title": "Position",
+            "description": "Queue position"
+          },
+          "priority": {
+            "type": "integer",
+            "title": "Priority",
+            "description": "Priority level"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Queue status"
+          },
+          "visitor_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visitor Message",
+            "description": "Visitor message"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason",
+            "description": "Queue entry reason"
+          },
+          "channel_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Id",
+            "description": "Channel ID"
+          },
+          "channel_type": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel Type",
+            "description": "Channel type"
+          },
+          "retry_count": {
+            "type": "integer",
+            "title": "Retry Count",
+            "description": "Retry count",
+            "default": 0
+          },
+          "wait_duration_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wait Duration Seconds",
+            "description": "Wait duration in seconds"
+          },
+          "entered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Entered At",
+            "description": "Queue entry time"
+          },
+          "assigned_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned At",
+            "description": "Assignment time"
+          },
+          "exited_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exited At",
+            "description": "Queue exit time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Created timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At",
+            "description": "Updated timestamp"
+          },
+          "visitor": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VisitorBriefResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Visitor details"
+          },
+          "assigned_staff": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StaffBriefResponse"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Assigned staff details"
+          },
+          "extra_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extra Metadata",
+            "description": "Extra metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "project_id",
+          "visitor_id",
+          "source",
+          "urgency",
+          "position",
+          "priority",
+          "status",
+          "entered_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "WaitingQueueDetailResponse",
+        "description": "Detailed response including visitor and staff info."
+      },
+      "WaitingQueueListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "List of items"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMetadata",
+            "description": "Pagination metadata"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WaitingQueueDetailResponse"
+            },
+            "type": "array",
+            "title": "Items",
+            "description": "List of waiting queue entries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pagination"
+        ],
+        "title": "WaitingQueueListResponse",
+        "description": "Paginated list of waiting queue entries."
+      },
+      "WaitingStatusEnum": {
+        "type": "string",
+        "enum": [
+          "waiting",
+          "assigned",
+          "cancelled",
+          "expired"
+        ],
+        "title": "WaitingStatusEnum",
+        "description": "Waiting queue status enumeration."
       },
       "WebsiteMetadataRequest": {
         "properties": {
@@ -21596,13 +23573,30 @@
         "title": "WuKongIMConversation",
         "description": "Schema for WuKongIM conversation."
       },
+      "WuKongIMConversationPaginatedResponse": {
+        "properties": {
+          "conversations": {
+            "items": {
+              "$ref": "#/components/schemas/WuKongIMConversation"
+            },
+            "type": "array",
+            "title": "Conversations",
+            "description": "List of conversations"
+          },
+          "pagination": {
+            "$ref": "#/components/schemas/PaginationMetadata",
+            "description": "Pagination metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pagination"
+        ],
+        "title": "WuKongIMConversationPaginatedResponse",
+        "description": "Paginated response for WuKongIM conversations."
+      },
       "WuKongIMConversationSyncRequest": {
         "properties": {
-          "version": {
-            "type": "integer",
-            "title": "Version",
-            "description": "Client's max conversation version (0 if no local data)"
-          },
           "last_msg_seqs": {
             "anyOf": [
               {
@@ -21623,13 +23617,10 @@
           }
         },
         "type": "object",
-        "required": [
-          "version"
-        ],
         "title": "WuKongIMConversationSyncRequest",
         "description": "Schema for conversation synchronization request."
       },
-      "WuKongIMConversationSyncResponse": {
+      "WuKongIMConversationWithChannelsResponse": {
         "properties": {
           "conversations": {
             "items": {
@@ -21638,14 +23629,22 @@
             "type": "array",
             "title": "Conversations",
             "description": "List of conversations"
+          },
+          "channels": {
+            "items": {
+              "$ref": "#/components/schemas/ChannelInfo"
+            },
+            "type": "array",
+            "title": "Channels",
+            "description": "List of channel information for each conversation"
           }
         },
         "type": "object",
         "required": [
           "conversations"
         ],
-        "title": "WuKongIMConversationSyncResponse",
-        "description": "Schema for conversation synchronization response."
+        "title": "WuKongIMConversationWithChannelsResponse",
+        "description": "Schema for conversation synchronization response with channel details."
       },
       "WuKongIMDeleteConversationRequest": {
         "properties": {

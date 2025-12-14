@@ -1,29 +1,40 @@
-"""Periodic and on-demand task to process waiting queue entries."""
+"""Waiting queue management tasks.
+
+This module provides:
+1. Fallback processing - Low-frequency periodic processing for missed entries
+2. Expired entries cleanup - Periodic cleanup of expired queue entries
+3. Legacy trigger function for backward compatibility
+"""
 
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime, timedelta
 from typing import Optional, Set
 from uuid import UUID
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.logging import get_logger
 from app.models import (
+    Visitor,
+    VisitorServiceStatus,
     VisitorWaitingQueue,
     WaitingStatus,
     AssignmentSource,
 )
-from app.services.transfer_service import transfer_to_human
+from app.services.transfer_service import transfer_to_staff
 
 logger = get_logger("tasks.process_waiting_queue")
 
-# Global state
-_task: Optional[asyncio.Task] = None
+# Global state for tasks
+_fallback_task: Optional[asyncio.Task] = None
+_cleanup_task: Optional[asyncio.Task] = None
 _processing_lock = asyncio.Lock()
-_processing_ids: Set[UUID] = set()  # Track currently processing entry IDs
+_processing_ids: Set[UUID] = set()
 _semaphore: Optional[asyncio.Semaphore] = None
 
 
@@ -35,352 +46,361 @@ def _get_semaphore() -> asyncio.Semaphore:
     return _semaphore
 
 
-async def _process_single_entry_internal(
-    db: Session,
-    entry: VisitorWaitingQueue,
-) -> bool:
+# =============================================================================
+# Fallback Processing - Low-frequency periodic processing for missed entries
+# =============================================================================
+
+async def _process_fallback_batch() -> None:
     """
-    Internal method to process a single queue entry.
+    Fallback batch processing for queue entries that may have been missed.
     
-    Args:
-        db: Database session
-        entry: VisitorWaitingQueue entry to process
-        
-    Returns:
-        True if processed successfully (assigned or appropriately handled), False otherwise
+    This runs at low frequency (default 2 minutes) to catch:
+    - Entries missed due to event trigger failures
+    - Entries present after system restart
+    - Entries where staff became available without triggering events
+    
+    Only processes entries that:
+    - Are in WAITING status
+    - Are not expired (expired_at > now or expired_at is null)
+    - Haven't been attempted recently (last_attempt_at < now - fallback_interval)
     """
-    try:
-        # Record this attempt
-        entry.record_attempt()
-        db.flush()
-        
-        # Call transfer_to_human service to try assigning a staff
-        result = await transfer_to_human(
-            db=db,
-            visitor_id=entry.visitor_id,
-            project_id=entry.project_id,
-            source=AssignmentSource.RULE,
-            visitor_message=entry.visitor_message,
-            session_id=entry.session_id,
-            notes=f"From waiting queue (entry_id={entry.id}, source={entry.source})",
-        )
-
-        if result.success and result.assigned_staff_id:
-            # Successfully assigned - mark entry as assigned
-            entry.assign_to_staff(result.assigned_staff_id)
-            db.commit()
-            
-            logger.info(
-                f"Queue entry {entry.id} assigned to staff {result.assigned_staff_id}",
-                extra={
-                    "entry_id": str(entry.id),
-                    "visitor_id": str(entry.visitor_id),
-                    "staff_id": str(result.assigned_staff_id),
-                    "wait_duration_seconds": entry.wait_duration_seconds,
-                },
-            )
-            return True
-            
-        elif result.success and not result.assigned_staff_id:
-            # No staff available - entry stays in queue
-            # Check if we've exceeded max retries
-            if entry.retry_count >= settings.QUEUE_PROCESS_MAX_RETRIES:
-                entry.expire()
-                db.commit()
-                logger.warning(
-                    f"Queue entry {entry.id} expired after {entry.retry_count} retries",
-                    extra={
-                        "entry_id": str(entry.id),
-                        "visitor_id": str(entry.visitor_id),
-                        "retry_count": entry.retry_count,
-                    },
-                )
-            else:
-                # Keep waiting, just update the attempt tracking
-                db.commit()
-                logger.debug(
-                    f"Queue entry {entry.id} still waiting (attempt {entry.retry_count})",
-                    extra={
-                        "entry_id": str(entry.id),
-                        "visitor_id": str(entry.visitor_id),
-                        "retry_count": entry.retry_count,
-                    },
-                )
-            return True
-            
-        else:
-            # Transfer failed
-            logger.warning(
-                f"Failed to process queue entry {entry.id}: {result.message}",
-                extra={
-                    "entry_id": str(entry.id),
-                    "visitor_id": str(entry.visitor_id),
-                    "error": result.message,
-                },
-            )
-            
-            # Check if we've exceeded max retries
-            if entry.retry_count >= settings.QUEUE_PROCESS_MAX_RETRIES:
-                entry.expire()
-                db.commit()
-                logger.warning(
-                    f"Queue entry {entry.id} expired after {entry.retry_count} failed attempts",
-                    extra={
-                        "entry_id": str(entry.id),
-                        "retry_count": entry.retry_count,
-                    },
-                )
-            else:
-                db.commit()
-            return False
-
-    except Exception as e:
-        logger.exception(
-            f"Exception processing queue entry {entry.id}",
-            extra={"entry_id": str(entry.id), "error": str(e)},
-        )
-        try:
-            db.rollback()
-        except Exception:
-            pass
-        return False
-
-
-async def process_queue_entry(entry_id: UUID) -> bool:
-    """
-    Process a single queue entry by ID.
-    
-    This method is safe to call from anywhere and handles locking
-    to prevent duplicate processing with the periodic task.
-    
-    Args:
-        entry_id: UUID of the VisitorWaitingQueue entry to process
-        
-    Returns:
-        True if processed successfully, False otherwise
-    """
-    # Check if already being processed
-    async with _processing_lock:
-        if entry_id in _processing_ids:
-            logger.debug(f"Queue entry {entry_id} is already being processed")
-            return False
-        _processing_ids.add(entry_id)
-    
-    # Acquire semaphore for concurrency control
-    semaphore = _get_semaphore()
-    
-    try:
-        async with semaphore:
-            db = SessionLocal()
-            try:
-                # Re-fetch the entry to ensure we have the latest state
-                entry = (
-                    db.query(VisitorWaitingQueue)
-                    .filter(
-                        VisitorWaitingQueue.id == entry_id,
-                        VisitorWaitingQueue.status == WaitingStatus.WAITING.value,
-                    )
-                    .first()
-                )
-                
-                if not entry:
-                    logger.debug(f"Queue entry {entry_id} not found or not waiting")
-                    return False
-                
-                return await _process_single_entry_internal(db, entry)
-                
-            finally:
-                db.close()
-    finally:
-        # Remove from processing set
-        async with _processing_lock:
-            _processing_ids.discard(entry_id)
-
-
-async def trigger_process_entry(entry_id: UUID) -> None:
-    """
-    Trigger processing of a queue entry in the background.
-    
-    This is a fire-and-forget method that schedules processing
-    without blocking the caller.
-    
-    Args:
-        entry_id: UUID of the VisitorWaitingQueue entry to process
-    """
-    asyncio.create_task(process_queue_entry(entry_id))
-
-
-async def _process_waiting_queue_batch() -> None:
-    """Scan DB for waiting queue entries and process them in parallel."""
     db = SessionLocal()
     try:
-        # Query waiting entries that need processing
-        # Only select entries that haven't been attempted recently (respect retry delay)
-        from datetime import datetime, timedelta
-        retry_delay = timedelta(seconds=settings.QUEUE_PROCESS_RETRY_DELAY_SECONDS)
-        cutoff_time = datetime.utcnow() - retry_delay
+        fallback_delay = timedelta(seconds=settings.QUEUE_FALLBACK_INTERVAL_SECONDS)
+        cutoff_time = datetime.utcnow() - fallback_delay
         
+        # Query entries that need fallback processing
         entries = (
             db.query(VisitorWaitingQueue)
             .filter(
                 VisitorWaitingQueue.status == WaitingStatus.WAITING.value,
-                # Only process entries that haven't been attempted recently
+                # Not expired
+                (
+                    (VisitorWaitingQueue.expired_at.is_(None)) |
+                    (VisitorWaitingQueue.expired_at > func.now())
+                ),
+                # Haven't been attempted recently
                 (
                     (VisitorWaitingQueue.last_attempt_at.is_(None)) |
                     (VisitorWaitingQueue.last_attempt_at < cutoff_time)
                 ),
             )
             .order_by(
-                VisitorWaitingQueue.priority.desc(),  # Higher priority first
-                VisitorWaitingQueue.position.asc(),   # Lower position first
+                VisitorWaitingQueue.priority.desc(),
+                VisitorWaitingQueue.position.asc(),
             )
             .limit(settings.QUEUE_PROCESS_BATCH_SIZE)
             .all()
         )
 
         if not entries:
-            logger.debug("Queue processor: no waiting entries to process")
+            logger.debug("Fallback processor: no entries to process")
             return
 
-        # Filter out entries that are already being processed
+        # Filter out entries already being processed
         async with _processing_lock:
-            entries_to_process = [
-                e for e in entries if e.id not in _processing_ids
-            ]
-            # Mark them as being processed
+            entries_to_process = [e for e in entries if e.id not in _processing_ids]
             for e in entries_to_process:
                 _processing_ids.add(e.id)
 
         if not entries_to_process:
-            logger.debug("Queue processor: all entries are already being processed")
+            logger.debug("Fallback processor: all entries already being processed")
             return
 
         logger.info(
-            f"Queue processor: processing {len(entries_to_process)} entries",
+            f"Fallback processor: processing {len(entries_to_process)} entries",
             extra={"count": len(entries_to_process)},
         )
 
-        # Process entries in parallel with semaphore control
+        # Group entries by project for efficient processing
+        project_entries: dict[UUID, list[VisitorWaitingQueue]] = {}
+        for entry in entries_to_process:
+            if entry.project_id not in project_entries:
+                project_entries[entry.project_id] = []
+            project_entries[entry.project_id].append(entry)
+
+        # Process each project's entries
         semaphore = _get_semaphore()
         
-        async def process_with_semaphore(entry: VisitorWaitingQueue) -> tuple[UUID, bool]:
-            """Process a single entry with semaphore control."""
+        async def process_project_entries(
+            project_id: UUID,
+            entries: list[VisitorWaitingQueue]
+        ) -> tuple[int, int]:
+            """Process entries for a single project."""
             async with semaphore:
-                # Create new DB session for this entry
                 entry_db = SessionLocal()
+                assigned = 0
+                processed = 0
                 try:
-                    # Re-fetch to get latest state
-                    fresh_entry = (
-                        entry_db.query(VisitorWaitingQueue)
-                        .filter(
-                            VisitorWaitingQueue.id == entry.id,
-                            VisitorWaitingQueue.status == WaitingStatus.WAITING.value,
-                        )
-                        .first()
-                    )
-                    
-                    if not fresh_entry:
-                        return entry.id, False
-                    
-                    result = await _process_single_entry_internal(entry_db, fresh_entry)
-                    return entry.id, result
-                except Exception as e:
-                    logger.exception(
-                        f"Exception in parallel processing for entry {entry.id}",
-                        extra={"entry_id": str(entry.id), "error": str(e)},
-                    )
-                    return entry.id, False
+                    for entry in entries:
+                        try:
+                            # Re-fetch entry to get latest state
+                            fresh_entry = (
+                                entry_db.query(VisitorWaitingQueue)
+                                .filter(
+                                    VisitorWaitingQueue.id == entry.id,
+                                    VisitorWaitingQueue.status == WaitingStatus.WAITING.value,
+                                )
+                                .first()
+                            )
+                            
+                            if not fresh_entry:
+                                continue
+                                
+                            fresh_entry.record_attempt()
+                            processed += 1
+                            
+                            result = await transfer_to_staff(
+                                db=entry_db,
+                                visitor_id=fresh_entry.visitor_id,
+                                project_id=project_id,
+                                source=AssignmentSource.RULE,
+                                visitor_message=fresh_entry.visitor_message,
+                                session_id=fresh_entry.session_id,
+                                notes=f"Fallback processing (entry_id={fresh_entry.id})",
+                                skip_queue_status_check=True,
+                                auto_commit=False,
+                                add_to_queue_if_no_staff=False,  # Already in queue
+                            )
+                            
+                            if result.success and result.assigned_staff_id:
+                                fresh_entry.assign_to_staff(result.assigned_staff_id)
+                                entry_db.commit()
+                                assigned += 1
+                                logger.info(
+                                    f"Fallback: entry {fresh_entry.id} assigned to {result.assigned_staff_id}",
+                                    extra={
+                                        "entry_id": str(fresh_entry.id),
+                                        "staff_id": str(result.assigned_staff_id),
+                                    }
+                                )
+                            else:
+                                entry_db.commit()  # Commit attempt record
+                                # No staff available, stop processing this project
+                                break
+                                
+                        except Exception as e:
+                            logger.error(f"Fallback: error processing entry {entry.id}: {e}")
+                            try:
+                                entry_db.rollback()
+                            except Exception:
+                                pass
+                                
+                    return assigned, processed
                 finally:
                     entry_db.close()
-        
-        # Run all tasks in parallel
-        tasks = [process_with_semaphore(e) for e in entries_to_process]
+
+        # Run project processing in parallel
+        tasks = [
+            process_project_entries(pid, pentries)
+            for pid, pentries in project_entries.items()
+        ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
-        # Count results
-        processed = 0
-        failed = 0
+        # Summarize results
+        total_assigned = 0
+        total_processed = 0
         for result in results:
-            if isinstance(result, Exception):
-                failed += 1
-            elif isinstance(result, tuple) and result[1]:
-                processed += 1
-            else:
-                failed += 1
-        
-        # Remove all from processing set
+            if isinstance(result, tuple):
+                total_assigned += result[0]
+                total_processed += result[1]
+
+        # Remove from processing set
         async with _processing_lock:
             for e in entries_to_process:
                 _processing_ids.discard(e.id)
 
         logger.info(
-            f"Queue processor: batch complete",
+            f"Fallback processor: batch complete",
             extra={
                 "total": len(entries_to_process),
-                "processed": processed,
-                "failed": failed,
+                "processed": total_processed,
+                "assigned": total_assigned,
             },
         )
 
     except Exception as e:
-        logger.exception(
-            "Queue processor: batch exception",
-            extra={"error": str(e)},
-        )
-        try:
-            db.rollback()
-        except Exception:
-            pass
+        logger.exception(f"Fallback processor: batch exception: {e}")
     finally:
         db.close()
 
 
-async def _loop() -> None:
-    """Main processing loop."""
-    interval_sec = max(1, settings.QUEUE_PROCESS_INTERVAL_SECONDS)
+async def _fallback_loop() -> None:
+    """Fallback processing loop."""
+    interval_sec = max(1, settings.QUEUE_FALLBACK_INTERVAL_SECONDS)
     while True:
         try:
-            await _process_waiting_queue_batch()
+            await _process_fallback_batch()
         except Exception as e:
-            logger.exception(f"Queue processor loop exception: {e}")
+            logger.exception(f"Fallback processor loop exception: {e}")
         await asyncio.sleep(interval_sec)
 
 
-def start_queue_processor() -> None:
-    """Start periodic background task if enabled."""
-    global _task
-    if not settings.QUEUE_PROCESS_ENABLED:
-        logger.info("Queue processor disabled by config")
-        return
-    if _task and not _task.done():
-        return
+# =============================================================================
+# Expired Entries Cleanup
+# =============================================================================
+
+async def _cleanup_expired_entries() -> None:
+    """
+    Clean up expired queue entries.
+    
+    Finds entries where expired_at < now and:
+    - Marks them as EXPIRED
+    - Resets visitor service status to CLOSED
+    - Optionally sends notification to visitor
+    """
+    db = SessionLocal()
     try:
-        _task = asyncio.create_task(_loop())
+        expired_entries = (
+            db.query(VisitorWaitingQueue)
+            .filter(
+                VisitorWaitingQueue.status == WaitingStatus.WAITING.value,
+                VisitorWaitingQueue.expired_at.isnot(None),
+                VisitorWaitingQueue.expired_at < func.now(),
+            )
+            .limit(100)  # Process in batches
+            .all()
+        )
+
+        if not expired_entries:
+            logger.debug("Cleanup: no expired entries found")
+            return
+
         logger.info(
-            "Queue processor task started",
-            extra={
-                "interval_seconds": settings.QUEUE_PROCESS_INTERVAL_SECONDS,
-                "batch_size": settings.QUEUE_PROCESS_BATCH_SIZE,
-                "max_workers": settings.QUEUE_PROCESS_MAX_WORKERS,
-            },
+            f"Cleanup: processing {len(expired_entries)} expired entries",
+            extra={"count": len(expired_entries)},
         )
+
+        for entry in expired_entries:
+            try:
+                entry.expire()
+                
+                # Reset visitor service status
+                visitor = db.query(Visitor).filter(
+                    Visitor.id == entry.visitor_id
+                ).first()
+                
+                if visitor and visitor.service_status == VisitorServiceStatus.QUEUED.value:
+                    visitor.service_status = VisitorServiceStatus.CLOSED.value
+                    visitor.updated_at = datetime.utcnow()
+                
+                db.commit()
+                
+                logger.info(
+                    f"Cleanup: expired entry {entry.id}",
+                    extra={
+                        "entry_id": str(entry.id),
+                        "visitor_id": str(entry.visitor_id),
+                        "wait_seconds": entry.wait_duration_seconds,
+                    }
+                )
+                
+                # TODO: Send notification to visitor about queue timeout
+                # await notify_visitor_queue_expired(entry.visitor_id)
+                
+            except Exception as e:
+                logger.error(f"Cleanup: error expiring entry {entry.id}: {e}")
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
+
     except Exception as e:
-        logger.warning(
-            "Failed to start queue processor task",
-            extra={"error": str(e)},
-        )
+        logger.exception(f"Cleanup: exception: {e}")
+    finally:
+        db.close()
 
 
-async def stop_queue_processor() -> None:
-    """Stop the periodic background task."""
-    global _task
-    if _task:
-        _task.cancel()
+async def _cleanup_loop() -> None:
+    """Cleanup task loop."""
+    interval_sec = max(1, settings.QUEUE_CLEANUP_INTERVAL_SECONDS)
+    while True:
         try:
-            await _task
+            await _cleanup_expired_entries()
+        except Exception as e:
+            logger.exception(f"Cleanup loop exception: {e}")
+        await asyncio.sleep(interval_sec)
+
+
+# =============================================================================
+# Task Lifecycle Management
+# =============================================================================
+
+def start_queue_tasks() -> None:
+    """Start queue processing background tasks."""
+    global _fallback_task, _cleanup_task
+    
+    # Start fallback processor if enabled
+    if settings.QUEUE_FALLBACK_ENABLED:
+        if _fallback_task is None or _fallback_task.done():
+            try:
+                _fallback_task = asyncio.create_task(_fallback_loop())
+                logger.info(
+                    "Queue fallback processor started",
+                    extra={"interval_seconds": settings.QUEUE_FALLBACK_INTERVAL_SECONDS},
+                )
+            except Exception as e:
+                logger.warning(f"Failed to start fallback processor: {e}")
+    else:
+        logger.info("Queue fallback processor disabled by config")
+    
+    # Start cleanup task
+    if _cleanup_task is None or _cleanup_task.done():
+        try:
+            _cleanup_task = asyncio.create_task(_cleanup_loop())
+            logger.info(
+                "Queue cleanup task started",
+                extra={"interval_seconds": settings.QUEUE_CLEANUP_INTERVAL_SECONDS},
+            )
+        except Exception as e:
+            logger.warning(f"Failed to start cleanup task: {e}")
+
+
+async def stop_queue_tasks() -> None:
+    """Stop queue processing background tasks."""
+    global _fallback_task, _cleanup_task
+    
+    tasks_to_stop = []
+    
+    if _fallback_task:
+        _fallback_task.cancel()
+        tasks_to_stop.append(_fallback_task)
+        
+    if _cleanup_task:
+        _cleanup_task.cancel()
+        tasks_to_stop.append(_cleanup_task)
+    
+    for task in tasks_to_stop:
+        try:
+            await task
         except asyncio.CancelledError:
             pass
         except Exception:
             pass
-        _task = None
-        logger.info("Queue processor task stopped")
+    
+    _fallback_task = None
+    _cleanup_task = None
+    logger.info("Queue tasks stopped")
+
+
+# =============================================================================
+# Legacy Functions (for backward compatibility)
+# =============================================================================
+
+async def trigger_process_entry(entry_id: UUID) -> None:
+    """
+    Trigger processing of a queue entry.
+    
+    This is a backward-compatible wrapper that delegates to the
+    new queue_trigger_service.
+    
+    Args:
+        entry_id: UUID of the VisitorWaitingQueue entry to process
+    """
+    from app.services.queue_trigger_service import trigger_queue_for_entry
+    await trigger_queue_for_entry(entry_id)
+
+
+# Legacy aliases for backward compatibility
+start_queue_processor = start_queue_tasks
+stop_queue_processor = stop_queue_tasks

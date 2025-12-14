@@ -5,7 +5,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -128,6 +128,14 @@ class VisitorWaitingQueue(Base):
         comment="Queue status: waiting, assigned, cancelled, expired",
     )
 
+    # AI disabled flag
+    ai_disabled: Mapped[Optional[bool]] = mapped_column(
+        Boolean,
+        nullable=True,
+        default=None,
+        comment="Whether AI responses should be disabled (None=keep current, True=disable, False=enable)",
+    )
+
     # Context information
     visitor_message: Mapped[Optional[str]] = mapped_column(
         Text,
@@ -160,16 +168,14 @@ class VisitorWaitingQueue(Base):
         comment="Additional contextual metadata",
     )
 
-    # Retry tracking
-    retry_count: Mapped[int] = mapped_column(
-        Integer,
-        nullable=False,
-        default=0,
-        comment="Number of assignment retry attempts",
-    )
+    # Processing tracking
     last_attempt_at: Mapped[Optional[datetime]] = mapped_column(
         nullable=True,
         comment="Timestamp of the last assignment attempt",
+    )
+    expired_at: Mapped[Optional[datetime]] = mapped_column(
+        nullable=True,
+        comment="When this entry should expire if not assigned",
     )
 
     # Timestamps
@@ -228,11 +234,36 @@ class VisitorWaitingQueue(Base):
         return self.status == WaitingStatus.WAITING.value
 
     @property
+    def is_expired(self) -> bool:
+        """Check if this entry has passed its expiration time."""
+        if not self.expired_at:
+            return False
+        return datetime.utcnow() > self.expired_at
+
+    @property
     def wait_duration_seconds(self) -> Optional[int]:
         """Calculate how long the visitor has been waiting."""
         if self.exited_at:
             return int((self.exited_at - self.entered_at).total_seconds())
         return int((datetime.utcnow() - self.entered_at).total_seconds())
+
+    def needs_fallback_processing(self, fallback_delay_seconds: int = 120) -> bool:
+        """Check if this entry should be processed by the fallback processor.
+        
+        Returns True if:
+        - Status is WAITING
+        - Not expired
+        - Either never attempted, or last attempt was more than fallback_delay_seconds ago
+        """
+        if self.status != WaitingStatus.WAITING.value:
+            return False
+        if self.is_expired:
+            return False
+        if self.last_attempt_at is None:
+            return True
+        from datetime import timedelta
+        cutoff = datetime.utcnow() - timedelta(seconds=fallback_delay_seconds)
+        return self.last_attempt_at < cutoff
 
     def assign_to_staff(self, staff_id: UUID) -> None:
         """Mark this queue entry as assigned to a staff member."""
@@ -260,7 +291,6 @@ class VisitorWaitingQueue(Base):
     def record_attempt(self) -> None:
         """Record an assignment attempt."""
         now = datetime.utcnow()
-        self.retry_count += 1
         self.last_attempt_at = now
         self.updated_at = now
 

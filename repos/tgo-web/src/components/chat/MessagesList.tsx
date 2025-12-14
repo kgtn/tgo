@@ -145,14 +145,38 @@ const MessagesListComponent: React.FC<MessagesListProps> = ({
     const historical = historicalMessages.map((wkMessage) => ({
       key: `historical-${wkMessage.message_id_str}`,
       message: convertWuKongIMToMessage(wkMessage),
-      isHistorical: true
+      isHistorical: true,
+      messageIdStr: wkMessage.message_id_str,
+      clientMsgNo: wkMessage.client_msg_no,
     }));
 
-    const realtime = realtimeMessages.map((message) => ({
-      key: `realtime-${message.id}`,
-      message,
-      isHistorical: false
-    }));
+    // Build a Set of message identifiers from historical messages for deduplication
+    const historicalIds = new Set<string>();
+    historical.forEach(item => {
+      if (item.messageIdStr) historicalIds.add(item.messageIdStr);
+      if (item.clientMsgNo) historicalIds.add(item.clientMsgNo);
+    });
+
+    // Filter out realtime messages that already exist in historical messages
+    const realtime = realtimeMessages
+      .filter((message) => {
+        // Check by messageId (string form) or clientMsgNo
+        const msgIdStr = message.messageId || message.id;
+        const clientNo = message.clientMsgNo;
+        
+        // If either identifier matches historical, skip this realtime message
+        if (msgIdStr && historicalIds.has(msgIdStr)) return false;
+        if (clientNo && historicalIds.has(clientNo)) return false;
+        
+        return true;
+      })
+      .map((message) => ({
+        key: `realtime-${message.id}`,
+        message,
+        isHistorical: false,
+        messageIdStr: message.messageId || message.id,
+        clientMsgNo: message.clientMsgNo,
+      }));
 
     return [...historical, ...realtime];
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -390,7 +414,6 @@ const MessagesListComponent: React.FC<MessagesListProps> = ({
     }
   }, [hasMoreHistory, hasMoreNewerHistory, isLoadingHistory, isLoadingMore, isLoadingMoreNewer, onLoadMore, onLoadMoreNewer]);
   if (isWuKongIMChat) {
-    console.log('combinedMessages--->', combinedMessages);
     return (
       <div
         className="h-full overflow-y-auto p-6 space-y-6"

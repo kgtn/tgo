@@ -11,6 +11,8 @@
     "remove": "移除",
     "search": "搜索",
     "loading": "加载中...",
+    "loadingMore": "加载中...",
+    "noMore": "没有更多了",
     "saving": "保存中...",
     "saveFailed": "保存失败",
     "success": "成功",
@@ -1104,7 +1106,12 @@
     },
     "list": {
       "searchPlaceholder": "搜索",
-      "searchAria": "搜索对话"
+      "searchAria": "搜索对话",
+      "tabs": {
+        "mine": "我的",
+        "unassigned": "未分配",
+        "all": "全部"
+      }
     },
     "header": {
       "staffFallback": "客服",
@@ -1208,6 +1215,9 @@
         "label": "发送",
         "sending": "发送中..."
       },
+      "closed": "会话已结束",
+      "notMyVisitor": "该访客已分配给 {{name}}",
+      "otherAgent": "其他坐席",
       "errors": {
         "images": {
           "unsupportedTypeTitle": "不支持的文件类型",
@@ -2279,6 +2289,37 @@
       "knowledgeBaseUploaded": "上传知识库",
       "agentCreated": "创建 AI Agent 并关联知识库",
       "messageReceived": "收到平台发的消息"
+    }
+  },
+  "ws": {
+    "error": {
+      "unknown": "未知错误",
+      "success": "成功",
+      "authFail": "认证失败",
+      "subscriberNotExist": "订阅者不存在",
+      "inBlacklist": "用户在黑名单中",
+      "channelNotExist": "频道不存在",
+      "userNotOnNode": "用户不在节点上",
+      "senderOffline": "发送者离线",
+      "msgKeyError": "消息密钥错误",
+      "payloadDecodeError": "消息解码失败",
+      "forwardSendPacketError": "转发消息失败",
+      "notAllowSend": "不允许发送消息",
+      "connectKick": "连接被踢出",
+      "notInWhitelist": "不在白名单中",
+      "queryTokenError": "查询 Token 失败",
+      "systemError": "系统错误",
+      "channelIDError": "频道 ID 错误",
+      "nodeMatchError": "节点匹配错误",
+      "nodeNotMatch": "节点不匹配",
+      "ban": "频道被禁",
+      "notSupportHeader": "不支持的消息头",
+      "clientKeyIsEmpty": "客户端密钥为空",
+      "rateLimit": "发送频率限制",
+      "notSupportChannelType": "不支持的频道类型",
+      "disband": "频道已解散",
+      "sendBan": "发送被禁止",
+      "sendFailed": "发送消息失败 (错误码: {{code}})"
     }
   }
 }

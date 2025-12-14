@@ -174,6 +174,14 @@ async def startup_event():
         # best-effort; don't block startup
         pass
 
+    # Start periodic session timeout check task (best-effort)
+    try:
+        from app.tasks.close_timeout_sessions import start_session_timeout_task
+        await start_session_timeout_task()
+    except Exception:
+        # best-effort; don't block startup
+        pass
+
     # Require Kafka configuration; fail fast if missing
     if not (settings.KAFKA_BOOTSTRAP_SERVERS and settings.KAFKA_BOOTSTRAP_SERVERS.strip()):
         raise RuntimeError("Kafka not configured: set KAFKA_BOOTSTRAP_SERVERS")
@@ -223,6 +231,13 @@ async def shutdown_event():
     try:
         from app.tasks.process_waiting_queue import stop_queue_processor
         await stop_queue_processor()
+    except Exception:
+        pass
+
+    # Stop periodic session timeout check task (best-effort)
+    try:
+        from app.tasks.close_timeout_sessions import stop_session_timeout_task
+        await stop_session_timeout_task()
     except Exception:
         pass
 

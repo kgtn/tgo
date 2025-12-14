@@ -136,7 +136,7 @@ export function BaseCard<T extends BaseCardItem>({
   onAction,
 }: BaseCardProps<T>) {
   const displayName = item.title || item.name;
-  const avatar = generateDefaultAvatar(displayName);
+  const avatar = generateDefaultAvatar(displayName, item.id);
   
   const handleCardClick = () => {
     if (onClick) {

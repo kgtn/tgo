@@ -36,11 +36,29 @@ export interface DefaultAvatar {
 }
 
 /**
+ * Simple string hash function for consistent color assignment
+ * @param str - The string to hash
+ * @returns A positive integer hash value
+ */
+const hashString = (str: string): number => {
+  let hash = 0;
+  if (!str || str.length === 0) return hash;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+};
+
+/**
  * Generate default avatar for entities without profile pictures
- * @param name - The name to generate avatar from
+ * @param name - The name to generate avatar from (used for the letter)
+ * @param colorSeed - Optional seed for color generation (e.g., channel_id, visitor_id, staff_id)
+ *                    If provided, the color will be determined by this value instead of the name
  * @returns Object containing the letter and color class
  */
-export const generateDefaultAvatar = (name: string): DefaultAvatar => {
+export const generateDefaultAvatar = (name: string, colorSeed?: string): DefaultAvatar => {
   if (!name || name.trim() === '') {
     return {
       letter: '?',
@@ -50,23 +68,43 @@ export const generateDefaultAvatar = (name: string): DefaultAvatar => {
 
   const firstChar = name.trim().charAt(0).toUpperCase();
   
-  // Convert character to index (A=0, B=1, etc.)
-  const charCode = firstChar.charCodeAt(0);
   let colorIndex = 0;
   
-  if (charCode >= 65 && charCode <= 90) { // A-Z
-    colorIndex = charCode - 65;
-  } else if (charCode >= 48 && charCode <= 57) { // 0-9
-    colorIndex = (charCode - 48) % AVATAR_COLORS.length;
+  // If colorSeed is provided, use it to determine the color
+  if (colorSeed && colorSeed.trim() !== '') {
+    colorIndex = hashString(colorSeed) % AVATAR_COLORS.length;
   } else {
-    // For non-ASCII characters (like Chinese), use a hash-like approach
-    colorIndex = charCode % AVATAR_COLORS.length;
+    // Fallback: use the name's first character for color
+    const charCode = firstChar.charCodeAt(0);
+    
+    if (charCode >= 65 && charCode <= 90) { // A-Z
+      colorIndex = charCode - 65;
+    } else if (charCode >= 48 && charCode <= 57) { // 0-9
+      colorIndex = (charCode - 48) % AVATAR_COLORS.length;
+    } else {
+      // For non-ASCII characters (like Chinese), use a hash-like approach
+      colorIndex = charCode % AVATAR_COLORS.length;
+    }
   }
   
   return {
     letter: firstChar,
     colorClass: AVATAR_COLORS[colorIndex] || AVATAR_COLORS[0]
   };
+};
+
+/**
+ * Get avatar color class based on an ID
+ * Useful for consistent color assignment across the app
+ * @param id - The ID to generate color from (channel_id, visitor_id, staff_id, etc.)
+ * @returns CSS color class string
+ */
+export const getAvatarColorFromId = (id?: string): string => {
+  if (!id || id.trim() === '') {
+    return 'bg-gradient-to-br from-gray-400 to-gray-500';
+  }
+  const colorIndex = hashString(id) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[colorIndex] || AVATAR_COLORS[0];
 };
 
 /**

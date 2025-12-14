@@ -248,7 +248,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
         onClick={() => openVisitorConversation(v)}
       >
         {/* Avatar - use same logic as ChatList */}
-        <ChatAvatar displayName={plainName} displayAvatar={v.avatar_url || ''} visitorStatus={v.is_online ? 'online' : 'offline'} />
+        <ChatAvatar displayName={plainName} displayAvatar={v.avatar_url || ''} visitorStatus={v.is_online ? 'online' : 'offline'} colorSeed={v.id} />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center min-w-0">
@@ -291,7 +291,7 @@ const SearchPanel: React.FC<SearchPanelProps> = ({ open, onClose }) => {
         }}
       >
         {/* Avatar - consistent with ChatList */}
-        <ChatAvatar displayName={displayName} displayAvatar={displayAvatar} />
+        <ChatAvatar displayName={displayName} displayAvatar={displayAvatar} colorSeed={channelId} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center min-w-0">

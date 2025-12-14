@@ -83,6 +83,30 @@ export interface VisitorAssignmentRuleUpdate {
  */
 export const staffApi = {
   /**
+   * Get current staff member info
+   */
+  async getMe(): Promise<StaffResponse> {
+    return apiClient.get<StaffResponse>('/v1/staff/me');
+  },
+
+  /**
+   * Toggle current staff member's service paused status
+   * @param paused - Whether to pause the service
+   */
+  async toggleMyServicePaused(paused: boolean): Promise<StaffResponse> {
+    return apiClient.put<StaffResponse>(`/v1/staff/me/service-paused?paused=${paused}`, {});
+  },
+
+  /**
+   * Set a staff member's service paused status
+   * @param staffId - Staff member ID
+   * @param paused - Whether to pause the service
+   */
+  async setStaffServicePaused(staffId: string, paused: boolean): Promise<StaffResponse> {
+    return apiClient.put<StaffResponse>(`/v1/staff/${staffId}/service-paused?paused=${paused}`, {});
+  },
+
+  /**
    * List staff members with optional filtering
    */
   async listStaff(params?: StaffQueryParams): Promise<StaffListResponse> {
@@ -165,6 +189,15 @@ export const staffApi = {
    */
   async getDefaultAssignmentPrompt(): Promise<{ default_prompt: string }> {
     return apiClient.get<{ default_prompt: string }>('/v1/visitor-assignment-rules/default-prompt');
+  },
+
+  /**
+   * Set a staff member's is_active status (long-term service switch)
+   * @param staffId - Staff member ID
+   * @param active - Whether to activate service
+   */
+  async setStaffIsActive(staffId: string, active: boolean): Promise<StaffResponse> {
+    return apiClient.put<StaffResponse>(`/v1/staff/${staffId}/is-active?active=${active}`, {});
   },
 };
 

@@ -10,7 +10,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.database import get_db
 from app.core.security import verify_token, get_user_language, UserLanguage
-from app.models import Staff, Visitor, VisitorTag, VisitorActivity, Platform
+from app.models import Staff, Visitor, VisitorTag, VisitorActivity, Platform, VisitorSession, SessionStatus
 from app.schemas.visitor import (
     VisitorResponse,
     VisitorAIProfileResponse,
@@ -36,6 +36,7 @@ router = APIRouter()
 STAFF_SUFFIX = "-staff"
 AGENT_SUFFIX = "-agent"
 TEAM_SUFFIX = "-team"
+VISITOR_SUFFIX = "-vtr"
 
 
 class ChannelInfoResponse(BaseModel):
@@ -135,6 +136,19 @@ def _build_enriched_visitor_payload(
         VisitorActivityResponse.model_validate(activity) for activity in recent_activities
     ]
 
+    # Query the open session to get assigned staff_id
+    open_session = (
+        db.query(VisitorSession)
+        .filter(
+            VisitorSession.visitor_id == visitor.id,
+            VisitorSession.project_id == project_id,
+            VisitorSession.status == SessionStatus.OPEN.value,
+        )
+        .order_by(VisitorSession.created_at.desc())
+        .first()
+    )
+    assigned_staff_id = open_session.staff_id if open_session else None
+
     visitor_payload = VisitorResponse.model_validate(visitor).model_copy(
         update={
             "tags": tag_responses,
@@ -142,6 +156,7 @@ def _build_enriched_visitor_payload(
             "ai_insights": ai_insight_response,
             "system_info": system_info_response,
             "recent_activities": recent_activity_responses,
+            "assigned_staff_id": assigned_staff_id,
         }
     )
     localize_visitor_response_intent(visitor_payload, accept_language)
@@ -447,7 +462,18 @@ async def _handle_staff_auth_channel_info(
                 project_id=current_user.project_id,
             )
 
-        # Visitor channel (no suffix)
+        # Visitor channel (with -vtr suffix)
+        if channel_id.endswith(VISITOR_SUFFIX):
+            return _get_personal_visitor_channel_info(
+                channel_id=channel_id,
+                channel_type=channel_type,
+                project_id=current_user.project_id,
+                db=db,
+                accept_language=accept_language,
+                user_language=user_language,
+            )
+
+        # Visitor channel (no suffix - raw UUID)
         return _get_personal_visitor_channel_info(
             channel_id=channel_id,
             channel_type=channel_type,
@@ -656,9 +682,14 @@ def _get_personal_visitor_channel_info(
     accept_language: Optional[str],
     user_language: UserLanguage = "en",
 ) -> ChannelInfoResponse:
-    """Get channel info for visitor personal channel (no suffix)."""
+    """Get channel info for visitor personal channel (with or without -vtr suffix)."""
+    # Handle both formats: raw UUID or UUID with -vtr suffix
+    visitor_id_str = channel_id
+    if channel_id.endswith(VISITOR_SUFFIX):
+        visitor_id_str = channel_id[:-len(VISITOR_SUFFIX)]
+    
     try:
-        visitor_uuid = UUID(channel_id)
+        visitor_uuid = UUID(visitor_id_str)
     except Exception:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid visitor_id in channel")
 

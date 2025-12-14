@@ -650,6 +650,54 @@
         }
       }
     },
+    "/api/v1/agents/exists": {
+      "get": {
+        "tags": [
+          "Agents"
+        ],
+        "summary": "Check if agents exist for project",
+        "description": "Check if any agents exist for the specified project.\n\nReturns a simple boolean response indicating whether the project has any agents.\nThis is useful for quick existence checks without fetching full agent data.",
+        "operationId": "check_agents_exist_api_v1_agents_exists_get",
+        "parameters": [
+          {
+            "name": "project_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Project ID",
+              "title": "Project Id"
+            },
+            "description": "Project ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Check Agents Exist Api V1 Agents Exists Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/agents": {
       "get": {
         "tags": [

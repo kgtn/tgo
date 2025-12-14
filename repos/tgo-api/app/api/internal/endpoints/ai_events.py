@@ -113,7 +113,7 @@ def _handle_manual_service_request(event: AIServiceEvent, project: Project, db: 
     """Persist a manual service request as a waiting queue entry."""
     payload = ManualServiceRequestEvent.model_validate(event.payload or {})
 
-    visitor_id = None
+    visitor = None
     if event.visitor_id:
         visitor = (
             db.query(Visitor)
@@ -130,13 +130,42 @@ def _handle_manual_service_request(event: AIServiceEvent, project: Project, db: 
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Visitor does not belong to the specified project",
             )
-        visitor_id = visitor.id
         _ensure_manual_service_tag(db, project.id, visitor)
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="visitor_id is required for manual service requests",
         )
+
+    # Check if visitor can enter queue based on their status
+    if not visitor.is_unassigned:
+        # Visitor is already in queue or being served - return existing queue info
+        existing_queue = db.query(VisitorWaitingQueue).filter(
+            VisitorWaitingQueue.visitor_id == visitor.id,
+            VisitorWaitingQueue.project_id == project.id,
+            VisitorWaitingQueue.status == WaitingStatus.WAITING.value,
+        ).first()
+        
+        if existing_queue:
+            return {
+                "entry_id": str(existing_queue.id),
+                "status": existing_queue.status,
+                "position": existing_queue.position,
+                "priority": existing_queue.priority,
+                "channel_id": existing_queue.channel_id,
+                "channel_type": existing_queue.channel_type,
+                "message": f"Visitor already in queue (status: {visitor.service_status})",
+            }
+        else:
+            return {
+                "entry_id": None,
+                "status": visitor.service_status,
+                "position": None,
+                "priority": None,
+                "channel_id": None,
+                "channel_type": None,
+                "message": f"Visitor cannot enter queue (status: {visitor.service_status})",
+            }
 
     reason = payload.reason.strip()
     if not reason:
@@ -182,7 +211,7 @@ def _handle_manual_service_request(event: AIServiceEvent, project: Project, db: 
     # Create waiting queue entry
     queue_entry = VisitorWaitingQueue(
         project_id=project.id,
-        visitor_id=visitor_id,
+        visitor_id=visitor.id,
         source=QueueSource.AI_REQUEST.value,
         urgency=urgency,
         priority=priority,
@@ -195,6 +224,10 @@ def _handle_manual_service_request(event: AIServiceEvent, project: Project, db: 
         extra_metadata=payload.metadata or {},
     )
     db.add(queue_entry)
+    
+    # Update visitor status to QUEUED
+    visitor.set_status_queued()
+    
     db.commit()
     db.refresh(queue_entry)
 
@@ -202,7 +235,7 @@ def _handle_manual_service_request(event: AIServiceEvent, project: Project, db: 
         "Manual service request added to waiting queue from AI event",
         extra={
             "project_id": str(project.id),
-            "visitor_id": str(visitor_id),
+            "visitor_id": str(visitor.id),
             "entry_id": str(queue_entry.id),
             "urgency": urgency,
             "priority": priority,

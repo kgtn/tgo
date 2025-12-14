@@ -11,6 +11,8 @@
     "remove": "Remove",
     "search": "Search",
     "loading": "Loading...",
+    "loadingMore": "Loading...",
+    "noMore": "No more",
     "saving": "Saving...",
     "saveFailed": "Save failed",
     "success": "Success",
@@ -1204,7 +1206,12 @@
     },
     "list": {
       "searchPlaceholder": "Search",
-      "searchAria": "Search conversations"
+      "searchAria": "Search conversations",
+      "tabs": {
+        "mine": "Mine",
+        "unassigned": "Unassigned",
+        "all": "All"
+      }
     },
     "header": {
       "staffFallback": "Agent",
@@ -1340,7 +1347,10 @@
       "send": {
         "label": "Send",
         "sending": "Sending..."
-      }
+      },
+      "closed": "Conversation ended",
+      "notMyVisitor": "This visitor is assigned to {{name}}",
+      "otherAgent": "another agent"
     },
     "visitor": {
       "unknown": "Unknown Visitor",
@@ -2379,6 +2389,37 @@
       "knowledgeBaseUploaded": "Upload Knowledge Base",
       "agentCreated": "Create AI Agent and Link Knowledge Base",
       "messageReceived": "Receive Message from Platform"
+    }
+  },
+  "ws": {
+    "error": {
+      "unknown": "Unknown error",
+      "success": "Success",
+      "authFail": "Authentication failed",
+      "subscriberNotExist": "Subscriber does not exist",
+      "inBlacklist": "User is in blacklist",
+      "channelNotExist": "Channel does not exist",
+      "userNotOnNode": "User not on node",
+      "senderOffline": "Sender is offline",
+      "msgKeyError": "Message key error",
+      "payloadDecodeError": "Payload decode failed",
+      "forwardSendPacketError": "Forward send packet failed",
+      "notAllowSend": "Not allowed to send",
+      "connectKick": "Connection kicked",
+      "notInWhitelist": "Not in whitelist",
+      "queryTokenError": "Query token failed",
+      "systemError": "System error",
+      "channelIDError": "Invalid channel ID",
+      "nodeMatchError": "Node matching error",
+      "nodeNotMatch": "Node not matched",
+      "ban": "Channel is banned",
+      "notSupportHeader": "Unsupported header",
+      "clientKeyIsEmpty": "Client key is empty",
+      "rateLimit": "Rate limit exceeded",
+      "notSupportChannelType": "Unsupported channel type",
+      "disband": "Channel disbanded",
+      "sendBan": "Sending is banned",
+      "sendFailed": "Failed to send message (error code: {{code}})"
     }
   }
 }

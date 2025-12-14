@@ -24,7 +24,7 @@ from app.core.security import verify_token
 from app.services.wukongim_client import wukongim_client
 from app.services.visitor_notifications import notify_visitor_profile_updated
 from app.utils.intent import localize_visitor_response_intent
-from app.utils.const import CHANNEL_TYPE_CUSTOMER_SERVICE, MEMBER_TYPE_STAFF, MEMBER_TYPE_VISITOR
+from app.utils.const import CHANNEL_TYPE_CUSTOMER_SERVICE, MEMBER_TYPE_VISITOR
 from app.utils.encoding import (
     build_visitor_channel_id,
     parse_visitor_channel_id,
@@ -286,6 +286,9 @@ async def _ensure_visitor_channel(
 
     This function creates the channel and channel member records if they don't exist.
     It's idempotent - safe to call multiple times for the same visitor.
+    
+    Only the visitor is added as initial subscriber. Staff will be added
+    when they are assigned to the visitor via transfer_to_staff.
 
     Args:
         db: Database session
@@ -298,52 +301,31 @@ async def _ensure_visitor_channel(
     channel_id = build_visitor_channel_id(visitor.id)
 
     try:
-        staff_members = (
-            db.query(Staff)
-            .filter(Staff.project_id == platform.project_id, Staff.deleted_at.is_(None))
-            .all()
-        )
-        subscribers = [str(visitor.id)] + [f"{s.id}-staff" for s in staff_members]
+        # Only visitor as initial subscriber
+        subscribers = [str(visitor.id)]
 
-        # Prepare channel member records (visitor + all active staff)
-        existing_member_rows = (
-            db.query(ChannelMember.member_id)
+        # Check if visitor is already a channel member
+        existing_visitor_member = (
+            db.query(ChannelMember)
             .filter(
                 ChannelMember.project_id == platform.project_id,
                 ChannelMember.channel_id == channel_id,
+                ChannelMember.member_id == visitor.id,
                 ChannelMember.deleted_at.is_(None),
             )
-            .all()
+            .first()
         )
-        existing_member_ids = {row[0] for row in existing_member_rows}
 
-        new_members = []
-        # Visitor as member
-        if visitor.id not in existing_member_ids:
-            new_members.append(
-                ChannelMember(
-                    project_id=platform.project_id,
-                    channel_id=channel_id,
-                    channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-                    member_id=visitor.id,
-                    member_type=MEMBER_TYPE_VISITOR,
-                )
+        # Add visitor as channel member if not exists
+        if not existing_visitor_member:
+            visitor_member = ChannelMember(
+                project_id=platform.project_id,
+                channel_id=channel_id,
+                channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
+                member_id=visitor.id,
+                member_type=MEMBER_TYPE_VISITOR,
             )
-        # Staff members
-        for s in staff_members:
-            if s.id not in existing_member_ids:
-                new_members.append(
-                    ChannelMember(
-                        project_id=platform.project_id,
-                        channel_id=channel_id,
-                        channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-                        member_id=s.id,
-                        member_type=MEMBER_TYPE_STAFF,
-                    )
-                )
-
-        if new_members:
-            db.add_all(new_members)
+            db.add(visitor_member)
 
         # Ensure channel exists in WuKongIM and then commit membership
         await wukongim_client.create_channel(
@@ -351,7 +333,7 @@ async def _ensure_visitor_channel(
             channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
             subscribers=subscribers,
         )
-        if new_members:
+        if not existing_visitor_member:
             db.commit()
 
         logger.info(
@@ -383,7 +365,7 @@ async def _ensure_visitor_channel(
 async def _create_visitor_with_channel(
     db: Session,
     platform: Platform,
-    platform_open_id: str,
+    platform_open_id: Optional[str] = None,
     name: Optional[str] = None,
     nickname: Optional[str] = None,
     nickname_zh: Optional[str] = None,
@@ -405,7 +387,7 @@ async def _create_visitor_with_channel(
     Args:
         db: Database session
         platform: Platform object
-        platform_open_id: Platform open ID for the visitor
+        platform_open_id: Platform open ID for the visitor. If None, visitor.id will be used.
         name: Optional visitor name
         nickname: Optional visitor nickname in English (will be auto-generated if not provided)
         nickname_zh: Optional visitor nickname in Chinese (will be auto-generated if not provided)
@@ -424,14 +406,26 @@ async def _create_visitor_with_channel(
     Raises:
         Exception: If WuKongIM channel creation fails (logged but not raised)
     """
+    # Handle case where platform_open_id is not provided
+    # We need to create visitor first to get its ID, then use it as platform_open_id
+    use_visitor_id_as_open_id = not platform_open_id
+    
+    if use_visitor_id_as_open_id:
+        # Use a temporary placeholder, will be updated after flush
+        initial_platform_open_id = f"pending-{uuid.uuid4().hex}"
+    else:
+        initial_platform_open_id = platform_open_id
+    
     # Resolve nicknames (generate if not provided)
-    resolved_nickname, resolved_nickname_zh = _resolve_visitor_nickname(nickname, nickname_zh, platform_open_id)
+    resolved_nickname, resolved_nickname_zh = _resolve_visitor_nickname(
+        nickname, nickname_zh, platform_open_id or None
+    )
 
     # Create visitor record
     visitor = Visitor(
         project_id=platform.project_id,
         platform_id=platform.id,
-        platform_open_id=platform_open_id,
+        platform_open_id=initial_platform_open_id,
         name=name,
         nickname=resolved_nickname,
         nickname_zh=resolved_nickname_zh,
@@ -445,10 +439,16 @@ async def _create_visitor_with_channel(
         custom_attributes=custom_attributes or {},
     )
     db.add(visitor)
+    
+    if use_visitor_id_as_open_id:
+        # Flush to get visitor ID, then update platform_open_id
+        db.flush()
+        visitor.platform_open_id = str(visitor.id)
+    
     db.commit()
     db.refresh(visitor)
 
-    # Create WuKongIM channel with all staff members as subscribers
+    # Create WuKongIM channel with admin staff members as subscribers
     await _ensure_visitor_channel(db, visitor, platform)
 
     return visitor
@@ -702,54 +702,24 @@ async def register_visitor(
 
     if not visitor:
         is_new_visitor = True
-        # Determine final platform_open_id (handle pending ID case)
-        # If normalized_open_id is empty, we need to create visitor first to get its ID
-        if not normalized_open_id:
-            # Special case: create visitor with pending ID, then update with visitor.id
-            resolved_nickname, resolved_nickname_zh = _resolve_visitor_nickname(req.nickname, req.nickname_zh, None)
-            initial_platform_open_id = f"pending-{uuid.uuid4().hex}"
-            visitor = Visitor(
-                project_id=platform.project_id,
-                platform_id=platform.id,
-                platform_open_id=initial_platform_open_id,
-                name=req.name,
-                nickname=resolved_nickname,
-                nickname_zh=resolved_nickname_zh,
-                avatar_url=req.avatar_url,
-                phone_number=req.phone_number,
-                email=req.email,
-                company=req.company,
-                job_title=req.job_title,
-                source=req.source,
-                note=req.note,
-                custom_attributes=req.custom_attributes or {},
-            )
-            db.add(visitor)
-            db.flush()
-            # Update platform_open_id with visitor.id
-            visitor.platform_open_id = str(visitor.id)
-            db.commit()
-            db.refresh(visitor)
-            # Create WuKongIM channel for the visitor
-            await _ensure_visitor_channel(db, visitor, platform)
-        else:
-            # Normal case: use _create_visitor_with_channel for complete setup
-            visitor = await _create_visitor_with_channel(
-                db=db,
-                platform=platform,
-                platform_open_id=normalized_open_id,
-                name=req.name,
-                nickname=req.nickname,
-                nickname_zh=req.nickname_zh,
-                avatar_url=req.avatar_url,
-                phone_number=req.phone_number,
-                email=req.email,
-                company=req.company,
-                job_title=req.job_title,
-                source=req.source,
-                note=req.note,
-                custom_attributes=req.custom_attributes,
-            )
+        # Use _create_visitor_with_channel for complete setup
+        # If normalized_open_id is None, visitor.id will be used as platform_open_id
+        visitor = await _create_visitor_with_channel(
+            db=db,
+            platform=platform,
+            platform_open_id=normalized_open_id,
+            name=req.name,
+            nickname=req.nickname,
+            nickname_zh=req.nickname_zh,
+            avatar_url=req.avatar_url,
+            phone_number=req.phone_number,
+            email=req.email,
+            company=req.company,
+            job_title=req.job_title,
+            source=req.source,
+            note=req.note,
+            custom_attributes=req.custom_attributes,
+        )
         profile_changed = True
     else:
         # Update existing visitor with non-None fields provided in request
@@ -1571,12 +1541,12 @@ async def sync_visitor_channel_messages(
             limit=limit,
             pull_mode=pull_mode,
         )
-        msg_count = len(result.get("messages", []))
+        msg_count = len(result.messages)
         logger.info(
             "Visitor messages sync success",
             extra={"platform_id": str(platform.id), "channel_id": req.channel_id, "channel_type": req.channel_type, "messages": msg_count},
         )
-        return WuKongIMChannelMessageSyncResponse(**result)
+        return result
     except HTTPException:
         raise
     except Exception as e:

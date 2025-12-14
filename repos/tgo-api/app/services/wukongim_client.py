@@ -12,8 +12,47 @@ import httpx
 from fastapi import HTTPException
 
 from app.core.config import settings
+from app.schemas.wukongim import (
+    WuKongIMRouteResponse,
+    WuKongIMMessageSendResponse,
+    WuKongIMChannelLastMessage,
+    WuKongIMConversation,
+    WuKongIMChannelMessageSyncResponse,
+    WuKongIMMessage,
+    WuKongIMSearchMessagesResponse,
+    WuKongIMSearchResult,
+)
 
 logger = logging.getLogger(__name__)
+
+
+class MessageType:
+    """WuKongIM message type constants.
+    
+    Standard message types (1-999):
+        - TEXT (1): Plain text message
+    
+    System message types (1000-2000):
+        - STAFF_ASSIGNED (1000): Staff assigned to visitor notification
+        - SESSION_CLOSED (1001): Session closed notification
+    """
+    # Standard message types
+    TEXT = 1
+    
+    # System message types (1000-2000 reserved for system notifications)
+    STAFF_ASSIGNED = 1000
+    SESSION_CLOSED = 1001
+
+
+class EventType:
+    """WuKongIM event type constants.
+    
+    Event types for real-time notifications:
+        - VISITOR_PROFILE_UPDATED: Visitor profile has been updated
+        - QUEUE_UPDATED: Waiting queue has been updated (new visitor waiting)
+    """
+    VISITOR_PROFILE_UPDATED = "visitor.profile.updated"
+    QUEUE_UPDATED = "queue.updated"
 
 
 class WuKongIMClient:
@@ -185,6 +224,94 @@ class WuKongIMClient:
         )
 
 
+    async def send_message(
+        self,
+        *,
+        payload: Dict[str, Any],
+        from_uid: Optional[str] = None,
+        channel_id: Optional[str] = None,
+        channel_type: Optional[int] = None,
+        client_msg_no: Optional[str] = None,
+        subscribers: Optional[List[str]] = None,
+        no_persist: bool = False,
+        red_dot: bool = True,
+        sync_once: bool = False,
+    ) -> Optional[WuKongIMMessageSendResponse]:
+        """Send a message through WuKongIM (/message/send API).
+
+        This is a low-level method that directly maps to WuKongIM's /message/send API.
+        For sending text messages, consider using send_text_message() instead.
+
+        Args:
+            payload: Message payload dict (will be JSON encoded and base64 encoded internally)
+            from_uid: Sender UID
+            channel_id: Channel ID
+            channel_type: Channel type (1=personal, 2=group, 251=customer_service)
+            client_msg_no: Client-provided message ID for correlation
+            subscribers: Specific subscribers to send message to
+            no_persist: Whether message should not be persisted (default False = persist)
+            red_dot: Whether to show red dot notification (default True = show)
+            sync_once: Whether message should be synced only once (default False = normal sync)
+
+        Returns:
+            Response with message_id, message_seq, client_msg_no
+        """
+        if not self.enabled:
+            logger.debug("WuKongIM integration is disabled; skipping send_message")
+            return None
+
+        # Encode payload to base64
+        payload_encoded = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("utf-8")
+
+        request_data: Dict[str, Any] = {
+            "payload": payload_encoded,
+        }
+
+        # Add optional parameters if provided
+        if from_uid is not None:
+            request_data["from_uid"] = from_uid
+        if channel_id is not None:
+            request_data["channel_id"] = channel_id
+        if channel_type is not None:
+            request_data["channel_type"] = channel_type
+        if client_msg_no is not None:
+            request_data["client_msg_no"] = client_msg_no
+        if subscribers is not None:
+            request_data["subscribers"] = subscribers
+
+        # Build header if any non-default values
+        header: Dict[str, int] = {}
+        if no_persist:
+            header["no_persist"] = 1
+        if not red_dot:
+            header["red_dot"] = 0
+        if sync_once:
+            header["sync_once"] = 1
+        if header:
+            request_data["header"] = header
+
+        logger.info(
+            "Sending WuKongIM message",
+            extra={
+                "from_uid": from_uid,
+                "channel_id": channel_id,
+                "channel_type": channel_type,
+                "client_msg_no": client_msg_no,
+                "has_subscribers": subscribers is not None,
+            }
+        )
+
+        result = await self._make_request(
+            method="POST",
+            endpoint="/message/send",
+            json_data=request_data,
+        )
+        logger.debug("WuKongIM send_message result: %s", result)
+        # WuKongIM API returns {"data": {...}, "status": 200}, extract data field
+        if result and "data" in result:
+            return WuKongIMMessageSendResponse(**result["data"])
+        return None
+
     async def send_text_message(
         self,
         *,
@@ -194,53 +321,312 @@ class WuKongIMClient:
         content: str,
         extra: Optional[Dict[str, Any]] = None,
         client_msg_no: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> Optional[WuKongIMMessageSendResponse]:
         """Send a plain text message through WuKongIM.
+
+        This is a convenience method for sending text messages.
+        For more control, use send_message() directly.
 
         Args:
             from_uid: Sender UID
             channel_id: Channel ID
-            channel_type: Channel type (1=personal, 2=group)
+            channel_type: Channel type (1=personal, 2=group, 251=customer_service)
             content: Message text content
-            extra: Optional extra JSON data
+            extra: Optional extra JSON data to include in payload
             client_msg_no: Optional client-provided id to correlate webhook callbacks
+
+        Returns:
+            WuKongIMMessageSendResponse with message_id, message_seq, client_msg_no
         """
         if not self.enabled:
             logger.debug("WuKongIM integration is disabled; skipping send_text_message")
-            return {}
+            return None
 
-        payload_data: Dict[str, Any] = {
-            "type": 1,
+        # Build payload for text message
+        payload: Dict[str, Any] = {
+            "type": MessageType.TEXT,
             "content": content,
         }
         if extra:
-            payload_data["extra"] = extra
+            payload["extra"] = extra
 
-        payload_encoded = base64.b64encode(json.dumps(payload_data).encode("utf-8")).decode("utf-8")
+        return await self.send_message(
+            payload=payload,
+            from_uid=from_uid,
+            channel_id=channel_id,
+            channel_type=channel_type,
+            client_msg_no=client_msg_no or str(uuid4()),
+        )
 
-        request_data: Dict[str, Any] = {
-            "from_uid": from_uid,
-            "channel_id": channel_id,
-            "channel_type": channel_type,
-            "payload": payload_encoded,
-            "client_msg_no": client_msg_no or str(uuid4()),
+    async def send_staff_assigned_message(
+        self,
+        *,
+        from_uid: str,
+        channel_id: str,
+        channel_type: int,
+        staff_uid: str,
+        staff_name: str,
+        client_msg_no: Optional[str] = None,
+    ) -> Optional[WuKongIMMessageSendResponse]:
+        """Send a system message when a staff member is assigned to a visitor.
+
+        System message types are defined in range 1000-2000.
+        Type 1000: Staff assigned notification.
+
+        Args:
+            from_uid: Sender UID (typically system or staff UID)
+            channel_id: Channel ID
+            channel_type: Channel type (251=customer_service)
+            staff_uid: The assigned staff's UID
+            staff_name: The assigned staff's display name
+            client_msg_no: Optional client-provided id to correlate webhook callbacks
+
+        Returns:
+            Response with message_id, message_seq, client_msg_no
+        """
+        if not self.enabled:
+            logger.debug("WuKongIM integration is disabled; skipping send_staff_assigned_message")
+            return None
+
+        # System message: Staff assigned
+        payload: Dict[str, Any] = {
+            "type": MessageType.STAFF_ASSIGNED,
+            "content": "您已接入人工客服，客服{0} 将为您服务",
+            "extra": [
+                {"uid": staff_uid, "name": staff_name},
+            ],
         }
+
         logger.info(
-            "Sending WuKongIM text message",
+            "Sending staff assigned system message",
             extra={
                 "from_uid": from_uid,
                 "channel_id": channel_id,
                 "channel_type": channel_type,
-                "client_msg_no": request_data["client_msg_no"],
+                "staff_uid": staff_uid,
+                "staff_name": staff_name,
             }
         )
 
-        result = await self._make_request(
-            method="POST",
-            endpoint="/message/send",
-            json_data=request_data,
+        return await self.send_message(
+            payload=payload,
+            from_uid=from_uid,
+            channel_id=channel_id,
+            channel_type=channel_type,
+            client_msg_no=client_msg_no or str(uuid4()),
         )
-        logger.debug("WuKongIM send_text_message result: %s", result)
+
+    async def send_session_closed_message(
+        self,
+        *,
+        from_uid: str,
+        channel_id: str,
+        channel_type: int,
+        staff_uid: Optional[str] = None,
+        staff_name: Optional[str] = None,
+        client_msg_no: Optional[str] = None,
+    ) -> Optional[WuKongIMMessageSendResponse]:
+        """Send a system message when a session is closed.
+
+        System message types are defined in range 1000-2000.
+        Type 1001: Session closed notification.
+
+        Args:
+            from_uid: Sender UID (typically system or staff UID)
+            channel_id: Channel ID
+            channel_type: Channel type (251=customer_service)
+            staff_uid: The staff's UID who closed the session (optional)
+            staff_name: The staff's display name (optional)
+            client_msg_no: Optional client-provided id to correlate webhook callbacks
+
+        Returns:
+            WuKongIMMessageSendResponse with message_id, message_seq, client_msg_no
+        """
+        if not self.enabled:
+            logger.debug("WuKongIM integration is disabled; skipping send_session_closed_message")
+            return None
+
+        # System message: Session closed
+        if staff_uid and staff_name:
+            payload: Dict[str, Any] = {
+                "type": MessageType.SESSION_CLOSED,
+                "content": "会话已结束，客服{0} 已结束本次服务",
+                "extra": [
+                    {"uid": staff_uid, "name": staff_name},
+                ],
+            }
+        else:
+            payload = {
+                "type": MessageType.SESSION_CLOSED,
+                "content": "会话已结束",
+                "extra": [],
+            }
+
+        logger.info(
+            "Sending session closed system message",
+            extra={
+                "from_uid": from_uid,
+                "channel_id": channel_id,
+                "channel_type": channel_type,
+                "staff_uid": staff_uid,
+                "staff_name": staff_name,
+            }
+        )
+
+        return await self.send_message(
+            payload=payload,
+            from_uid=from_uid,
+            channel_id=channel_id,
+            channel_type=channel_type,
+            client_msg_no=client_msg_no or str(uuid4()),
+        )
+
+    async def send_visitor_profile_updated(
+        self,
+        *,
+        visitor_id: str,
+        channel_id: str,
+        channel_type: int,
+        client_msg_no: Optional[str] = None,
+    ) -> Optional[WuKongIMMessageSendResponse]:
+        """Send a visitor profile updated event.
+
+        This event notifies all channel subscribers that the visitor's profile
+        has been updated (e.g., tags, AI insights, system info changed).
+
+        Args:
+            visitor_id: The visitor's UUID string
+            channel_id: Channel ID
+            channel_type: Channel type (251=customer_service)
+            client_msg_no: Optional client-provided id for correlation
+
+        Returns:
+            WuKongIMMessageSendResponse or None if disabled
+        """
+        if not self.enabled:
+            logger.debug("WuKongIM integration is disabled; skipping send_visitor_profile_updated")
+            return None
+
+        event_type = EventType.VISITOR_PROFILE_UPDATED
+        data = {
+            "visitor_id": visitor_id,
+            "channel_id": channel_id,
+            "channel_type": channel_type,
+        }
+
+        logger.info(
+            "Sending visitor profile updated event",
+            extra={
+                "visitor_id": visitor_id,
+                "channel_id": channel_id,
+                "channel_type": channel_type,
+            }
+        )
+
+        return await self.send_event(
+            client_msg_no=client_msg_no or f"profile-update-{uuid4().hex}",
+            channel_id=channel_id,
+            channel_type=channel_type,
+            event_type=event_type,
+            data=data,
+            force=False,
+        )
+
+    async def send_queue_updated_event(
+        self,
+        *,
+        channel_id: str,
+        channel_type: int,
+        project_id: str,
+        waiting_count: int,
+        client_msg_no: Optional[str] = None,
+    ) -> Optional[WuKongIMMessageSendResponse]:
+        """Send a waiting queue updated event to notify staff of pending visitors.
+
+        This is sent to the project staff channel when a visitor enters the queue.
+
+        Args:
+            channel_id: Project staff channel ID (format: {project_id}-prj)
+            channel_type: Channel type (249 for project staff channel)
+            project_id: Project ID
+            waiting_count: Current number of visitors waiting in queue
+            client_msg_no: Optional client-provided id for correlation
+
+        Returns:
+            WuKongIMMessageSendResponse or None if disabled
+        """
+        if not self.enabled:
+            logger.debug("WuKongIM integration is disabled; skipping send_queue_updated_event")
+            return None
+
+        event_type = EventType.QUEUE_UPDATED
+        data = {
+            "project_id": project_id,
+            "waiting_count": waiting_count,
+        }
+
+        logger.info(
+            "Sending queue updated event",
+            extra={
+                "channel_id": channel_id,
+                "channel_type": channel_type,
+                "project_id": project_id,
+                "waiting_count": waiting_count,
+            }
+        )
+
+        return await self.send_event(
+            client_msg_no=client_msg_no or f"queue-update-{uuid4().hex}",
+            channel_id=channel_id,
+            channel_type=channel_type,
+            event_type=event_type,
+            data=data,
+            force=True,
+        )
+
+    async def get_channel_last_message(
+        self,
+        *,
+        channel_id: str,
+        channel_type: int,
+        login_uid: Optional[str] = None,
+    ) -> Optional[Dict[str, Any]]:
+        """Get the last message of a channel.
+
+        Args:
+            channel_id: Channel ID
+            channel_type: Channel type (1=personal, 2=group, 251=customer_service)
+            login_uid: Login user ID (required for personal channels, channel_type=1)
+
+        Returns:
+            Last message info or None if channel not found or no messages
+        """
+        if not self.enabled:
+            logger.debug("WuKongIM integration is disabled; skipping get_channel_last_message")
+            return None
+
+        params: Dict[str, Any] = {
+            "channel_id": channel_id,
+            "channel_type": channel_type,
+        }
+        if login_uid:
+            params["login_uid"] = login_uid
+
+        logger.debug(
+            "Getting channel last message",
+            extra={
+                "channel_id": channel_id,
+                "channel_type": channel_type,
+            }
+        )
+
+        try:
+            response = await self._request("GET", "/channel/last_message", params=params)
+            return response
+        except Exception as e:
+            # 404 means no messages, return None
+            logger.debug(f"Failed to get channel last message: {e}")
+            return None
 
     async def create_channel(
         self,
@@ -287,6 +673,196 @@ class WuKongIMClient:
         logger.debug("WuKongIM create_channel result: %s", result)
         return result
 
+    async def add_channel_subscribers(
+        self,
+        *,
+        channel_id: str,
+        channel_type: int,
+        subscribers: List[str],
+        reset: bool = False,
+    ) -> Dict[str, Any]:
+        """Add subscribers to a WuKongIM channel.
+
+        This method is idempotent - adding the same subscriber multiple times is safe.
+        If the channel doesn't exist, it will be created automatically.
+
+        Args:
+            channel_id: The channel identifier
+            channel_type: Channel type (cannot be 1/person channel)
+            subscribers: List of subscriber UIDs to add
+            reset: Whether to reset existing subscribers (default False)
+
+        Returns:
+            Response from WuKongIM service
+        """
+        if not self.enabled:
+            logger.debug("WuKongIM integration is disabled; skipping add_channel_subscribers")
+            return {}
+
+        if not subscribers:
+            logger.debug("No subscribers provided; skipping add_channel_subscribers")
+            return {}
+
+        request_data: Dict[str, Any] = {
+            "channel_id": channel_id,
+            "channel_type": channel_type,
+            "subscribers": subscribers,
+            "reset": 1 if reset else 0,
+        }
+
+        logger.info(
+            "Adding subscribers to WuKongIM channel",
+            extra={
+                "channel_id": channel_id,
+                "channel_type": channel_type,
+                "subscribers_count": len(subscribers),
+                "reset": reset,
+            },
+        )
+
+        try:
+            result = await self._make_request(
+                method="POST",
+                endpoint="/channel/subscriber_add",
+                json_data=request_data,
+            )
+
+            logger.debug("WuKongIM add_channel_subscribers result: %s", result)
+            return result
+        except Exception as e:
+            logger.error(
+                f"Failed to add subscribers to channel {channel_id}: {e}",
+                extra={
+                    "channel_id": channel_id,
+                    "channel_type": channel_type,
+                    "subscribers": subscribers,
+                },
+            )
+            raise
+
+    async def remove_channel_subscribers(
+        self,
+        *,
+        channel_id: str,
+        channel_type: int,
+        subscribers: List[str],
+    ) -> Dict[str, Any]:
+        """Remove subscribers from a WuKongIM channel.
+
+        This method is idempotent - removing non-existent subscribers is safe.
+
+        Args:
+            channel_id: The channel identifier
+            channel_type: Channel type (cannot be 1/person channel)
+            subscribers: List of subscriber UIDs to remove
+
+        Returns:
+            Response from WuKongIM service
+        """
+        if not self.enabled:
+            logger.debug("WuKongIM integration is disabled; skipping remove_channel_subscribers")
+            return {}
+
+        if not subscribers:
+            logger.debug("No subscribers provided; skipping remove_channel_subscribers")
+            return {}
+
+        request_data: Dict[str, Any] = {
+            "channel_id": channel_id,
+            "channel_type": channel_type,
+            "subscribers": subscribers,
+        }
+
+        logger.info(
+            "Removing subscribers from WuKongIM channel",
+            extra={
+                "channel_id": channel_id,
+                "channel_type": channel_type,
+                "subscribers_count": len(subscribers),
+            },
+        )
+
+        try:
+            result = await self._make_request(
+                method="POST",
+                endpoint="/channel/subscriber_remove",
+                json_data=request_data,
+            )
+
+            logger.debug("WuKongIM remove_channel_subscribers result: %s", result)
+            return result
+        except Exception as e:
+            logger.error(
+                f"Failed to remove subscribers from channel {channel_id}: {e}",
+                extra={
+                    "channel_id": channel_id,
+                    "channel_type": channel_type,
+                    "subscribers": subscribers,
+                },
+            )
+            raise
+
+    async def remove_all_channel_subscribers(
+        self,
+        *,
+        channel_id: str,
+        channel_type: int,
+    ) -> Dict[str, Any]:
+        """Remove all subscribers from a WuKongIM channel.
+
+        This method removes all subscribers from a channel. Not supported for 
+        person channels (channel_type=1). Will also delete all related 
+        conversations and tags.
+
+        Args:
+            channel_id: The channel identifier
+            channel_type: Channel type (cannot be 1/person channel)
+
+        Returns:
+            Response from WuKongIM service
+        """
+        if not self.enabled:
+            logger.debug("WuKongIM integration is disabled; skipping remove_all_channel_subscribers")
+            return {}
+
+        request_data: Dict[str, Any] = {
+            "channel_id": channel_id,
+            "channel_type": channel_type,
+        }
+
+        logger.info(
+            "Removing all subscribers from WuKongIM channel",
+            extra={
+                "channel_id": channel_id,
+                "channel_type": channel_type,
+            },
+        )
+
+        try:
+            result = await self._make_request(
+                method="POST",
+                endpoint="/channel/subscriber_remove_all",
+                json_data=request_data,
+            )
+
+            logger.info(
+                f"Successfully removed all subscribers from channel {channel_id}",
+                extra={
+                    "channel_id": channel_id,
+                    "channel_type": channel_type,
+                },
+            )
+            return result
+        except Exception as e:
+            logger.error(
+                f"Failed to remove all subscribers from channel {channel_id}: {e}",
+                extra={
+                    "channel_id": channel_id,
+                    "channel_type": channel_type,
+                },
+            )
+            raise
+
     async def search_user_messages(
         self,
         *,
@@ -302,7 +878,7 @@ class WuKongIMClient:
         start_time: Optional[int] = None,
         end_time: Optional[int] = None,
         highlights: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
+    ) -> WuKongIMSearchMessagesResponse:
         """
         Search messages for a given user via WuKongIM search plugin.
 
@@ -321,11 +897,11 @@ class WuKongIMClient:
             highlights: Highlight fields (defaults to payload.content when keyword provided)
 
         Returns:
-            Dict from WuKongIM containing message search results.
+            WuKongIMSearchMessagesResponse containing message search results.
         """
         if not self.enabled:
             logger.debug("WuKongIM integration disabled; skipping message search")
-            return {"messages": [], "total": 0, "limit": limit, "page": page}
+            return WuKongIMSearchMessagesResponse(messages=[], total=0)
 
         request_data: Dict[str, Any] = {
             "uid": uid,
@@ -366,20 +942,17 @@ class WuKongIMClient:
         )
 
         raw_messages = response.get("messages") or []
-        processed_messages: List[Dict[str, Any]] = []
+        processed_messages: List[WuKongIMSearchResult] = []
         for raw in raw_messages:
             item = dict(raw) if isinstance(raw, dict) else {}
             payload_raw = item.get("payload")
             if isinstance(payload_raw, str):
                 item["payload"] = self._decode_message_payload(payload_raw)
 
-            processed_messages.append(item)
+            processed_messages.append(WuKongIMSearchResult(**item))
 
-        response["messages"] = processed_messages
-        response.setdefault("total", len(processed_messages))
-        response.setdefault("limit", request_data["limit"])
-        response.setdefault("page", request_data["page"])
-        return response
+        total = response.get("total", len(processed_messages))
+        return WuKongIMSearchMessagesResponse(messages=processed_messages, total=total)
 
 
     async def register_or_login_user(
@@ -595,7 +1168,7 @@ class WuKongIMClient:
         version: int = 0,
         last_msg_seqs: Optional[str] = None,
         msg_count: int = 20,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[WuKongIMConversation]:
         """
         Synchronize recent conversations for a user.
 
@@ -606,7 +1179,7 @@ class WuKongIMClient:
             msg_count: Max message count per conversation
 
         Returns:
-            List of conversations with recent messages
+            List of WuKongIMConversation with recent messages
         """
         if not self.enabled:
             logger.debug("WuKongIM integration is disabled")
@@ -664,10 +1237,91 @@ class WuKongIMClient:
                                 )
 
             logger.info(f"Successfully synced {len(conversations)} conversations for user {uid}")
-            return conversations
+            # Convert to WuKongIMConversation objects
+            return [WuKongIMConversation(**conv) for conv in conversations]
 
         except Exception as e:
             logger.error(f"Failed to sync conversations for user {uid}: {e}")
+            raise
+
+    async def sync_conversations_by_channels(
+        self,
+        uid: str,
+        channels: List[Dict[str, Any]],
+        msg_count: int = 20,
+    ) -> List[WuKongIMConversation]:
+        """
+        Synchronize conversations by specified channel collection.
+
+        Args:
+            uid: User unique ID
+            channels: List of channels to sync, each with {"channel_id": "...", "channel_type": ...}
+            msg_count: Max message count per conversation
+
+        Returns:
+            List of WuKongIMConversation with recent messages
+        """
+        if not self.enabled:
+            logger.debug("WuKongIM integration is disabled")
+            return []
+
+        if not channels:
+            logger.debug("No channels provided for sync")
+            return []
+
+        request_data = {
+            "uid": uid,
+            "channels": channels,
+            "msg_count": msg_count,
+        }
+
+        logger.info(
+            f"Syncing conversations by channels for user {uid}",
+            extra={
+                "uid": uid,
+                "channel_count": len(channels),
+                "msg_count": msg_count,
+            }
+        )
+
+        try:
+            result = await self._make_request(
+                method="POST",
+                endpoint="/conversation/syncByChannels",
+                json_data=request_data,
+            )
+
+            conversations = result if isinstance(result, list) else []
+
+            # Decode base64 payloads in recent messages
+            for conversation in conversations:
+                if "recents" in conversation and isinstance(conversation["recents"], list):
+                    for message in conversation["recents"]:
+                        if "payload" in message and isinstance(message["payload"], str):
+                            # Decode the base64 payload to JSON
+                            message["payload"] = self._decode_message_payload(message["payload"])
+
+                        if "stream_data" in message and isinstance(message["stream_data"], str):
+                            try:
+                                decoded_bytes = base64.b64decode(message["stream_data"])
+                                message["stream_data"] = decoded_bytes.decode("utf-8")
+                                logger.debug(
+                                    "Successfully decoded stream_data for conversation message %s",
+                                    message.get("message_id"),
+                                )
+                            except (binascii.Error, UnicodeDecodeError) as e:
+                                logger.warning(
+                                    "Failed to decode stream_data for conversation message %s: %s",
+                                    message.get("message_id"),
+                                    e,
+                                )
+
+            logger.info(f"Successfully synced {len(conversations)} conversations by channels for user {uid}")
+            # Convert to WuKongIMConversation objects
+            return [WuKongIMConversation(**conv) for conv in conversations]
+
+        except Exception as e:
+            logger.error(f"Failed to sync conversations by channels for user {uid}: {e}")
             raise
 
     async def set_conversation_unread(
@@ -783,7 +1437,7 @@ class WuKongIMClient:
         end_message_seq: int = 0,
         limit: int = 100,
         pull_mode: int = 1,
-    ) -> Dict[str, Any]:
+    ) -> WuKongIMChannelMessageSyncResponse:
         """
         Synchronize messages from a specific channel.
 
@@ -797,16 +1451,16 @@ class WuKongIMClient:
             pull_mode: Pull mode (0=down, 1=up)
 
         Returns:
-            Channel message sync response with decoded payloads
+            WuKongIMChannelMessageSyncResponse with decoded payloads
         """
         if not self.enabled:
             logger.debug("WuKongIM integration is disabled")
-            return {
-                "start_message_seq": start_message_seq,
-                "end_message_seq": end_message_seq,
-                "more": 0,
-                "messages": []
-            }
+            return WuKongIMChannelMessageSyncResponse(
+                start_message_seq=start_message_seq,
+                end_message_seq=end_message_seq,
+                more=0,
+                messages=[]
+            )
 
         request_data = {
             "login_uid": login_uid,
@@ -860,13 +1514,13 @@ class WuKongIMClient:
 
             message_count = len(result.get("messages", []))
             logger.info(f"Successfully synced {message_count} channel messages for user {login_uid}")
-            return result
+            return WuKongIMChannelMessageSyncResponse(**result)
 
         except Exception as e:
             logger.error(f"Failed to sync channel messages for user {login_uid}: {e}")
             raise
 
-    async def get_route(self, uid: str) -> Dict[str, Any]:
+    async def get_route(self, uid: str) -> WuKongIMRouteResponse:
         """
         Get WebSocket connection address for a user.
 
@@ -893,7 +1547,7 @@ class WuKongIMClient:
             )
 
             logger.info(f"Successfully retrieved route for user {uid}")
-            return result
+            return WuKongIMRouteResponse(**result)
 
         except Exception as e:
             logger.error(f"Failed to get route for user {uid}: {e}")

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react'
 import styled from '@emotion/styled'
-import type { ChatMessage } from '../types/chat'
+import type { ChatMessage, SystemMessagePayload, RegularMessagePayload } from '../types/chat'
+import { isSystemMessageType } from '../types/chat'
 import { formatMessageTime } from '../utils/time'
 import { useChatStore } from '../store'
 import { AlertCircle, RotateCw, Trash2 } from 'lucide-react'
 import { ReasonCode } from 'easyjssdk'
-import { Bubble, Cursor, AILoadingDots, TextMessage, ImageMessage, FileMessage, MixedMessage, MixedImages } from './messages'
+import { Bubble, Cursor, AILoadingDots, TextMessage, ImageMessage, FileMessage, MixedMessage, MixedImages, SystemMessage } from './messages'
 
 
 
@@ -115,42 +116,58 @@ export default function MessageList({ messages }: { messages: ChatMessage[] }){
           </TopNotice>
         )}
         {!historyLoading && !historyError && !historyHasMore && <TopNotice>没有更多消息</TopNotice>}
-        {items.map(m => (
+        {items.map(m => {
+          // Check if this is a system message (type 1000-2000)
+          const isSystemMsg = isSystemMessageType(m.payload.type)
+          
+          if (isSystemMsg) {
+            const sysPayload = m.payload as SystemMessagePayload
+            return (
+              <li key={m.key}>
+                <SystemMessage content={sysPayload.content} extra={sysPayload.extra} />
+              </li>
+            )
+          }
+          
+          // After filtering out system messages, we can safely cast to RegularMessagePayload
+          const payload = m.payload as RegularMessagePayload
+          
+          return (
           <li key={m.key}>
             <Row self={m.role==='user'}>
-              {m.payload.type === 3 ? (
-                <FileMessage url={m.payload.url} name={m.payload.name} size={m.payload.size} />
-              ) : m.payload.type === 12 ? (
+              {payload.type === 3 ? (
+                <FileMessage url={payload.url} name={payload.name} size={payload.size} />
+              ) : payload.type === 12 ? (
                 <div style={{ display:'flex', flexDirection:'column', gap: 8, alignItems: 'flex-start' }}>
-                  {(m.payload.content && m.payload.content.length>0) && (
+                  {(payload.content && payload.content.length>0) && (
                     <Bubble self={m.role==='user'}>
-                      <MixedMessage content={m.payload.content} />
+                      <MixedMessage content={payload.content} />
                     </Bubble>
                   )}
-                  {(Array.isArray(m.payload.images) && m.payload.images.length>0) && (
-                    <MixedImages images={m.payload.images} />
+                  {(Array.isArray(payload.images) && payload.images.length>0) && (
+                    <MixedImages images={payload.images} />
                   )}
-                  {m.payload.file && (
-                    <FileMessage url={m.payload.file.url} name={m.payload.file.name} size={m.payload.file.size} />
+                  {payload.file && (
+                    <FileMessage url={payload.file.url} name={payload.file.name} size={payload.file.size} />
                   )}
                 </div>
-              ) : m.payload.type === 2 ? (
-                <ImageMessage url={m.payload.url} w={m.payload.width} h={m.payload.height} />
+              ) : payload.type === 2 ? (
+                <ImageMessage url={payload.url} w={payload.width} h={payload.height} />
               ) : m.streamData && m.streamData.length ? (
                 /* Streaming content - show with blinking cursor */
                 <Bubble self={false}>
                   <TextMessage content={m.streamData} />
                   <Cursor />
                 </Bubble>
-              ) : m.payload.type === 100 ? (
+              ) : payload.type === 100 ? (
                 /* AI Loading - show only when no streamData yet */
                 <Bubble self={false}>
                   <AILoadingDots><span /><span /><span /></AILoadingDots>
                 </Bubble>
               ) : (
                 <Bubble self={m.role==='user'}>
-                  {m.payload.type === 1 ? (
-                    <TextMessage content={m.payload.content} />
+                  {payload.type === 1 ? (
+                    <TextMessage content={payload.content} />
                   ) : (
                     <div>[消息]</div>
                   )}
@@ -195,7 +212,7 @@ export default function MessageList({ messages }: { messages: ChatMessage[] }){
             )}
 
           </li>
-        ))}
+        )})}
       </List>
     </Main>
   )

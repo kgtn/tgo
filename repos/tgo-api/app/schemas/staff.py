@@ -47,6 +47,14 @@ class StaffBase(BaseSchema):
         default=StaffStatus.OFFLINE,
         description="Staff status: online, offline, busy"
     )
+    is_active: bool = Field(
+        default=True,
+        description="Whether staff is active for service (long-term switch)"
+    )
+    service_paused: bool = Field(
+        default=False,
+        description="Whether staff has temporarily paused accepting new visitors (short-term switch)"
+    )
 
 
 class StaffCreate(StaffBase):
@@ -99,6 +107,14 @@ class StaffUpdate(BaseSchema):
         None,
         description="Updated status"
     )
+    is_active: Optional[bool] = Field(
+        None,
+        description="Whether staff is active for service (long-term switch)"
+    )
+    service_paused: Optional[bool] = Field(
+        None,
+        description="Whether staff has temporarily paused accepting new visitors (short-term switch)"
+    )
     password: Optional[str] = Field(
         None,
         min_length=8,
@@ -127,6 +143,12 @@ class StaffResponse(BaseSchema):
     description: Optional[str] = Field(None, description="Staff description for LLM assignment prompts")
     role: StaffRole = Field(..., description="Staff role")
     status: StaffStatus = Field(..., description="Staff status")
+    is_active: bool = Field(..., description="Whether staff is active for service (long-term switch)")
+    service_paused: bool = Field(..., description="Whether staff has temporarily paused accepting new visitors (short-term switch)")
+    is_working: Optional[bool] = Field(
+        None, 
+        description="Whether staff is currently within service hours (computed field based on VisitorAssignmentRule)"
+    )
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
     deleted_at: Optional[datetime] = Field(None, description="Soft deletion timestamp")

@@ -3,7 +3,8 @@ import { useAuthStore } from '../stores/authStore';
 import {
   wukongimWebSocketService,
   ConnectionStatus,
-  WuKongIMWebSocketConfig
+  WuKongIMWebSocketConfig,
+  WsSendResult
 } from '../services/wukongimWebSocket';
 import { WuKongIMApiService } from '../services/wukongimApi';
 
@@ -11,7 +12,7 @@ export interface UseWuKongIMWebSocketReturn {
   connectionStatus: ConnectionStatus;
   connect: () => Promise<void>;
   disconnect: () => void;
-  sendMessage: (channelId: string, channelType: number, payload: any) => Promise<any>;
+  sendMessage: (channelId: string, channelType: number, payload: any, clientMsgNo: string) => Promise<WsSendResult>;
   isConnected: boolean;
   isConnecting: boolean;
   error?: string;
@@ -98,14 +99,20 @@ export const useWuKongIMWebSocket = (): UseWuKongIMWebSocketReturn => {
 
   /**
    * Send message through WebSocket
+   * @param channelId Target channel ID
+   * @param channelType Target channel type
+   * @param payload Message payload
+   * @param clientMsgNo Client message number for deduplication (required)
+   * @returns Promise with send result containing messageId, messageSeq, and reasonCode
    */
   const sendMessage = useCallback(async (
     channelId: string,
     channelType: number,
-    payload: any
-  ): Promise<any> => {
+    payload: any,
+    clientMsgNo: string
+  ): Promise<WsSendResult> => {
     try {
-      const ack = await wukongimWebSocketService.sendMessage(channelId, channelType, payload);
+      const ack = await wukongimWebSocketService.sendMessage(channelId, channelType, payload, clientMsgNo);
       console.log('🔌 Hook: Message sent successfully:', ack);
       return ack;
     } catch (error) {
@@ -132,7 +139,7 @@ export const useWuKongIMWebSocket = (): UseWuKongIMWebSocketReturn => {
             console.log('🔌 Hook: Force reconnect successful, retrying message send');
             
             // Retry the send operation once after reconnect
-            return await wukongimWebSocketService.sendMessage(channelId, channelType, payload);
+            return await wukongimWebSocketService.sendMessage(channelId, channelType, payload, clientMsgNo);
           } catch (reconnectError) {
             console.error('🔌 Hook: Force reconnect failed:', reconnectError);
             throw new Error('连接状态不一致，重连失败，请刷新页面');
@@ -185,6 +192,7 @@ export const useWuKongIMWebSocket = (): UseWuKongIMWebSocketReturn => {
       channelId: string,
       channelType: number,
       content: string,
+      clientMsgNo: string,
       messageType: number = 1
     ) => {
       // Create proper WuKongIM payload format
@@ -192,7 +200,6 @@ export const useWuKongIMWebSocket = (): UseWuKongIMWebSocketReturn => {
         type: messageType, // 1 for text message
         content: content.trim(),
         timestamp: Date.now(),
-        // Add any additional payload fields required by WuKongIM
       };
 
       // Check WebSocket connection status directly from service
@@ -206,7 +213,7 @@ export const useWuKongIMWebSocket = (): UseWuKongIMWebSocketReturn => {
 
         // Send via WebSocket only - no fallback
         console.log('Sending message via WebSocket');
-        return await wukongimWebSocketService.sendMessage(channelId, channelType, payload);
+        return await wukongimWebSocketService.sendMessage(channelId, channelType, payload, clientMsgNo);
         
       } catch (error) {
         console.error('WebSocket message sending failed:', error);
@@ -231,7 +238,7 @@ export const useWuKongIMWebSocket = (): UseWuKongIMWebSocketReturn => {
             console.log('🔌 MessageSender: Force reconnect successful, retrying message send');
             
             // Retry the send operation once after reconnect
-            return await wukongimWebSocketService.sendMessage(channelId, channelType, payload);
+            return await wukongimWebSocketService.sendMessage(channelId, channelType, payload, clientMsgNo);
           } catch (reconnectError) {
             console.error('🔌 MessageSender: Force reconnect failed:', reconnectError);
             throw new Error('连接状态不一致，重连失败，请刷新页面');

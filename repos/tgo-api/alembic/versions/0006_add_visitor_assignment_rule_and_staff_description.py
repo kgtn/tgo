@@ -44,6 +44,23 @@ def upgrade() -> None:
         ),
     )
     
+    # Add service_status column to api_visitors table
+    op.add_column(
+        "api_visitors",
+        sa.Column(
+            "service_status",
+            sa.String(20),
+            nullable=False,
+            server_default="new",
+            comment="Service status: new, queued, assigned_pending, active, closed",
+        ),
+    )
+    op.create_index(
+        "ix_api_visitors_service_status",
+        "api_visitors",
+        ["service_status"],
+    )
+    
     # Create visitor_assignment_rules table
     op.create_table(
         "api_visitor_assignment_rules",
@@ -670,6 +687,10 @@ def downgrade() -> None:
     
     # Drop assignment rules table
     op.drop_table("api_visitor_assignment_rules")
+    
+    # Drop service_status index and column from api_visitors
+    op.drop_index("ix_api_visitors_service_status", table_name="api_visitors")
+    op.drop_column("api_visitors", "service_status")
     
     # Drop description and name columns from api_staff
     op.drop_column("api_staff", "description")

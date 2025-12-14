@@ -78,8 +78,8 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
   // Check if agent has a valid avatar URL
   const hasValidAvatarUrl = hasValidAvatar(agent.avatar);
 
-  // Generate default avatar if needed
-  const defaultAvatar = !hasValidAvatarUrl ? generateDefaultAvatar(agent.name) : null;
+  // Generate default avatar if needed (use agent.id for consistent color)
+  const defaultAvatar = !hasValidAvatarUrl ? generateDefaultAvatar(agent.name, agent.id) : null;
 
   const getStatusIndicator = (status: string): { color: string; title: string } => {
     switch (status) {

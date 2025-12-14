@@ -20,6 +20,11 @@ from app.core.security import (
     require_admin,
 )
 from app.models import Staff
+from app.models.visitor_assignment_rule import VisitorAssignmentRule
+from app.services.queue_trigger_service import trigger_queue_for_staff
+from app.services.wukongim_client import wukongim_client
+from app.utils.const import CHANNEL_TYPE_PROJECT_STAFF
+from app.utils.encoding import build_project_staff_channel_id
 from app.schemas import (
     StaffCreate,
     StaffListParams,
@@ -30,21 +35,38 @@ from app.schemas import (
     StaffUpdate,
 )
 from app.schemas.wukongim import (
-    WuKongIMChannelMessageSyncRequest,
-    WuKongIMChannelMessageSyncResponse,
-    WuKongIMConversationSyncRequest,
-    WuKongIMConversationSyncResponse,
-    WuKongIMDeleteConversationRequest,
     WuKongIMIntegrationStatus,
     WuKongIMOnlineStatusRequest,
     WuKongIMOnlineStatusResponse,
-    WuKongIMSetUnreadRequest,
 )
 from app.services.wukongim_client import wukongim_client
+from app.services.transfer_service import is_within_service_hours
 from app.api.common_responses import AUTH_RESPONSES, CRUD_RESPONSES, LIST_RESPONSES
 
 logger = get_logger("endpoints.staff")
 router = APIRouter()
+
+
+def _build_staff_response(staff: Staff, is_working: bool = None) -> StaffResponse:
+    """Build StaffResponse with optional is_working field."""
+    data = {
+        "id": staff.id,
+        "project_id": staff.project_id,
+        "username": staff.username,
+        "name": staff.name,
+        "nickname": staff.nickname,
+        "avatar_url": staff.avatar_url,
+        "description": staff.description,
+        "role": staff.role,
+        "status": staff.status,
+        "is_active": staff.is_active,
+        "service_paused": staff.service_paused,
+        "is_working": is_working,
+        "created_at": staff.created_at,
+        "updated_at": staff.updated_at,
+        "deleted_at": staff.deleted_at,
+    }
+    return StaffResponse(**data)
 
 
 @router.post(
@@ -127,8 +149,16 @@ async def list_staff(
     
     Retrieve a paginated list of staff members with optional filtering.
     Requires staff:list permission.
+    
+    Returns is_working field indicating if current time is within service hours.
     """
     logger.info(f"User {current_user.username} listing staff members")
+    
+    # Get assignment rule for is_working calculation
+    assignment_rule = db.query(VisitorAssignmentRule).filter(
+        VisitorAssignmentRule.project_id == current_user.project_id
+    ).first()
+    is_working = is_within_service_hours(assignment_rule)
     
     # Build query
     query = db.query(Staff).filter(
@@ -148,8 +178,8 @@ async def list_staff(
     # Apply pagination
     staff_members = query.offset(params.offset).limit(params.limit).all()
     
-    # Convert to response models
-    staff_responses = [StaffResponse.model_validate(staff) for staff in staff_members]
+    # Convert to response models with is_working
+    staff_responses = [_build_staff_response(staff, is_working) for staff in staff_members]
     
     return StaffListResponse(
         data=staff_responses,
@@ -213,12 +243,135 @@ async def create_staff(
     )
     
     db.add(staff)
+    db.flush()  # Get staff.id before WuKongIM call
+    
+    # Add staff to project staff channel
+    try:
+        channel_id = build_project_staff_channel_id(current_user.project_id)
+        staff_uid = f"{staff.id}-staff"
+        await wukongim_client.add_channel_subscribers(
+            channel_id=channel_id,
+            channel_type=CHANNEL_TYPE_PROJECT_STAFF,
+            subscribers=[staff_uid],
+        )
+    except Exception as e:
+        logger.error(f"Failed to add staff {staff.id} to project channel: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to add staff to project channel"
+        )
+    
     db.commit()
     db.refresh(staff)
     
     logger.info(f"Created staff {staff.id} with username: {staff.username}")
     
-    return StaffResponse.model_validate(staff)
+    # Calculate is_working
+    assignment_rule = db.query(VisitorAssignmentRule).filter(
+        VisitorAssignmentRule.project_id == current_user.project_id
+    ).first()
+    is_working = is_within_service_hours(assignment_rule)
+    
+    return _build_staff_response(staff, is_working)
+
+
+@router.get("/me", response_model=StaffResponse)
+async def get_current_staff(
+    db: Session = Depends(get_db),
+    current_user: Staff = Depends(get_current_active_user),
+) -> StaffResponse:
+    """
+    Get current staff member info.
+    
+    Returns the current authenticated staff member's information.
+    Includes is_working field based on VisitorAssignmentRule service hours.
+    """
+    assignment_rule = db.query(VisitorAssignmentRule).filter(
+        VisitorAssignmentRule.project_id == current_user.project_id
+    ).first()
+    is_working = is_within_service_hours(assignment_rule)
+    
+    return _build_staff_response(current_user, is_working)
+
+
+@router.put(
+    "/me/service-paused",
+    response_model=StaffResponse,
+    summary="Toggle Service Paused Status",
+    description="Toggle current staff member's service paused status."
+)
+async def toggle_my_service_paused(
+    paused: bool,
+    db: Session = Depends(get_db),
+    current_user: Staff = Depends(get_current_active_user),
+) -> StaffResponse:
+    """
+    Toggle current staff's service paused status.
+    
+    When paused is True, the staff member will not be assigned new visitors.
+    """
+    logger.info(f"Staff {current_user.username} setting service_paused to {paused}")
+    
+    current_user.service_paused = paused
+    current_user.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(current_user)
+    
+    logger.info(f"Staff {current_user.username} service_paused is now {current_user.service_paused}")
+    
+    # Trigger queue processing if staff resumed service
+    if not paused:
+        await trigger_queue_for_staff(current_user.id, current_user.project_id)
+    
+    # Calculate is_working
+    assignment_rule = db.query(VisitorAssignmentRule).filter(
+        VisitorAssignmentRule.project_id == current_user.project_id
+    ).first()
+    is_working = is_within_service_hours(assignment_rule)
+    
+    return _build_staff_response(current_user, is_working)
+
+
+@router.put(
+    "/me/is-active",
+    response_model=StaffResponse,
+    summary="Toggle Service Active Status",
+    description="Toggle current staff member's service active status (start/stop service)."
+)
+async def toggle_my_is_active(
+    active: bool,
+    db: Session = Depends(get_db),
+    current_user: Staff = Depends(get_current_active_user),
+) -> StaffResponse:
+    """
+    Toggle current staff's service active status.
+    
+    When active is False, the staff member is stopped from service (long-term, e.g., off-duty).
+    When active is True, the staff member starts service.
+    """
+    logger.info(f"Staff {current_user.username} setting is_active to {active}")
+    
+    current_user.is_active = active
+    current_user.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(current_user)
+    
+    logger.info(f"Staff {current_user.username} is_active is now {current_user.is_active}")
+    
+    # Trigger queue processing if staff activated service
+    if active:
+        await trigger_queue_for_staff(current_user.id, current_user.project_id)
+    
+    # Calculate is_working
+    assignment_rule = db.query(VisitorAssignmentRule).filter(
+        VisitorAssignmentRule.project_id == current_user.project_id
+    ).first()
+    is_working = is_within_service_hours(assignment_rule)
+    
+    return _build_staff_response(current_user, is_working)
 
 
 @router.get("/{staff_id}", response_model=StaffResponse)
@@ -242,7 +395,13 @@ async def get_staff(
             detail="Staff member not found"
         )
     
-    return StaffResponse.model_validate(staff)
+    # Calculate is_working
+    assignment_rule = db.query(VisitorAssignmentRule).filter(
+        VisitorAssignmentRule.project_id == current_user.project_id
+    ).first()
+    is_working = is_within_service_hours(assignment_rule)
+    
+    return _build_staff_response(staff, is_working)
 
 
 @router.patch("/{staff_id}", response_model=StaffResponse)
@@ -288,7 +447,120 @@ async def update_staff(
     
     logger.info(f"Updated staff {staff.id}")
     
-    return StaffResponse.model_validate(staff)
+    # Calculate is_working
+    assignment_rule = db.query(VisitorAssignmentRule).filter(
+        VisitorAssignmentRule.project_id == current_user.project_id
+    ).first()
+    is_working = is_within_service_hours(assignment_rule)
+    
+    return _build_staff_response(staff, is_working)
+
+
+@router.put(
+    "/{staff_id}/service-paused",
+    response_model=StaffResponse,
+    summary="Set Staff Service Paused Status",
+    description="Set a staff member's service paused status. Requires staff:update permission."
+)
+async def set_staff_service_paused(
+    staff_id: UUID,
+    paused: bool,
+    db: Session = Depends(get_db),
+    current_user: Staff = Depends(require_permission("staff:update")),
+) -> StaffResponse:
+    """
+    Set staff member's service paused status.
+    
+    When paused is True, the staff member will not be assigned new visitors.
+    Requires staff:update permission.
+    """
+    logger.info(f"User {current_user.username} setting service_paused to {paused} for staff {staff_id}")
+    
+    staff = db.query(Staff).filter(
+        Staff.id == staff_id,
+        Staff.project_id == current_user.project_id,
+        Staff.deleted_at.is_(None)
+    ).first()
+    
+    if not staff:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Staff member not found"
+        )
+    
+    staff.service_paused = paused
+    staff.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(staff)
+    
+    logger.info(f"Staff {staff.username} service_paused is now {staff.service_paused}")
+    
+    # Trigger queue processing if staff resumed service
+    if not paused:
+        await trigger_queue_for_staff(staff.id, staff.project_id)
+    
+    # Calculate is_working
+    assignment_rule = db.query(VisitorAssignmentRule).filter(
+        VisitorAssignmentRule.project_id == current_user.project_id
+    ).first()
+    is_working = is_within_service_hours(assignment_rule)
+    
+    return _build_staff_response(staff, is_working)
+
+
+@router.put(
+    "/{staff_id}/is-active",
+    response_model=StaffResponse,
+    summary="Set Staff Service Active Status",
+    description="Set a staff member's service active status (start/stop service). Requires staff:update permission."
+)
+async def set_staff_is_active(
+    staff_id: UUID,
+    active: bool,
+    db: Session = Depends(get_db),
+    current_user: Staff = Depends(require_permission("staff:update")),
+) -> StaffResponse:
+    """
+    Set staff member's service active status.
+    
+    When active is False, the staff member is stopped from service (long-term, e.g., off-duty).
+    When active is True, the staff member starts service.
+    Requires staff:update permission.
+    """
+    logger.info(f"User {current_user.username} setting is_active to {active} for staff {staff_id}")
+    
+    staff = db.query(Staff).filter(
+        Staff.id == staff_id,
+        Staff.project_id == current_user.project_id,
+        Staff.deleted_at.is_(None)
+    ).first()
+    
+    if not staff:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Staff member not found"
+        )
+    
+    staff.is_active = active
+    staff.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(staff)
+    
+    logger.info(f"Staff {staff.username} is_active is now {staff.is_active}")
+    
+    # Trigger queue processing if staff activated service
+    if active:
+        await trigger_queue_for_staff(staff.id, staff.project_id)
+    
+    # Calculate is_working
+    assignment_rule = db.query(VisitorAssignmentRule).filter(
+        VisitorAssignmentRule.project_id == current_user.project_id
+    ).first()
+    is_working = is_within_service_hours(assignment_rule)
+    
+    return _build_staff_response(staff, is_working)
 
 
 @router.delete("/{staff_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -321,6 +593,22 @@ async def delete_staff(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete yourself"
+        )
+    
+    # Remove staff from project staff channel first
+    try:
+        channel_id = build_project_staff_channel_id(current_user.project_id)
+        staff_uid = f"{staff.id}-staff"
+        await wukongim_client.remove_channel_subscribers(
+            channel_id=channel_id,
+            channel_type=CHANNEL_TYPE_PROJECT_STAFF,
+            subscribers=[staff_uid],
+        )
+    except Exception as e:
+        logger.error(f"Failed to remove staff {staff.id} from project channel: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove staff from project channel"
         )
     
     # Soft delete
@@ -405,186 +693,4 @@ async def check_staff_online_status(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to check online status"
-        )
-
-
-@router.post(
-    "/wukongim/conversations/sync",
-    response_model=WuKongIMConversationSyncResponse,
-    summary="Sync WuKongIM Conversations",
-    description="Synchronize recent conversations from WuKongIM for the current staff member."
-)
-async def sync_wukongim_conversations(
-    request: WuKongIMConversationSyncRequest,
-    current_user: Staff = Depends(get_current_active_user),
-) -> WuKongIMConversationSyncResponse:
-    """Synchronize WuKongIM conversations for the current staff member."""
-    # Use staff ID with "-staff" suffix as WuKongIM UID
-    staff_uid = f"{current_user.id}-staff"
-
-    logger.info(
-        f"Staff {current_user.username} syncing WuKongIM conversations",
-        extra={
-            "staff_username": current_user.username,
-            "staff_uid": staff_uid,
-            "version": request.version,
-            "msg_count": request.msg_count,
-        }
-    )
-
-    try:
-        conversations = await wukongim_client.sync_conversations(
-            uid=staff_uid,
-            version=request.version,
-            last_msg_seqs=request.last_msg_seqs,
-            msg_count=request.msg_count,
-        )
-
-        logger.info(f"Successfully synced {len(conversations)} conversations for staff {current_user.username}")
-
-        return WuKongIMConversationSyncResponse(conversations=conversations)
-
-    except Exception as e:
-        logger.error(f"Failed to sync conversations for staff {current_user.username}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to sync conversations"
-        )
-
-
-@router.post(
-    "/wukongim/conversations/set-unread",
-    summary="Set Conversation Unread Count",
-    description="Set the unread message count for a specific conversation."
-)
-async def set_conversation_unread(
-    request: WuKongIMSetUnreadRequest,
-    current_user: Staff = Depends(get_current_active_user),
-) -> Dict[str, str]:
-    """Set unread count for a WuKongIM conversation."""
-    # Use staff ID with "-staff" suffix as WuKongIM UID
-    staff_uid = f"{current_user.id}-staff"
-
-    logger.info(
-        f"Staff {current_user.username} setting unread count for conversation",
-        extra={
-            "staff_username": current_user.username,
-            "staff_uid": staff_uid,
-            "channel_id": request.channel_id,
-            "channel_type": request.channel_type,
-            "unread": request.unread,
-        }
-    )
-
-    try:
-        await wukongim_client.set_conversation_unread(
-            uid=staff_uid,
-            channel_id=request.channel_id,
-            channel_type=request.channel_type,
-            unread=request.unread,
-        )
-
-        logger.info(f"Successfully set unread count for staff {current_user.username}")
-
-        return {"message": "Unread count updated successfully"}
-
-    except Exception as e:
-        logger.error(f"Failed to set unread count for staff {current_user.username}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to set unread count"
-        )
-
-
-@router.post(
-    "/wukongim/conversations/delete",
-    summary="Delete Conversation",
-    description="Delete a specific conversation from WuKongIM."
-)
-async def delete_conversation(
-    request: WuKongIMDeleteConversationRequest,
-    current_user: Staff = Depends(get_current_active_user),
-) -> Dict[str, str]:
-    """Delete a WuKongIM conversation."""
-    # Use staff ID with "-staff" suffix as WuKongIM UID
-    staff_uid = f"{current_user.id}-staff"
-
-    logger.info(
-        f"Staff {current_user.username} deleting conversation",
-        extra={
-            "staff_username": current_user.username,
-            "staff_uid": staff_uid,
-            "channel_id": request.channel_id,
-            "channel_type": request.channel_type,
-        }
-    )
-
-    try:
-        await wukongim_client.delete_conversation(
-            uid=staff_uid,
-            channel_id=request.channel_id,
-            channel_type=request.channel_type,
-        )
-
-        logger.info(f"Successfully deleted conversation for staff {current_user.username}")
-
-        return {"message": "Conversation deleted successfully"}
-
-    except Exception as e:
-        logger.error(f"Failed to delete conversation for staff {current_user.username}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete conversation"
-        )
-
-
-@router.post(
-    "/wukongim/channels/messages/sync",
-    response_model=WuKongIMChannelMessageSyncResponse,
-    summary="Sync Channel Messages",
-    description="Synchronize messages from a specific WuKongIM channel."
-)
-async def sync_channel_messages(
-    request: WuKongIMChannelMessageSyncRequest,
-    current_user: Staff = Depends(get_current_active_user),
-) -> WuKongIMChannelMessageSyncResponse:
-    """Synchronize messages from a specific WuKongIM channel."""
-    # Use staff ID with "-staff" suffix as WuKongIM UID
-    staff_uid = f"{current_user.id}-staff"
-
-    logger.info(
-        f"Staff {current_user.username} syncing channel messages",
-        extra={
-            "staff_username": current_user.username,
-            "staff_uid": staff_uid,
-            "channel_id": request.channel_id,
-            "channel_type": request.channel_type,
-            "start_message_seq": request.start_message_seq,
-            "end_message_seq": request.end_message_seq,
-            "limit": request.limit,
-            "pull_mode": request.pull_mode,
-        }
-    )
-
-    try:
-        result = await wukongim_client.sync_channel_messages(
-            login_uid=staff_uid,
-            channel_id=request.channel_id,
-            channel_type=request.channel_type,
-            start_message_seq=request.start_message_seq,
-            end_message_seq=request.end_message_seq,
-            limit=request.limit,
-            pull_mode=request.pull_mode,
-        )
-
-        message_count = len(result.get("messages", []))
-        logger.info(f"Successfully synced {message_count} channel messages for staff {current_user.username}")
-
-        return WuKongIMChannelMessageSyncResponse(**result)
-
-    except Exception as e:
-        logger.error(f"Failed to sync channel messages for staff {current_user.username}: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to sync channel messages"
         )

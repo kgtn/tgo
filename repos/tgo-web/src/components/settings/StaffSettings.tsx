@@ -31,6 +31,7 @@ import { StaffResponse, StaffCreateRequest } from '@/services/api';
 import { useToast } from '@/hooks/useToast';
 import { useProvidersStore } from '@/stores/providersStore';
 import AIProvidersApiService from '@/services/aiProvidersApi';
+import Toggle from '@/components/ui/Toggle';
 
 // Role configuration for display
 const roleConfig: Record<StaffRole, { label: string; bgColor: string; textColor: string }> = {
@@ -485,6 +486,9 @@ const StaffSettings: React.FC = () => {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const menuButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
 
+  // Service toggle state (for is_active)
+  const [togglingActiveStaffId, setTogglingActiveStaffId] = useState<string | null>(null);
+
   // Assignment rules state
   const [assignmentRulesExpanded, setAssignmentRulesExpanded] = useState(false);
   const [_assignmentRule, setAssignmentRule] = useState<VisitorAssignmentRuleResponse | null>(null);
@@ -567,6 +571,28 @@ const StaffSettings: React.FC = () => {
   useEffect(() => {
     fetchStaff();
   }, [fetchStaff]);
+
+  // Toggle staff is_active status (long-term service switch)
+  const handleToggleIsActive = async (staffId: string, currentActive: boolean) => {
+    if (togglingActiveStaffId) return;
+
+    setTogglingActiveStaffId(staffId);
+    try {
+      const updated = await staffApi.setStaffIsActive(staffId, !currentActive);
+      // Update the staff list with the new data
+      setStaffList(prev => prev.map(s => s.id === staffId ? updated : s));
+      showSuccess(
+        currentActive
+          ? t('settings.staff.serviceStopped', '已停止该坐席的服务')
+          : t('settings.staff.serviceStarted', '已开启该坐席的服务')
+      );
+    } catch (error: any) {
+      console.error('Failed to toggle is_active:', error);
+      showError(error?.message || t('settings.staff.toggleActiveError', '切换服务状态失败'));
+    } finally {
+      setTogglingActiveStaffId(null);
+    }
+  };
 
   // Fetch assignment rules on mount
   useEffect(() => {
@@ -1073,6 +1099,9 @@ const StaffSettings: React.FC = () => {
                     {t('settings.staff.tableStatus', '状态')}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    {t('settings.staff.tableServiceActive', '服务')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {t('settings.staff.tableCreated', '创建时间')}
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -1118,6 +1147,22 @@ const StaffSettings: React.FC = () => {
                         <span className="text-sm text-gray-600 dark:text-gray-400">
                           {statusConfig[staff.status as StaffStatus]?.label || staff.status}
                         </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        {togglingActiveStaffId === staff.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                        ) : (
+                          <Toggle
+                            checked={staff.is_active}
+                            onChange={() => handleToggleIsActive(staff.id, staff.is_active)}
+                            size="sm"
+                            aria-label={staff.is_active
+                              ? t('settings.staff.clickToStop', '点击停止服务')
+                              : t('settings.staff.clickToStart', '点击开启服务')}
+                          />
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">

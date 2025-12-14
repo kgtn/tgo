@@ -53,7 +53,40 @@ export type AILoadingMessagePayload = {
   type: 100
 }
 
-export type MessagePayload = TextMessagePayload | ImageMessagePayload | FileMessagePayload | MixedMessagePayload | CommandMessagePayload | AILoadingMessagePayload
+// System message (type 1000-2000), e.g. "您已接入人工客服，客服{0} 将为您服务"
+export type SystemMessageExtra = {
+  uid?: string
+  name?: string
+  [key: string]: any
+}
+
+export type SystemMessagePayload = {
+  type: number // 1000-2000
+  content: string
+  extra?: SystemMessageExtra[]
+}
+
+// Helper to check if a payload type is a system message
+export function isSystemMessageType(type: number): boolean {
+  return type >= 1000 && type <= 2000
+}
+
+// Format system message content by replacing {0}, {1}, etc. with extra data
+export function formatSystemMessageContent(content: string, extra?: SystemMessageExtra[]): string {
+  if (!extra || !Array.isArray(extra)) return content
+  let result = content
+  extra.forEach((item, index) => {
+    const name = item?.name || item?.uid || ''
+    result = result.replace(new RegExp(`\\{${index}\\}`, 'g'), name)
+  })
+  return result
+}
+
+// Regular message payloads (non-system)
+export type RegularMessagePayload = TextMessagePayload | ImageMessagePayload | FileMessagePayload | MixedMessagePayload | CommandMessagePayload | AILoadingMessagePayload
+
+// All message payloads including system messages
+export type MessagePayload = RegularMessagePayload | SystemMessagePayload
 
 export type ChatMessage = {
   id: string

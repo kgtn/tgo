@@ -1,5 +1,6 @@
 // 导出所有store
-export { useChatStore } from './chatStore';
+export { useChatStore, chatSelectors, StreamEndReason } from './chatStore';
+export type { StreamEndReasonType } from './chatStore';
 export { useAIStore } from './aiStore';
 export { useKnowledgeStore } from './knowledgeStore';
 export { usePlatformStore } from './platformStore';
@@ -7,14 +8,10 @@ export { useUIStore } from './uiStore';
 export { useAuthStore } from './authStore';
 export { useSetupStore } from './setupStore';
 
-// 常用选择器 - 避免在选择器中调用计算方法
-export const chatSelectors = {
-  activeChat: (state: any) => state.activeChat,
-  messages: (state: any) => state.messages,
-  chats: (state: any) => state.chats,
-  searchQuery: (state: any) => state.searchQuery,
-  isLoading: (state: any) => state.isLoading || state.isSending
-};
+// 新拆分的 stores (可选直接使用，但 chatStore 提供向后兼容的聚合接口)
+export { useConversationStore, conversationSelectors } from './conversationStore';
+export { useMessageStore, messageSelectors } from './messageStore';
+export { useSyncStore, syncSelectors } from './syncStore';
 
 export const aiSelectors = {
   agents: (state: any) => state.agents,

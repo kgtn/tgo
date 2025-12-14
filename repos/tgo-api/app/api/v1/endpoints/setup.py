@@ -2,25 +2,23 @@
 
 from datetime import datetime, timezone
 from typing import Optional
-from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.logging import get_logger
 from app.core.security import generate_api_key, get_password_hash
 from app.models import (
     AIProvider,
-    ChannelMember,
     Platform,
     PlatformType,
     PlatformTypeDefinition,
     Project,
     Staff,
     SystemSetup,
-    Visitor,
     VisitorAssignmentRule,
 )
 from app.models.staff import StaffRole, StaffStatus
@@ -39,13 +37,9 @@ from app.schemas.setup import (
 )
 from app.services.ai_client import ai_client
 from app.services.wukongim_client import wukongim_client
-from app.utils.const import (
-    CHANNEL_TYPE_CUSTOMER_SERVICE,
-    MEMBER_TYPE_STAFF,
-    MEMBER_TYPE_VISITOR,
-)
+from app.utils.const import CHANNEL_TYPE_PROJECT_STAFF
 from app.utils.crypto import encrypt_str
-from app.utils.encoding import build_visitor_channel_id
+from app.utils.encoding import build_project_staff_channel_id
 
 logger = get_logger("endpoints.setup")
 
@@ -322,121 +316,33 @@ async def create_admin(
             },
         )
 
-        # Create a default visitor with AI disabled, only if we have a website platform
-        default_visitor: Optional[Visitor] = None
-        if website_platform is None:
-            logger.error(
-                "No 'website' platform type definition found; skipping default visitor and WuKongIM setup",
-                extra={"project_id": str(project.id)},
-            )
-        else:
-            default_visitor = Visitor(
-                project_id=project.id,
-                platform_id=website_platform.id,
-                platform_open_id=str(uuid4()),
-                nickname="Default Visitor",
-                nickname_zh="默认访客",
-                ai_disabled=True,
-            )
-            db.add(default_visitor)
-            db.flush()  # Ensure default_visitor.id is available
+    # Flush to ensure admin.id is available for WuKongIM
+    db.flush()
 
-            logger.info(
-                "Created default visitor for project",
-                extra={
-                    "project_id": str(project.id),
-                    "platform_id": str(website_platform.id),
-                    "visitor_id": str(default_visitor.id),
-                },
-            )
-
-            # Prepare WuKongIM channel and members (best-effort, non-fatal on failure)
-            channel_id = build_visitor_channel_id(default_visitor.id)
-            channel_members = [
-                ChannelMember(
-                    project_id=project.id,
-                    channel_id=channel_id,
-                    channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-                    member_id=default_visitor.id,
-                    member_type=MEMBER_TYPE_VISITOR,
-                ),
-                ChannelMember(
-                    project_id=project.id,
-                    channel_id=channel_id,
-                    channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-                    member_id=admin.id,
-                    member_type=MEMBER_TYPE_STAFF,
-                ),
-            ]
-            db.add_all(channel_members)
-
-            try:
-                # Ensure WuKongIM channel exists with visitor and admin as subscribers
-                subscribers = [str(default_visitor.id), f"{admin.id}-staff"]
-                await wukongim_client.create_channel(
-                    channel_id=channel_id,
-                    channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-                    subscribers=subscribers,
-                )
-
-                logger.info(
-                    "WuKongIM channel created for default visitor during setup",
-                    extra={
-                        "channel_id": channel_id,
-                        "channel_type": CHANNEL_TYPE_CUSTOMER_SERVICE,
-                        "visitor_id": str(default_visitor.id),
-                        "admin_id": str(admin.id),
-                    },
-                )
-
-                # Ensure WuKongIM user exists for the visitor (best-effort)
-                try:
-                    await wukongim_client.register_or_login_user(uid=str(default_visitor.id))
-                    logger.info(
-                        "WuKongIM user ensured for default visitor",
-                        extra={"uid": str(default_visitor.id)},
-                    )
-                except Exception as e:
-                    logger.error(
-                        f"Failed to register default visitor on WuKongIM: {e}",
-                        extra={"uid": str(default_visitor.id)},
-                    )
-
-                # Send a test message as the visitor
-                try:
-                    await wukongim_client.send_text_message(
-                        from_uid=str(default_visitor.id),
-                        channel_id=channel_id,
-                        channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-                        content="this is a test message from the default visitor",
-                    )
-                    logger.info(
-                        "Sent WuKongIM test message for default visitor",
-                        extra={
-                            "visitor_id": str(default_visitor.id),
-                            "channel_id": channel_id,
-                            "channel_type": CHANNEL_TYPE_CUSTOMER_SERVICE,
-                        },
-                    )
-                except Exception as e:
-                    logger.error(
-                        f"Failed to send WuKongIM test message for default visitor: {e}",
-                        extra={
-                            "visitor_id": str(default_visitor.id),
-                            "channel_id": channel_id,
-                            "channel_type": CHANNEL_TYPE_CUSTOMER_SERVICE,
-                        },
-                    )
-            except Exception as e:
-                # Do not fail admin creation if channel setup fails
-                logger.error(
-                    f"Failed to setup WuKongIM channel for default visitor during admin setup: {e}",
-                    extra={
-                        "project_id": str(project.id),
-                        "visitor_id": str(default_visitor.id),
-                        "channel_id": channel_id,
-                    },
-                )
+    # Create project staff channel and add admin as first subscriber
+    try:
+        channel_id = build_project_staff_channel_id(project.id)
+        admin_uid = f"{admin.id}-staff"
+        await wukongim_client.create_channel(
+            channel_id=channel_id,
+            channel_type=CHANNEL_TYPE_PROJECT_STAFF,
+            subscribers=[admin_uid],
+        )
+        logger.info(
+            "Created project staff channel",
+            extra={
+                "project_id": str(project.id),
+                "channel_id": channel_id,
+                "admin_uid": admin_uid,
+            },
+        )
+    except Exception as e:
+        logger.error(f"Failed to create project staff channel: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create project staff channel"
+        )
 
     # Update system setup flags
     setup.admin_created = True
@@ -892,20 +798,55 @@ async def batch_create_staff(
         ).first()
         
         if not existing_rule:
+            # Parse default weekdays from config (comma-separated string to list of ints)
+            default_weekdays = [
+                int(d.strip()) 
+                for d in settings.ASSIGNMENT_RULE_DEFAULT_WEEKDAYS.split(",") 
+                if d.strip().isdigit()
+            ]
+            
             # Create default visitor assignment rule
             default_rule = VisitorAssignmentRule(
                 project_id=project.id,
                 llm_assignment_enabled=False,  # Disable LLM by default, use load balancing
-                timezone="Asia/Shanghai",
-                service_weekdays=[1, 2, 3, 4, 5],  # Monday to Friday
-                service_start_time="09:00",
-                service_end_time="18:00",
-                max_concurrent_chats=10,
-                auto_close_hours=48,
+                timezone=settings.ASSIGNMENT_RULE_DEFAULT_TIMEZONE,
+                service_weekdays=default_weekdays,
+                service_start_time=settings.ASSIGNMENT_RULE_DEFAULT_START_TIME,
+                service_end_time=settings.ASSIGNMENT_RULE_DEFAULT_END_TIME,
+                max_concurrent_chats=settings.ASSIGNMENT_RULE_DEFAULT_MAX_CONCURRENT_CHATS,
+                auto_close_hours=settings.ASSIGNMENT_RULE_DEFAULT_AUTO_CLOSE_HOURS,
             )
             db.add(default_rule)
             logger.info(
                 f"Created default visitor assignment rule for project {project.id}"
+            )
+        
+        # Flush to ensure staff IDs are available
+        db.flush()
+        
+        # Add all new staff to project staff channel
+        try:
+            channel_id = build_project_staff_channel_id(project.id)
+            staff_uids = [f"{staff.id}-staff" for staff in created_staff]
+            await wukongim_client.add_channel_subscribers(
+                channel_id=channel_id,
+                channel_type=CHANNEL_TYPE_PROJECT_STAFF,
+                subscribers=staff_uids,
+            )
+            logger.info(
+                f"Added {len(staff_uids)} staff to project channel",
+                extra={
+                    "project_id": str(project.id),
+                    "channel_id": channel_id,
+                    "staff_count": len(staff_uids),
+                },
+            )
+        except Exception as e:
+            logger.error(f"Failed to add staff to project channel: {e}")
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to add staff to project channel"
             )
         
         db.commit()

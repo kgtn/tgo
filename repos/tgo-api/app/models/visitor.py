@@ -1,6 +1,7 @@
 """Visitor model."""
 
 from datetime import datetime
+from enum import Enum
 from typing import List, Optional, TYPE_CHECKING
 from uuid import UUID, uuid4
 
@@ -20,6 +21,34 @@ if TYPE_CHECKING:
     from app.models.visitor_tag import VisitorTag
     from app.models.visitor_customer_update import VisitorCustomerUpdate
     from app.models.visitor_session import VisitorSession
+
+
+class VisitorServiceStatus(str, Enum):
+    """Visitor service status enumeration.
+    
+    State transitions:
+    - NEW: Initial state when visitor is created
+    - QUEUED: Visitor is in the waiting queue
+    - ACTIVE: Staff is actively serving the visitor
+    - CLOSED: Service session is closed
+    
+    Allowed transitions:
+    - NEW -> QUEUED (visitor requests human service)
+    - NEW -> ACTIVE (direct assignment without queue)
+    - QUEUED -> ACTIVE (staff assigned from queue)
+    - ACTIVE -> CLOSED (service ends)
+    - CLOSED -> QUEUED (visitor requests service again)
+    - CLOSED -> ACTIVE (visitor re-engaged)
+    """
+    
+    NEW = "new"                       # Visitor just created, no service requested
+    QUEUED = "queued"                 # In waiting queue for human service
+    ACTIVE = "active"                 # Currently being served by staff
+    CLOSED = "closed"                 # Service session closed
+
+
+# Statuses indicating visitor is unassigned (can be assigned to staff)
+UNASSIGNED_STATUSES = {VisitorServiceStatus.NEW.value, VisitorServiceStatus.CLOSED.value}
 
 
 class Visitor(Base):
@@ -131,6 +160,14 @@ class Visitor(Base):
         default=False,
         comment="Whether AI responses are disabled for this visitor"
     )
+    
+    # Service status
+    service_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=VisitorServiceStatus.NEW.value,
+        comment="Service status: new, queued, active, closed"
+    )
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
@@ -235,3 +272,23 @@ class Visitor(Base):
     def display_name(self) -> str:
         """Get the best available display name for the visitor."""
         return self.name or self.nickname or self.platform_open_id
+
+    @property
+    def is_unassigned(self) -> bool:
+        """Check if visitor is unassigned (can be assigned to staff)."""
+        return self.service_status in UNASSIGNED_STATUSES
+
+    def set_status_queued(self) -> None:
+        """Set visitor status to QUEUED."""
+        self.service_status = VisitorServiceStatus.QUEUED.value
+        self.updated_at = datetime.utcnow()
+
+    def set_status_active(self) -> None:
+        """Set visitor status to ACTIVE."""
+        self.service_status = VisitorServiceStatus.ACTIVE.value
+        self.updated_at = datetime.utcnow()
+
+    def set_status_closed(self) -> None:
+        """Set visitor status to CLOSED."""
+        self.service_status = VisitorServiceStatus.CLOSED.value
+        self.updated_at = datetime.utcnow()

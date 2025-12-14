@@ -178,15 +178,25 @@ class Settings(BaseSettings):
         description="Enable periodic background sync for ProjectAIConfig",
     )
 
-    # Queue Processor settings (unified waiting queue processing)
-    QUEUE_PROCESS_ENABLED: bool = Field(
-        default=True,
-        description="Enable periodic processing of waiting queue entries",
-    )
-    QUEUE_PROCESS_INTERVAL_SECONDS: int = Field(
-        default=5,
-        description="Interval in seconds for scanning and processing waiting queue",
+    # Queue Processing settings (event-driven with fallback)
+    QUEUE_DEFAULT_TIMEOUT_MINUTES: int = Field(
+        default=60*24, # 24 hours
+        description="Default queue wait timeout in minutes if not configured per project",
         gt=0,
+    )
+    QUEUE_CLEANUP_INTERVAL_SECONDS: int = Field(
+        default=300,
+        description="Interval in seconds for expired queue entries cleanup (default 5 minutes)",
+        gt=0,
+    )
+    QUEUE_FALLBACK_INTERVAL_SECONDS: int = Field(
+        default=120,
+        description="Interval in seconds for fallback queue processing (default 2 minutes)",
+        gt=0,
+    )
+    QUEUE_FALLBACK_ENABLED: bool = Field(
+        default=True,
+        description="Enable fallback periodic processing for missed queue entries",
     )
     QUEUE_PROCESS_BATCH_SIZE: int = Field(
         default=50,
@@ -198,14 +208,53 @@ class Settings(BaseSettings):
         description="Maximum number of concurrent workers for queue processing",
         gt=0,
     )
-    QUEUE_PROCESS_MAX_RETRIES: int = Field(
-        default=3,
-        description="Maximum retry attempts before marking queue entry as expired",
-        ge=0,
+
+    # Session timeout settings
+    SESSION_TIMEOUT_CHECK_ENABLED: bool = Field(
+        default=True,
+        description="Enable periodic check for timed-out sessions",
     )
-    QUEUE_PROCESS_RETRY_DELAY_SECONDS: int = Field(
-        default=60,
-        description="Delay in seconds before retrying a queue entry",
+    SESSION_TIMEOUT_CHECK_INTERVAL_SECONDS: int = Field(
+        default=300,
+        description="Interval in seconds between session timeout checks (default 5 minutes)",
+        gt=0,
+    )
+    SESSION_DEFAULT_TIMEOUT_HOURS: int = Field(
+        default=48,
+        description="Default session timeout in hours if not configured in VisitorAssignmentRule",
+        gt=0,
+    )
+    SESSION_TIMEOUT_BATCH_SIZE: int = Field(
+        default=50,
+        description="Number of timed-out sessions to process per batch",
+        gt=0,
+    )
+
+    # Visitor Assignment Rule defaults
+    ASSIGNMENT_RULE_DEFAULT_TIMEZONE: str = Field(
+        default="Asia/Shanghai",
+        description="Default timezone for visitor assignment rules",
+    )
+    ASSIGNMENT_RULE_DEFAULT_WEEKDAYS: str = Field(
+        default="1,2,3,4,5,6,7",
+        description="Default service weekdays (comma-separated, 1=Monday to 7=Sunday)",
+    )
+    ASSIGNMENT_RULE_DEFAULT_START_TIME: str = Field(
+        default="00:00",
+        description="Default service start time (HH:MM format)",
+    )
+    ASSIGNMENT_RULE_DEFAULT_END_TIME: str = Field(
+        default="24:00",
+        description="Default service end time (HH:MM format, 24:00 for end of day)",
+    )
+    ASSIGNMENT_RULE_DEFAULT_MAX_CONCURRENT_CHATS: int = Field(
+        default=50,
+        description="Default maximum concurrent chats per staff",
+        gt=0,
+    )
+    ASSIGNMENT_RULE_DEFAULT_AUTO_CLOSE_HOURS: int = Field(
+        default=48,
+        description="Default auto-close hours for sessions",
         gt=0,
     )
 

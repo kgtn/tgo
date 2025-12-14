@@ -16,6 +16,8 @@ interface VisitorHeaderProps {
   onAvatarClick?: () => void;
   /** Whether avatar upload is in progress */
   isUploading?: boolean;
+  /** Visitor ID for consistent avatar color */
+  visitorId?: string;
 }
 
 /**
@@ -29,14 +31,15 @@ const VisitorHeader: React.FC<VisitorHeaderProps> = ({
   lastSeenText,
   className = '',
   onAvatarClick,
-  isUploading = false
+  isUploading = false,
+  visitorId
 }) => {
   const { t } = useTranslation();
   // Use same avatar fallback logic as conversations list
   const hasValidAvatarUrl = hasValidAvatar(avatar);
   const defaultAvatar = useMemo(
-    () => (!hasValidAvatarUrl ? generateDefaultAvatar(name) : null),
-    [hasValidAvatarUrl, name]
+    () => (!hasValidAvatarUrl ? generateDefaultAvatar(name, visitorId) : null),
+    [hasValidAvatarUrl, name, visitorId]
   );
 
   const handleImageError = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {

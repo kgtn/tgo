@@ -2,7 +2,7 @@
 
 from app.services.transfer_service import (
     TransferResult,
-    transfer_to_human,
+    transfer_to_staff,
     reassign_to_staff,
     assign_from_waiting_queue,
     get_waiting_queue_count,
@@ -12,7 +12,7 @@ from app.services.transfer_service import (
 
 __all__ = [
     "TransferResult",
-    "transfer_to_human",
+    "transfer_to_staff",
     "reassign_to_staff",
     "assign_from_waiting_queue",
     "get_waiting_queue_count",

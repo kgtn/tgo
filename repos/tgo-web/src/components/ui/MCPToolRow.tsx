@@ -15,7 +15,7 @@ const MCPToolRow: React.FC<MCPToolRowProps> = ({
   disabled = false,
 }) => {
   const displayName = tool.title || tool.name;
-  const toolAvatar = generateDefaultAvatar(displayName);
+  const toolAvatar = generateDefaultAvatar(displayName, tool.id);
 
   return (
     <div className="flex items-center justify-between p-3 rounded-md border border-gray-200 bg-white transition-colors">

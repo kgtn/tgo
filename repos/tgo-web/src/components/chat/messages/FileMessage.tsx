@@ -56,7 +56,7 @@ const FileMessage: React.FC<MessageComponentProps> = ({ message, isStaff }) => {
         const payload: any = { type: MessagePayloadType.FILE, content: '[文件]', url, name, size, timestamp: Date.now() };
         try {
           if (!isConnected) throw new Error('WebSocket 未连接，无法发送文件消息');
-          await sendWsMessage(message.channelId as string, message.channelType as number, payload);
+          await sendWsMessage(message.channelId as string, message.channelType as number, payload, clientKey);
           updateMessageByClientMsgNo(clientKey, { metadata: { ws_sent: true, ws_send_error: false } });
         } catch (err) {
           updateMessageByClientMsgNo(clientKey, { metadata: { ws_send_error: true } });

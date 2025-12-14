@@ -91,6 +91,37 @@ export interface VisitorAvatarUploadResponse {
 }
 
 
+// Response for POST /v1/sessions/visitor/{visitor_id}/close
+export interface VisitorSessionResponse {
+  id: string;
+  project_id: string;
+  visitor_id: string;
+  channel_id: string;
+  channel_type: number;
+  status: string;
+  started_at: string;
+  ended_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Request for POST /v1/sessions/visitor/{visitor_id}/transfer
+export interface TransferSessionRequest {
+  target_staff_id: string;
+  reason?: string | null;
+}
+
+// Response for POST /v1/sessions/visitor/{visitor_id}/transfer
+export interface TransferSessionResponse {
+  success: boolean;
+  message: string;
+  old_session_id: string;
+  new_session_id?: string | null;
+  visitor_id: string;
+  from_staff_id: string;
+  to_staff_id: string;
+}
+
 /**
  * Visitor API Service Class
  */
@@ -103,6 +134,8 @@ class VisitorApiService extends BaseApiService {
     visitorByChannel: '/v1/visitors/by-channel',
     enableAI: (id: string) => `/v1/visitors/${id}/enable-ai`,
     disableAI: (id: string) => `/v1/visitors/${id}/disable-ai`,
+    closeSession: (visitorId: string) => `/v1/sessions/visitor/${visitorId}/close`,
+    transferSession: (visitorId: string) => `/v1/sessions/visitor/${visitorId}/transfer`,
   };
 
   protected readonly apiVersion = 'v1';
@@ -150,6 +183,36 @@ class VisitorApiService extends BaseApiService {
   async disableAI(visitorId: string): Promise<VisitorResponse> {
     const endpoint = (this.endpoints.disableAI as (id: string) => string)(visitorId);
     return this.post<VisitorResponse>(endpoint, {});
+  }
+
+  /**
+   * Close current session for a visitor using POST /v1/sessions/visitor/{visitor_id}/close
+   * @param visitorId - The visitor's UUID
+   * @returns Promise with session response
+   */
+  async closeSession(visitorId: string): Promise<VisitorSessionResponse> {
+    const endpoint = (this.endpoints.closeSession as (id: string) => string)(visitorId);
+    return this.post<VisitorSessionResponse>(endpoint, {});
+  }
+
+  /**
+   * Transfer current session for a visitor to another staff
+   * @param visitorId - The visitor's UUID
+   * @param targetStaffId - The target staff's UUID
+   * @param reason - Optional reason for transfer
+   * @returns Promise with transfer response
+   */
+  async transferSession(
+    visitorId: string,
+    targetStaffId: string,
+    reason?: string
+  ): Promise<TransferSessionResponse> {
+    const endpoint = (this.endpoints.transferSession as (id: string) => string)(visitorId);
+    const body: TransferSessionRequest = {
+      target_staff_id: targetStaffId,
+      reason: reason || null,
+    };
+    return this.post<TransferSessionResponse>(endpoint, body);
   }
 
   /**

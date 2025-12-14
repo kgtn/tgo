@@ -32,6 +32,7 @@ import PlatformConfigPage from '../pages/PlatformConfigPage';
 import SettingsLayout from '../pages/SettingsLayout';
 
 import GeneralSettings from '../components/settings/GeneralSettings';
+import ProfileSettings from '../components/settings/ProfileSettings';
 import StaffSettings from '../components/settings/StaffSettings';
 import ModelProvidersSettings from '../components/settings/ModelProvidersSettings';
 import AboutSettings from '../components/settings/AboutSettings';
@@ -76,8 +77,9 @@ export const router = createBrowserRouter([
         path: 'settings',
         element: <SettingsLayout />,
         children: [
-          { index: true, element: <Navigate to="/settings/general" replace /> },
+          { index: true, element: <Navigate to="/settings/profile" replace /> },
 
+          { path: 'profile', element: <ProfileSettings /> },
           { path: 'general', element: <GeneralSettings /> },
           { path: 'staff', element: <StaffSettings /> },
           { path: 'providers', element: <ModelProvidersSettings /> },

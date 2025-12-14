@@ -616,7 +616,47 @@ export enum MessagePayloadType {
   IMAGE = 2,
   FILE = 3,
   RICH_TEXT = 12,
-  STREAM = 100  // 流消息类型（AI 流式输出开始）
+  STREAM = 100,  // 流消息类型（AI 流式输出开始）
+  // 系统消息类型范围：1000-2000
+  SYSTEM_MIN = 1000,
+  SYSTEM_STAFF_ASSIGNED = 1000,  // 已分配到客服
+  SYSTEM_SESSION_CLOSED = 1001,  // 会话关闭
+  SYSTEM_MAX = 2000,
+}
+
+/**
+ * 检查是否是需要刷新频道信息的系统消息类型
+ * 1000 - 已分配到客服
+ * 1001 - 会话关闭
+ */
+export function isChannelRefreshSystemMessage(type: number): boolean {
+  return type === MessagePayloadType.SYSTEM_STAFF_ASSIGNED || type === MessagePayloadType.SYSTEM_SESSION_CLOSED;
+}
+
+/**
+ * 检查消息类型是否为系统消息
+ * 系统消息的 payload.type 范围在 1000-2000 之间
+ */
+export function isSystemMessageType(type: number): boolean {
+  return type >= MessagePayloadType.SYSTEM_MIN && type <= MessagePayloadType.SYSTEM_MAX;
+}
+
+/**
+ * 系统消息中的额外信息项
+ */
+export interface SystemMessageExtraItem {
+  uid?: string;
+  name?: string;
+  [key: string]: any;
+}
+
+/**
+ * 系统消息 Payload
+ */
+export interface PayloadSystem {
+  type: number; // 1000-2000
+  content: string; // 模板字符串，如 "您已接入人工客服，客服{0} 将为您服务"
+  extra?: SystemMessageExtraItem[];
 }
 
 // Strongly-typed message payloads
@@ -657,7 +697,7 @@ export interface PayloadRichText {
   };
 }
 
-export type MessagePayload = PayloadText | PayloadImage | PayloadFile | PayloadRichText;
+export type MessagePayload = PayloadText | PayloadImage | PayloadFile | PayloadRichText | PayloadSystem;
 
 
 export interface Message {
@@ -785,6 +825,9 @@ export interface ChannelAIInsights {
   insight_summary: string | null;
 }
 
+// Visitor service status enum
+export type VisitorServiceStatus = 'new' | 'queued' | 'assigned_pending' | 'active' | 'closed';
+
 export interface ChannelVisitorExtra {
   id: string;
   platform_id: string;
@@ -809,10 +852,12 @@ export interface ChannelVisitorExtra {
   last_offline_time?: string;
   is_online?: boolean;
   ai_disabled?: boolean; // True means AI is disabled for this visitor
+  assigned_staff_id?: string; // ID of the staff member assigned to this visitor
   ai_insights?: ChannelAIInsights | null; // AI insights from backend
   tags?: VisitorTag[];
   recent_activities?: VisitorActivity[];
   system_info?: SystemInfo;
+  service_status?: VisitorServiceStatus; // Visitor service status: new, queued, assigned_pending, active, closed
 }
 
 export type ChannelExtra = ChannelVisitorExtra | ChannelStaffExtra | null;
@@ -1092,6 +1137,21 @@ export interface WuKongIMConversationSyncRequest {
 
 export interface WuKongIMConversationSyncResponse {
   conversations: WuKongIMConversation[]; // List of conversations
+  channels?: ChannelInfo[]; // Optional channel info for each conversation (returned by /conversations/my, /waiting, /all)
+}
+
+// Pagination metadata for paginated responses
+export interface PaginationMetadata {
+  total: number; // Total number of items
+  limit: number; // Number of items per page
+  offset: number; // Number of items skipped
+  has_next: boolean; // Whether there are more items
+  has_prev: boolean; // Whether there are previous items
+}
+
+// Paginated conversation response (for /conversations/waiting and /conversations/all)
+export interface WuKongIMConversationPaginatedResponse extends WuKongIMConversationSyncResponse {
+  pagination: PaginationMetadata;
 }
 
 // Historical Messages Sync Types (aligned with WuKongIM /channel/messagesync)

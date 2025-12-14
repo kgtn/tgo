@@ -16,6 +16,7 @@ import { chatMessagesApiService } from '@/services/chatMessagesApi';
 import { useToast } from '@/hooks/useToast';
 import { showApiError } from '@/utils/toastHelpers';
 import { useTranslation } from 'react-i18next';
+import { WsSendError } from '@/services/wukongimWebSocket';
 
 /**
  * Props for the ChatWindow component
@@ -25,6 +26,10 @@ export interface ChatWindowProps {
   activeChat?: Chat;
   /** Callback when a message is sent */
   onSendMessage?: (message: string) => void;
+  /** Callback when a visitor is accepted from the waiting queue */
+  onAcceptVisitor?: () => void;
+  /** Callback when a chat is ended successfully (with channel info) */
+  onEndChatSuccess?: (channelId: string, channelType: number) => void;
 }
 
 /**
@@ -40,7 +45,7 @@ export interface ChatWindowProps {
  * @param activeChat - The currently active chat
  * @param onSendMessage - Callback when a message is sent
  */
-const ChatWindow: React.FC<ChatWindowProps> = React.memo(({ activeChat, onSendMessage }) => {
+const ChatWindow: React.FC<ChatWindowProps> = React.memo(({ activeChat, onSendMessage, onAcceptVisitor, onEndChatSuccess }) => {
   const { t } = useTranslation();
   // Get channel info for WuKongIM integration (flattened on Chat)
   const channelId = activeChat?.channelId;
@@ -206,12 +211,20 @@ const ChatWindow: React.FC<ChatWindowProps> = React.memo(({ activeChat, onSendMe
         // Send via WebSocket (with dedicated error handling)
         try {
           if (!isConnected) throw new Error(t('chat.send.wsNotConnected', 'WebSocket \u672a\u8fde\u63a5\uff0c\u8bf7\u68c0\u67e5\u7f51\u7edc\u8fde\u63a5'));
-          await sendWsMessage(channelId, channelType, payload);
+          await sendWsMessage(channelId, channelType, payload, nowId);
           // Update message metadata to mark as successfully sent
           updateMessageByClientMsgNo(nowId, { metadata: { ws_sent: true, ws_send_error: false } as any });
           onSendMessage?.(message);
         } catch (e) {
-          const errMsg = e instanceof Error ? e.message : t('chat.send.wsFailed', 'WebSocket \u53d1\u9001\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u7f51\u7edc\u8fde\u63a5');
+          // 使用 i18n 翻译 WsSendError
+          let errMsg: string;
+          if (e instanceof WsSendError) {
+            errMsg = t(e.i18nKey, e.defaultMessage);
+          } else if (e instanceof Error) {
+            errMsg = e.message;
+          } else {
+            errMsg = t('chat.send.wsFailed', 'WebSocket \u53d1\u9001\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u7f51\u7edc\u8fde\u63a5');
+          }
           updateMessageByClientMsgNo(nowId, { metadata: { ws_send_error: true, error_text: errMsg } as any });
           showApiError(showToast, e);
           return;
@@ -314,7 +327,7 @@ const ChatWindow: React.FC<ChatWindowProps> = React.memo(({ activeChat, onSendMe
   return (
     <main className="flex-grow flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Chat Header */}
-      <ChatHeader activeChat={activeChat} />
+      <ChatHeader activeChat={activeChat} onEndChatSuccess={onEndChatSuccess} />
 
       {/* Messages Area */}
       <div className="flex-1 min-h-0 overflow-hidden">
@@ -344,6 +357,7 @@ const ChatWindow: React.FC<ChatWindowProps> = React.memo(({ activeChat, onSendMe
       <MessageInput
         onSendMessage={handleSendMessage}
         isSending={isSending}
+        onAcceptVisitor={onAcceptVisitor}
       />
 
       {/* Dev Mode Toolbar - only shown when dev mode is enabled */}

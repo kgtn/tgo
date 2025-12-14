@@ -67,6 +67,9 @@ export interface StaffResponse {
   avatar_url: string | null;
   role: 'user' | 'admin' | 'agent';
   status: 'online' | 'offline' | 'busy';
+  is_active: boolean; // 是否停止服务（长期开关）
+  service_paused: boolean;
+  is_working?: boolean; // 是否在工作时间（根据分配规则计算）
   agent_id: string | null;
   description: string | null;
   created_at: string;

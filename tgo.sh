@@ -1416,12 +1416,60 @@ cmd_build() {
   if [ "${#services[@]}" -eq 0 ]; then
     echo "[INFO] Rebuilding all services from source..."
     docker compose --env-file "$ENV_FILE" $compose_file_args build
+    
+    # Run all migrations for all services
+    echo "[INFO] Running database migrations..."
+    wait_for_postgres "$compose_file_args"
+    run_all_migrations "$compose_file_args"
+    
     docker compose --env-file "$ENV_FILE" $compose_file_args up -d
   else
     echo "[INFO] Rebuilding services from source: ${services[*]}..."
     docker compose --env-file "$ENV_FILE" $compose_file_args build "${services[@]}"
+    
+    # Run migrations for the specific service if applicable
+    run_service_migrations "$target" "$compose_file_args"
+    
     docker compose --env-file "$ENV_FILE" $compose_file_args up -d "${services[@]}"
   fi
+}
+
+# Run migrations for a specific service
+# Usage: run_service_migrations <service_target> <compose_file_args>
+run_service_migrations() {
+  local target="$1"
+  local compose_file_args="$2"
+  
+  # Only run migrations for services that have Alembic
+  case "$target" in
+    api)
+      echo "[INFO] Running Alembic migrations for tgo-api..."
+      wait_for_postgres "$compose_file_args"
+      docker compose --env-file "$ENV_FILE" $compose_file_args run --rm -T tgo-api alembic upgrade head
+      ;;
+    rag)
+      echo "[INFO] Running Alembic migrations for tgo-rag..."
+      wait_for_postgres "$compose_file_args"
+      docker compose --env-file "$ENV_FILE" $compose_file_args run --rm -T tgo-rag alembic upgrade head
+      ;;
+    ai)
+      echo "[INFO] Running Alembic migrations for tgo-ai..."
+      wait_for_postgres "$compose_file_args"
+      docker compose --env-file "$ENV_FILE" $compose_file_args run --rm -T tgo-ai alembic upgrade head
+      ;;
+    platform)
+      echo "[INFO] Running Alembic migrations for tgo-platform..."
+      wait_for_postgres "$compose_file_args"
+      docker compose --env-file "$ENV_FILE" $compose_file_args run --rm -T -e PYTHONPATH=. tgo-platform alembic upgrade head
+      ;;
+    web|widget)
+      # Frontend services don't have database migrations
+      echo "[INFO] No database migrations needed for $target"
+      ;;
+    *)
+      echo "[WARN] Unknown service target for migrations: $target"
+      ;;
+  esac
 }
 
 # Helper function to get protocol based on SSL mode

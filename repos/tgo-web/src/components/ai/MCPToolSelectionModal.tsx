@@ -233,7 +233,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
                     const isSelected = tempSelectedTools.includes(tool.id);
                     // Use consistent avatar generation like other components
                     const displayName = tool.title || tool.name;
-                    const toolAvatar = generateDefaultAvatar(displayName);
+                    const toolAvatar = generateDefaultAvatar(displayName, tool.id);
 
                     return (
                       <div

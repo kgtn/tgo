@@ -7,6 +7,7 @@ from app.api.v1.endpoints import (
     ai_models,
     ai_teams,
     ai_tools,
+    conversations,
     diagnostics,
     docs,
     email,
@@ -19,10 +20,12 @@ from app.api.v1.endpoints import (
     rag_files,
     rag_qa_pairs,
     rag_websites,
+    sessions,
     staff,
     tags,
     visitors,
     visitor_assignment_rules,
+    visitor_waiting_queue,
     chat,
     channels,
     search,
@@ -72,6 +75,12 @@ api_router.include_router(
     visitor_assignment_rules.router,
     prefix="/visitor-assignment-rules",
     tags=["Visitor Assignment Rules"]
+)
+
+api_router.include_router(
+    visitor_waiting_queue.router,
+    prefix="/visitor-waiting-queue",
+    tags=["Visitor Waiting Queue"]
 )
 
 api_router.include_router(
@@ -187,6 +196,18 @@ api_router.include_router(
     channels.router,
     prefix="/channels",
     tags=["Channels"],
+)
+
+api_router.include_router(
+    conversations.router,
+    prefix="/conversations",
+    tags=["Conversations"],
+)
+
+api_router.include_router(
+    sessions.router,
+    prefix="/sessions",
+    tags=["Sessions"],
 )
 
 api_router.include_router(

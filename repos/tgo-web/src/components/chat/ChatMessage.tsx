@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import type { Message } from '@/types';
-import { MessagePayloadType, PlatformType } from '@/types';
+import type { Message, PayloadSystem } from '@/types';
+import { MessagePayloadType, PlatformType, isSystemMessageType } from '@/types';
 import { useAuthStore } from '@/stores/authStore';
-import { useChannelStore, getChannelKey } from '@/stores/channelStore';
 import { StreamEndReason } from '@/stores/chatStore';
-import { generateDefaultAvatar, hasValidAvatar } from '@/utils/avatarUtils';
+import { useChannelDisplay } from '@/hooks/useChannelDisplay';
+import { generateDefaultAvatar } from '@/utils/avatarUtils';
 import { getPlatformIconComponent, getPlatformLabel, toPlatformType, getPlatformColor } from '@/utils/platformUtils';
 
 import AIInfoCard from './AIInfoCard';
@@ -19,6 +19,7 @@ import FileMessage from './messages/FileMessage';
 import RichTextMessage from './messages/RichTextMessage';
 import LoadingMessage from './messages/LoadingMessage';
 import AIErrorMessage from './messages/AIErrorMessage';
+import SystemMessage from './messages/SystemMessage';
 
 interface ChatMessageProps {
   message: Message;
@@ -61,7 +62,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick, o
   const typedPayload = message.payload as any | undefined;
 
   // Message type flags
-  const isSystemMessage = message.type === 'system';
+  // 系统消息：message.type === 'system' 或 payload.type 在 1000-2000 范围内
+  const payloadType = typedPayload?.type ?? message.payloadType;
+  const isSystemMessage = message.type === 'system' || (typeof payloadType === 'number' && isSystemMessageType(payloadType));
   const isOwnMessage = currentUid ? message.fromUid === currentUid : false;
 
   // Error state detection
@@ -125,44 +128,61 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick, o
   // This is different from message.channelId which is the conversation channel
   const senderChannelId = message.fromUid;
   const senderChannelType = 1; // Person-to-person channel type
-  const compositeKey = React.useMemo(
-    () => senderChannelId ? getChannelKey(senderChannelId, senderChannelType) : null,
-    [senderChannelId, senderChannelType]
-  );
+  
+  // For avatar color consistency with chat list, use message.channelId for non-own messages (visitors)
+  // This ensures visitor avatar color matches the conversation list item
+  const colorSeedChannelId = isOwnMessage ? senderChannelId : (message.channelId || senderChannelId);
 
-  const channelInfoCache = useChannelStore(state => senderChannelId ? state.getChannel(senderChannelId, senderChannelType) : undefined);
-  const isChannelFetching = useChannelStore(state => compositeKey ? Boolean(state.inFlight[compositeKey]) : false);
-  const channelStoreError = useChannelStore(state => compositeKey ? state.errors[compositeKey] : null);
-  const ensureChannelInfo = useChannelStore(state => state.ensureChannel);
+  // Use unified hook for sender display info
+  // Priority: message.fromInfo > channelStore cache > fallback
+  const {
+    name: channelName,
+    avatar: channelAvatar,
+    hasValidAvatar: hasAvatar,
+    extra: channelExtra,
+  } = useChannelDisplay({
+    channelId: senderChannelId,
+    channelType: senderChannelType,
+    overrideName: message.fromInfo?.name,
+    overrideAvatar: message.fromInfo?.avatar || message.avatar,
+    skipFetch: false,
+  });
+  
+  // Generate default avatar manually:
+  // - Letter: from sender's name (channelName)
+  // - Color: from colorSeedChannelId (for visitor messages, use conversation channelId for consistency with chat list)
+  const defaultAvatar = useMemo(() => {
+    if (hasAvatar) return null;
+    return generateDefaultAvatar(channelName, colorSeedChannelId);
+  }, [hasAvatar, channelName, colorSeedChannelId]);
 
-  // Fetch sender info for visitor messages (not own messages, not staff messages)
-  const needsSenderInfo = !message.fromInfo?.name || !message.fromInfo?.avatar;
-  React.useEffect(() => {
-    if (!senderChannelId) return;
-    // Skip fetching for own messages and staff messages
-    if (isOwnMessage || senderChannelId.endsWith('-staff')) return;
-    if (!needsSenderInfo || channelInfoCache || isChannelFetching || channelStoreError) return;
-    ensureChannelInfo({ channel_id: senderChannelId, channel_type: senderChannelType }).catch(() => {});
-  }, [senderChannelId, senderChannelType, isOwnMessage, needsSenderInfo, channelInfoCache, isChannelFetching, channelStoreError, ensureChannelInfo]);
+  // Display info with staff fallback
+  const displayName = isOwnMessage
+    ? (message.fromInfo?.name || t('chat.header.staffFallback', '客服'))
+    : channelName;
+  const displayAvatar = channelAvatar;
 
-  // Display info
-  const displayName = message.fromInfo?.name || channelInfoCache?.name || (
-    isOwnMessage ? t('chat.header.staffFallback', '客服') : t('chat.header.visitorFallback', { suffix: String(senderChannelId || '').slice(-4), defaultValue: `访客${String(senderChannelId || '').slice(-4)}` })
-  );
-  const displayAvatar = channelInfoCache?.avatar || message.fromInfo?.avatar || message.avatar || '';
-  const hasAvatar = hasValidAvatar(displayAvatar);
-  const defaultAvatar = !hasAvatar ? generateDefaultAvatar(displayName) : null;
-
-  // System message
+  // System message - payload.type 在 1000-2000 范围内
   if (isSystemMessage) {
-    return <div className="text-center text-xs text-gray-400 dark:text-gray-500">{message.content}</div>;
+    // 如果有 payload 且是系统消息格式，使用 SystemMessage 组件
+    if (typedPayload && typeof payloadType === 'number' && isSystemMessageType(payloadType)) {
+      return <SystemMessage payload={typedPayload as PayloadSystem} />;
+    }
+    // 兼容旧的简单系统消息格式
+    return (
+      <div className="flex justify-center my-3">
+        <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100/80 dark:bg-gray-700/50 text-xs text-gray-500 dark:text-gray-400">
+          {message.content}
+        </div>
+      </div>
+    );
   }
 
   // Get platform icon for visitor messages
   const getPlatformIcon = () => {
     const fromInfoExtra: any = message.fromInfo?.extra;
     const extraType: PlatformType | undefined = fromInfoExtra?.platform_type;
-    const cacheExtra: any = channelInfoCache?.extra;
+    const cacheExtra: any = channelExtra;
     const cacheType: PlatformType | undefined = cacheExtra?.platform_type;
     const type = extraType ?? cacheType ?? toPlatformType(message.platform);
     const IconComp = getPlatformIconComponent(type);

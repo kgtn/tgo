@@ -86,6 +86,18 @@ class Staff(Base):
         default="offline",
         comment="Staff status: online, offline, busy"
     )
+    
+    # Service control
+    is_active: Mapped[bool] = mapped_column(
+        nullable=False,
+        default=True,
+        comment="Whether staff is active for service (long-term switch, e.g., off-duty, resigned)"
+    )
+    service_paused: Mapped[bool] = mapped_column(
+        nullable=False,
+        default=False,
+        comment="Whether staff has temporarily paused accepting new visitors (short-term switch)"
+    )
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(
@@ -141,3 +153,8 @@ class Staff(Base):
     def is_agent(self) -> bool:
         """Check if the staff is an AI agent."""
         return self.role == StaffRole.AGENT
+
+    @property
+    def is_available_for_service(self) -> bool:
+        """Check if the staff is available for accepting new visitors."""
+        return self.is_active and not self.service_paused and not self.is_deleted

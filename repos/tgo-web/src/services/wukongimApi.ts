@@ -21,8 +21,9 @@ import type {
   Message,
   MessagePayload,
   PayloadRichTextImage,
+  PayloadSystem,
 } from '../types';
-import { MessagePayloadType } from '../types';
+import { MessagePayloadType, isSystemMessageType } from '../types';
 
 
 /**
@@ -32,11 +33,10 @@ export class WuKongIMApiService extends BaseApiService {
   protected readonly apiVersion = 'v1';
   protected readonly endpoints = {
     ROUTE: `/${this.apiVersion}/wukongim/route`,
-    CONVERSATIONS_SYNC: `/${this.apiVersion}/staff/wukongim/conversations/sync`,
-    CONVERSATIONS_DELETE: `/${this.apiVersion}/staff/wukongim/conversations/delete`,
-    CONVERSATIONS_SET_UNREAD: `/${this.apiVersion}/staff/wukongim/conversations/set-unread`,
-    // Future endpoint for historical messages sync
-    MESSAGES_SYNC: `/${this.apiVersion}/staff/wukongim/channels/messages/sync`,
+    CONVERSATIONS_SYNC: `/${this.apiVersion}/conversations/all`,
+    CONVERSATIONS_DELETE: `/${this.apiVersion}/conversations`,
+    CONVERSATIONS_SET_UNREAD: `/${this.apiVersion}/conversations/unread`,
+    MESSAGES_SYNC: `/${this.apiVersion}/conversations/messages`,
   } as const;
 
   /**
@@ -49,7 +49,7 @@ export class WuKongIMApiService extends BaseApiService {
   ): Promise<{ success?: boolean } | void> {
     const service = new WuKongIMApiService();
     try {
-      return await service.post<{ success?: boolean }>(
+      return await service.put<{ success?: boolean }>(
         service.endpoints.CONVERSATIONS_SET_UNREAD,
         {
           channel_id: channelId,
@@ -333,6 +333,10 @@ export class WuKongIMUtils {
       if (payload.type === 2) {
         return payload.content || '[图片]';
       }
+      // 处理系统消息 (type: 1000-2000) 的模板替换
+      if (typeof payload.type === 'number' && isSystemMessageType(payload.type)) {
+        return WuKongIMUtils.formatSystemMessageContent(payload.content, payload.extra);
+      }
       return payload.content || '';
     }
 
@@ -343,6 +347,10 @@ export class WuKongIMUtils {
         const parsed = JSON.parse(payload);
         // Check if it's the new object format embedded in string
         if (parsed && typeof parsed === 'object' && parsed.content !== undefined) {
+          // 处理系统消息 (type: 1000-2000) 的模板替换
+          if (typeof parsed.type === 'number' && isSystemMessageType(parsed.type)) {
+            return WuKongIMUtils.formatSystemMessageContent(parsed.content, parsed.extra);
+          }
           return parsed.content || (parsed.type === 2 ? '[图片]' : '');
         }
         // Fallback to old parsing logic
@@ -355,6 +363,23 @@ export class WuKongIMUtils {
 
     // Fallback for any other type
     return String(payload || '');
+  }
+
+  /**
+   * 格式化系统消息内容，将模板中的 {0}, {1} 等占位符替换为 extra 中对应的名称
+   * @param template - 模板字符串，如 "您已接入人工客服，客服{0} 将为您服务"
+   * @param extra - 额外信息数组，如 [{ uid: "xxx", name: "Administrator" }]
+   * @returns 格式化后的字符串
+   */
+  static formatSystemMessageContent(template: string, extra?: Array<{ uid?: string; name?: string; [key: string]: any }>): string {
+    if (!template) return '';
+    if (!extra || extra.length === 0) return template;
+
+    return template.replace(/\{(\d+)\}/g, (match, index) => {
+      const idx = parseInt(index, 10);
+      const item = extra[idx];
+      return item?.name || match;
+    });
   }
 
   /**
@@ -440,6 +465,16 @@ export class WuKongIMUtils {
       fileMeta = { file_url: url || url0, file_name: name, file_size: size };
     } else if (payloadType === MessagePayloadType.TEXT) {
       typedPayload = { type: MessagePayloadType.TEXT, content };
+    }
+
+    // 处理系统消息 (payload.type 在 1000-2000 范围内)
+    if (isSystemMessageType(payloadTypeNum)) {
+      // 系统消息直接使用原始 payload 对象
+      typedPayload = {
+        type: payloadTypeNum,
+        content: payloadObj?.content || content || '',
+        extra: payloadObj?.extra || [],
+      } as PayloadSystem;
     }
 
     // Determine if this is a streaming message that's still in progress

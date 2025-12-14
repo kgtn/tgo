@@ -1055,10 +1055,10 @@ dompurify@^3.1.6:
   optionalDependencies:
     "@types/trusted-types" "^2.0.7"
 
-easyjssdk@^1.0.10:
-  version "1.0.10"
-  resolved "https://registry.yarnpkg.com/easyjssdk/-/easyjssdk-1.0.10.tgz#b41d0ec89a5261c5710fd50f1a0753993a378ebb"
-  integrity sha512-clDjpx35gxXy+Ws2yEDBetBL2jPmd8abXsya+L7TJDMjZ8VBSHqEsyD0NcovqGNUZCsuZNjDQGmuKCANOUW8GA==
+easyjssdk@^1.0.13:
+  version "1.0.13"
+  resolved "https://registry.yarnpkg.com/easyjssdk/-/easyjssdk-1.0.13.tgz#4770f8eab4988f9c78e928709218299881729dd1"
+  integrity sha512-V1iHAuGZPD62jII3pPrz5mojooIzfb+UkbT1kwLHCg1mUc9pyVveg7zBC2I0g/xplWrCSclG3npQ89fhr9bU3g==
   dependencies:
     uuid "^11.1.0"
     ws "^8.18.2"

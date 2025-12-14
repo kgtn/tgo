@@ -8,19 +8,21 @@ export interface ChatAvatarProps {
   displayAvatar: string;
   visitorStatus?: 'online' | 'offline' | 'away';
   lastSeenMinutes?: number;
+  /** Optional seed for consistent color generation (e.g., channel_id, visitor_id, staff_id) */
+  colorSeed?: string;
 }
 
 /**
  * Chat avatar with online indicator and recent "last seen" badge.
  * Memoized to avoid unnecessary re-renders in large chat lists.
  */
-export const ChatAvatar: React.FC<ChatAvatarProps> = React.memo(({ displayName, displayAvatar, visitorStatus, lastSeenMinutes }) => {
+export const ChatAvatar: React.FC<ChatAvatarProps> = React.memo(({ displayName, displayAvatar, visitorStatus, lastSeenMinutes, colorSeed }) => {
   const { t } = useTranslation();
   const hasValidAvatarUrl = hasValidAvatar(displayAvatar);
 
   const defaultAvatar = useMemo(
-    () => (!hasValidAvatarUrl ? generateDefaultAvatar(displayName) : null),
-    [hasValidAvatarUrl, displayName]
+    () => (!hasValidAvatarUrl ? generateDefaultAvatar(displayName, colorSeed) : null),
+    [hasValidAvatarUrl, displayName, colorSeed]
   );
 
   const handleImageError = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -44,12 +46,11 @@ export const ChatAvatar: React.FC<ChatAvatarProps> = React.memo(({ displayName, 
 
       {visitorStatus === VISITOR_STATUS.ONLINE && (
         <div 
-          className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-1 border-white" 
+          className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border border-white" 
           title={t('time.lastSeen.online', '在线')} 
         />
       )}
-
-      {visitorStatus === VISITOR_STATUS.OFFLINE && lastSeenMinutes !== undefined && lastSeenMinutes <= 60 ? (
+      {visitorStatus === VISITOR_STATUS.OFFLINE && lastSeenMinutes !== undefined && lastSeenMinutes <= 60 && (
         <div
           className="absolute -bottom-0.5 -right-0.5 bg-white flex items-center justify-center rounded-[10px] p-0.5"
           title={lastSeenMinutes === 0 
@@ -66,7 +67,7 @@ export const ChatAvatar: React.FC<ChatAvatarProps> = React.memo(({ displayName, 
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 });

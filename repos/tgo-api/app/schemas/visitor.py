@@ -251,6 +251,10 @@ class VisitorInDB(VisitorBase, TimestampMixin, SoftDeleteMixin):
     last_visit_time: datetime = Field(..., description="Visitor most recent activity/visit time")
     last_offline_time: Optional[datetime] = Field(None, description="Most recent time visitor went offline")
     is_online: bool = Field(..., description="Whether the visitor is currently online/active")
+    service_status: str = Field(
+        default="new",
+        description="Visitor service status: new, queued, active, closed"
+    )
 
 
 class VisitorResponse(VisitorInDB):
@@ -267,6 +271,10 @@ class VisitorResponse(VisitorInDB):
     display_nickname: Optional[str] = Field(
         None,
         description="Display nickname based on client language (nickname_zh for zh, nickname for others)"
+    )
+    assigned_staff_id: Optional[UUID] = Field(
+        None,
+        description="Currently assigned staff ID (from active session)"
     )
     tags: List[TagResponse] = Field(default_factory=list, description="Associated visitor tags")
     ai_profile: Optional[VisitorAIProfileResponse] = Field(None, description="AI persona data")
@@ -302,6 +310,10 @@ class VisitorBasicResponse(BaseSchema):
         None, description="Whether AI responses are disabled for this visitor"
     )
     is_online: bool = Field(..., description="Whether the visitor is currently online/active")
+    service_status: str = Field(
+        default="new",
+        description="Visitor service status: new, queued, active, closed"
+    )
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

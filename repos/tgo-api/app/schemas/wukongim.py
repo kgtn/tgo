@@ -134,7 +134,6 @@ class WuKongIMConversation(BaseSchema):
 class WuKongIMConversationSyncRequest(BaseSchema):
     """Schema for conversation synchronization request."""
 
-    version: int = Field(..., description="Client's max conversation version (0 if no local data)")
     last_msg_seqs: Optional[str] = Field(
         None,
         description="Last message sequences string (format: channelID:channelType:last_msg_seq|...)"
@@ -149,6 +148,32 @@ class WuKongIMConversationSyncResponse(BaseSchema):
     """Schema for conversation synchronization response."""
 
     conversations: List[WuKongIMConversation] = Field(..., description="List of conversations")
+
+
+class ChannelInfo(BaseSchema):
+    """Channel information schema for conversation response."""
+    
+    name: str = Field(..., description="Channel display name")
+    avatar: str = Field(..., description="Channel avatar URL")
+    channel_id: str = Field(..., description="WuKongIM channel identifier")
+    channel_type: int = Field(..., description="Channel type: 1 (personal), 251 (customer service)")
+    entity_type: str = Field(
+        ..., description="Entity type: 'visitor', 'staff', 'agent', or 'team'"
+    )
+    extra: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Additional entity-specific data"
+    )
+
+
+class WuKongIMConversationWithChannelsResponse(BaseSchema):
+    """Schema for conversation synchronization response with channel details."""
+
+    conversations: List[WuKongIMConversation] = Field(..., description="List of conversations")
+    channels: List[ChannelInfo] = Field(
+        default_factory=list,
+        description="List of channel information for each conversation"
+    )
 
 
 class WuKongIMSetUnreadRequest(BaseSchema):
@@ -208,3 +233,41 @@ class WuKongIMRouteResponse(BaseSchema):
     tcp_addr: str = Field(..., description="TCP connection address (format: IP:PORT)")
     ws_addr: str = Field(..., description="WebSocket connection address (format: ws://IP:PORT)")
     wss_addr: Optional[str] = Field(None, description="WebSocket Secure connection address (format: wss//IP:PORT)")
+
+
+class WuKongIMMessageSendResponse(BaseSchema):
+    """Schema for message send response."""
+    
+    message_id: int = Field(..., description="Global unique message ID")
+    message_seq: int = Field(..., description="Message sequence number in channel")
+    client_msg_no: str = Field(..., description="Client message number (UUID)")
+
+
+class WuKongIMChannelLastMessage(BaseSchema):
+    """Schema for channel last message response."""
+    
+    message_id: int = Field(..., description="Global unique message ID")
+    message_seq: int = Field(..., description="Message sequence number")
+    timestamp: int = Field(..., description="Message timestamp (10-digit seconds)")
+    from_uid: Optional[str] = Field(None, description="Sender user ID")
+    payload: Optional[Dict[str, Any]] = Field(None, description="Message payload")
+
+
+class WuKongIMSearchResult(BaseSchema):
+    """Schema for a single search result item."""
+    
+    message_id: int = Field(..., description="Global unique message ID")
+    message_seq: int = Field(..., description="Message sequence number")
+    from_uid: str = Field(..., description="Sender user ID")
+    channel_id: str = Field(..., description="Channel ID")
+    channel_type: int = Field(..., description="Channel type")
+    timestamp: int = Field(..., description="Message timestamp")
+    payload: Dict[str, Any] = Field(..., description="Message payload")
+    highlights: Optional[List[str]] = Field(None, description="Highlighted text fragments")
+
+
+class WuKongIMSearchMessagesResponse(BaseSchema):
+    """Schema for message search response."""
+    
+    total: int = Field(..., description="Total number of matching messages")
+    messages: List[WuKongIMSearchResult] = Field(default_factory=list, description="List of matching messages")

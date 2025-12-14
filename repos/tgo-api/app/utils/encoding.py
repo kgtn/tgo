@@ -89,6 +89,21 @@ def decode_channel_id(encoded: str) -> str:
 
 
 VISITOR_CHANNEL_SUFFIX: Final[str] = "-vtr"
+PROJECT_STAFF_CHANNEL_SUFFIX: Final[str] = "-prj"
+
+
+def build_project_staff_channel_id(project_id: Union[str, UUID]) -> str:
+    """
+    Build the WuKongIM project staff channel ID.
+
+    The identifier format is `{project_uuid}-prj`.
+    This channel is used for broadcasting messages to all staff in a project.
+    """
+    if isinstance(project_id, UUID):
+        project_str = str(project_id)
+    else:
+        project_str = str(project_id)
+    return f"{project_str}{PROJECT_STAFF_CHANNEL_SUFFIX}"
 
 
 def build_visitor_channel_id(visitor_id: Union[str, UUID]) -> str:

@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Settings as SettingsIcon } from 'lucide-react';
-import { FiSettings, FiCpu, FiInfo, FiLogOut, FiUsers } from 'react-icons/fi';
+import { FiSettings, FiCpu, FiInfo, FiLogOut, FiUsers, FiUser } from 'react-icons/fi';
 import { useAuthStore } from '@/stores/authStore';
 import OnboardingSidebarPanel from '@/components/onboarding/OnboardingSidebarPanel';
 
@@ -15,11 +15,13 @@ const SettingsSidebar: React.FC<SettingsSidebarProps> = ({ className = '' }) => 
   const { logout, isAuthenticated } = useAuthStore();
 
   const items: Array<{ id: string; label: string }> = [
+    { id: 'profile', label: t('settings.menu.profile', '个人资料') },
     { id: 'general', label: t('settings.menu.general', '通用') },
     { id: 'staff', label: t('settings.menu.staff', '人工坐席') },
     { id: 'providers', label: t('settings.menu.providers', '模型提供商') },
   ];
   const iconMap: Record<string, React.ReactNode> = {
+    profile: <FiUser className="w-4 h-4" />,
     general: <FiSettings className="w-4 h-4" />,
     staff: <FiUsers className="w-4 h-4" />,
     providers: <FiCpu className="w-4 h-4" />,

@@ -5,7 +5,7 @@ from app.models.project import Project
 from app.models.system_setup import SystemSetup
 from app.models.staff import Staff, StaffRole, StaffStatus
 from app.models.tag import Tag, TagCategory
-from app.models.visitor import Visitor
+from app.models.visitor import Visitor, VisitorServiceStatus, UNASSIGNED_STATUSES
 from app.models.visitor_ai_profile import VisitorAIProfile
 from app.models.visitor_ai_insight import VisitorAIInsight
 from app.models.visitor_system_info import VisitorSystemInfo
@@ -37,6 +37,8 @@ __all__ = [
     "PlatformTypeDefinition",
     "Staff",
     "Visitor",
+    "VisitorServiceStatus",
+    "UNASSIGNED_STATUSES",
     "VisitorAIProfile",
     "VisitorAIInsight",
     "VisitorSystemInfo",

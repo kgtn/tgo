@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Chat } from '@/types';
+import type { Chat, ChannelVisitorExtra } from '@/types';
 import { PlatformType } from '@/types';
 import { DEFAULT_CHANNEL_TYPE } from '@/constants';
-import { getChannelKey } from '@/utils/channelUtils';
-import { useChannelStore } from '@/stores/channelStore';
-import { useChatStore } from '@/stores';
+import { useChannelDisplay } from '@/hooks/useChannelDisplay';
 import { toPlatformType } from '@/utils/platformUtils';
 import { formatWeChatConversationTime } from '@/utils/timeFormatting';
 import { ChatAvatar } from './ChatAvatar';
@@ -30,32 +28,58 @@ export const ChatListItem: React.FC<ChatListItemProps> = React.memo(({ chat, isA
   const isAgentChat = channelId?.endsWith('-agent') ?? false;
   const isTeamChat = channelId?.endsWith('-team') ?? false;
 
-  const displayName = chat.channelInfo?.name || (
-    isAgentChat 
-      ? '智能体' 
-      : isTeamChat 
-        ? '智能体团队' 
-        : `访客${String(channelId || chat.id).slice(-4)}`
-  );
-  const displayAvatar = chat.channelInfo?.avatar || '';
+  // Use unified hook for channel display info
+  const { name, avatar, extra } = useChannelDisplay({
+    channelId,
+    channelType,
+    // Skip fetch for special chat types
+    skipFetch: isAgentChat || isTeamChat,
+  });
 
-  const compositeKey = useMemo(() => {
-    if (!channelId || channelType == null) return null;
-    return getChannelKey(channelId, channelType);
-  }, [channelId, channelType]);
+  // Apply special display names for agent/team chats
+  const displayName = isAgentChat 
+    ? '智能体' 
+    : isTeamChat 
+      ? '智能体团队' 
+      : name;
+  const displayAvatar = avatar;
 
-  const channelInfoCache = useChannelStore(state => (channelId && channelType != null ? state.getChannel(channelId, channelType) : undefined));
-  const isChannelFetching = useChannelStore(state => (compositeKey ? Boolean(state.inFlight[compositeKey]) : false));
-  const channelStoreError = useChannelStore(state => (compositeKey ? state.errors[compositeKey] : null));
-  const ensureChannelInfo = useChannelStore(state => state.ensureChannel);
+  const parseMinutesAgo = useCallback((timestamp?: string): number | undefined => {
+    if (!timestamp) return undefined;
+    // Normalize: replace space with T, limit fractional seconds to 3 digits
+    let normalized = timestamp.replace(' ', 'T').replace(/(\.\d{3})\d+$/, '$1');
+    // If no timezone info, assume UTC and append 'Z'
+    if (!/[Zz]$/.test(normalized) && !/[+-]\d{2}:\d{2}$/.test(normalized)) {
+      normalized += 'Z';
+    }
+    let ms = Date.parse(normalized);
+    if (!Number.isFinite(ms)) {
+      // Fallback: drop fractional seconds entirely, still assume UTC
+      normalized = timestamp.replace(' ', 'T').split('.')[0] + 'Z';
+      ms = Date.parse(normalized);
+    }
+    if (!Number.isFinite(ms)) return undefined;
+    const minutes = Math.floor((Date.now() - ms) / 60000);
+    return Math.max(0, minutes);
+  }, []);
 
-  useEffect(() => {
-    if (!channelId || channelType == null) return;
-    if (channelInfoCache || isChannelFetching || channelStoreError) return;
-    ensureChannelInfo({ channel_id: channelId, channel_type: channelType })
-      .then(info => { if (info) { useChatStore.getState().applyChannelInfo(channelId, channelType, info); } })
-      .catch(() => {});
-  }, [channelId, channelType, channelInfoCache, isChannelFetching, channelStoreError, ensureChannelInfo]);
+  // Get online status from extra (channel info)
+  const visitorExtra = extra as ChannelVisitorExtra | undefined;
+  const { visitorStatus, lastSeenMinutes } = useMemo((): { visitorStatus?: 'online' | 'offline' | 'away'; lastSeenMinutes?: number } => {
+    // Priority: extra.is_online (from channel info API) > chat.visitorStatus (legacy)
+    if (visitorExtra?.is_online !== undefined) {
+      if (visitorExtra.is_online) {
+        return { visitorStatus: 'online', lastSeenMinutes: undefined };
+      } else {
+        // Calculate lastSeenMinutes from last_offline_time if available
+        const minutes = parseMinutesAgo(visitorExtra.last_offline_time) ?? 0;
+
+        return { visitorStatus: 'offline', lastSeenMinutes: minutes };
+      }
+    }
+    // Fallback to chat.visitorStatus
+    return { visitorStatus: chat.visitorStatus, lastSeenMinutes: chat.lastSeenMinutes };
+  }, [visitorExtra?.is_online, visitorExtra?.last_offline_time, chat.visitorStatus, chat.lastSeenMinutes, parseMinutesAgo]);
 
   const handleClick = useCallback(() => { onClick(chat); }, [onClick, chat]);
 
@@ -89,8 +113,9 @@ export const ChatListItem: React.FC<ChatListItemProps> = React.memo(({ chat, isA
       <ChatAvatar
         displayName={displayName}
         displayAvatar={displayAvatar}
-        visitorStatus={chat.visitorStatus}
-        lastSeenMinutes={chat.lastSeenMinutes}
+        visitorStatus={visitorStatus}
+        lastSeenMinutes={lastSeenMinutes}
+        colorSeed={channelId}
       />
 
       <div className="flex-grow overflow-hidden">
@@ -103,9 +128,9 @@ export const ChatListItem: React.FC<ChatListItemProps> = React.memo(({ chat, isA
               <TbBrain className={`w-3.5 h-3.5 ml-1 flex-shrink-0 ${isActive ? 'text-blue-100' : 'text-green-500 dark:text-green-400'}`} />
             ) : (
               <ChatPlatformIcon platformType={(() => {
-                const extra: any = chat.channelInfo?.extra;
-                const fromExtra: PlatformType | undefined = (extra && typeof extra === 'object' && 'platform_type' in extra)
-                  ? (extra.platform_type as PlatformType)
+                const extraObj: any = extra;
+                const fromExtra: PlatformType | undefined = (extraObj && typeof extraObj === 'object' && 'platform_type' in extraObj)
+                  ? (extraObj.platform_type as PlatformType)
                   : undefined;
                 return fromExtra ?? toPlatformType(chat.platform);
               })()} />

@@ -52,7 +52,7 @@ async def get_wukongim_route(
         
         logger.info(f"Successfully retrieved route for uid: {uid}")
         
-        return WuKongIMRouteResponse(**result)
+        return result
         
     except HTTPException:
         # Re-raise HTTPExceptions from the client
