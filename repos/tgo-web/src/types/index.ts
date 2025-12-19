@@ -593,6 +593,7 @@ export interface Chat {
     [key: string]: any;
   };
   payloadType?: number;
+  lastPayload?: any;
 }
 
 export type ChatStatus = 'active' | 'waiting' | 'closed' | 'transferred';
@@ -622,6 +623,7 @@ export enum MessagePayloadType {
   SYSTEM_MIN = 1000,
   SYSTEM_STAFF_ASSIGNED = 1000,  // 已分配到客服
   SYSTEM_SESSION_CLOSED = 1001,  // 会话关闭
+  SESSION_TRANSFERRED = 1002,  // 会话转接
   SYSTEM_MAX = 2000,
 }
 
@@ -1140,6 +1142,8 @@ export interface WuKongIMConversationSyncRequest {
   version: number; // Client's max conversation version (0 if no local data)
   last_msg_seqs?: string | null; // Last message sequences string (format: channelID:channelType:last_msg_seq|...)
   msg_count?: number; // Max message count per conversation (default: 20)
+  tag_ids?: string[] | null; // Optional tag IDs for filtering (OR relation)
+  manual_service_contain?: boolean; // Optional flag to filter by manual service tag (AND relation with tag_ids)
 }
 
 export interface WuKongIMConversationSyncResponse {

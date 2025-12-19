@@ -35,11 +35,11 @@ const AIInsightsSection: React.FC<AIInsightsSectionProps> = ({
 
   return (
     <div className={`pt-4 space-y-3 ${className}`}>
-      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('chat.visitor.sections.aiInsights', 'AI \u6d1e\u5bdf')}</h4>
+      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('visitor.sections.aiInsights', 'AI 洞察')}</h4>
       <div className="space-y-2.5 text-[13px] leading-5">
         {hasSatisfaction && (
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 dark:text-gray-400">{t('chat.visitor.aiInsights.satisfactionScore', '\u6ee1\u610f\u5ea6\u8bc4\u5206')}</span>
+            <span className="text-gray-500 dark:text-gray-400">{t('visitor.aiInsights.satisfactionScore', '满意度评分')}</span>
             <div className="flex items-center space-x-0.5">
               {[1, 2, 3, 4, 5].map((n) => (
                 <Star
@@ -53,7 +53,7 @@ const AIInsightsSection: React.FC<AIInsightsSectionProps> = ({
 
         {hasEmotion && (
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 dark:text-gray-400">{t('chat.visitor.aiInsights.emotionScore', '\u60c5\u7eea\u8bc4\u5206')}</span>
+            <span className="text-gray-500 dark:text-gray-400">{t('visitor.aiInsights.emotionScore', '情绪评分')}</span>
             <div className="flex items-center space-x-0.5">
               {[1, 2, 3, 4, 5].map((n) => (
                 <Star
@@ -67,14 +67,14 @@ const AIInsightsSection: React.FC<AIInsightsSectionProps> = ({
 
         {hasIntent && (
           <div className="flex items-center justify-between">
-            <span className="text-gray-500 dark:text-gray-400">{t('chat.visitor.aiInsights.intent', '\u610f\u56fe')}</span>
+            <span className="text-gray-500 dark:text-gray-400">{t('visitor.aiInsights.intent', '意图')}</span>
             <span className="text-gray-800 dark:text-gray-200 font-medium truncate max-w-[9rem]" title={intent || ''}>{intent}</span>
           </div>
         )}
 
         {hasSummary && (
           <div className="flex flex-col">
-            <span className="text-gray-500 dark:text-gray-400 mb-1">{t('chat.visitor.aiInsights.insightSummary', '\u6d1e\u5bdf\u6458\u8981')}</span>
+            <span className="text-gray-500 dark:text-gray-400 mb-1">{t('visitor.aiInsights.insightSummary', '洞察摘要')}</span>
             <p className="text-gray-800 dark:text-gray-200 text-[13px] leading-5 whitespace-pre-wrap break-words">{insightSummary}</p>
           </div>
         )}

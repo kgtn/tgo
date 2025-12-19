@@ -43,6 +43,11 @@ interface UIState {
   screenWidth: number;
   screenHeight: number;
 
+  // 连接状态
+  isConnected: boolean;
+  isConnecting: boolean;
+  connectionError: string | null;
+
   // 用户偏好
   preferences: {
     language: 'zh-CN' | 'en-US';
@@ -83,6 +88,9 @@ interface UIState {
   // 响应式更新
   updateScreenSize: (width: number, height: number) => void;
 
+  // 连接状态更新
+  setConnectionStatus: (status: { isConnected: boolean; isConnecting: boolean; error?: string }) => void;
+
   // 用户偏好
   updatePreferences: (preferences: Partial<UIState['preferences']>) => void;
   resetPreferences: () => void;
@@ -121,6 +129,9 @@ export const useUIStore = create<UIState>()(
         isTablet: false,
         screenWidth: typeof window !== 'undefined' ? window.innerWidth : 1920,
         screenHeight: typeof window !== 'undefined' ? window.innerHeight : 1080,
+        isConnected: false,
+        isConnecting: false,
+        connectionError: null,
         preferences: defaultPreferences,
 
         // Actions
@@ -250,6 +261,13 @@ export const useUIStore = create<UIState>()(
             sidebarState: isMobile ? 'collapsed' : get().sidebarState
           }, false, 'updateScreenSize');
         },
+
+        // 连接状态更新
+        setConnectionStatus: (status) => set({
+          isConnected: status.isConnected,
+          isConnecting: status.isConnecting,
+          connectionError: status.error || null
+        }, false, 'setConnectionStatus'),
 
         // 用户偏好
         updatePreferences: (newPreferences) => set(

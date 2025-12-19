@@ -63,7 +63,7 @@ const VisitorHeader: React.FC<VisitorHeaderProps> = ({
         imageClassName={onAvatarClick ? 'group-hover:opacity-75 transition-opacity' : undefined}
         fallbackClassName={onAvatarClick ? 'group-hover:opacity-75 transition-opacity' : undefined}
         onClick={onAvatarClick}
-        title={onAvatarClick ? t('chat.visitor.avatar.uploadTitle', '点击上传头像') : undefined}
+        title={onAvatarClick ? t('visitor.avatar.uploadTitle', '点击上传头像') : undefined}
         overlay={
           onAvatarClick ? (
             isUploading ? (

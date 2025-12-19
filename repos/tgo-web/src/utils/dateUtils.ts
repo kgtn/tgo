@@ -53,7 +53,57 @@ export function buildLastSeenText(iso?: string | null, isOnline?: boolean | null
   const mins = diffMinutesFromNow(iso);
   if (mins == null) return null;
   if (mins === 0) return i18n.t('time.lastSeen.justNow', { defaultValue: '刚刚在线' });
-  if (mins > 0 && mins <= 60) return i18n.t('time.lastSeen.minutesAgo', { mins, defaultValue: `${mins}分钟前在线` });
+  if (mins > 0 && mins <= 60)   return i18n.t('time.lastSeen.minutesAgo', { mins, defaultValue: `${mins}分钟前在线` });
   return null;
+}
+
+/**
+ * Format date as YYYY/MM/DD HH:mm
+ */
+export function formatLocalDateTime(iso?: string | null): string {
+  const d = parseAPITimestampToLocalDate(iso);
+  if (!d) return '-';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${y}/${m}/${day} ${hh}:${mm}`;
+}
+
+/**
+ * Format online duration in minutes to a human-readable string
+ * @param minutes Duration in minutes
+ * @param isOnline Whether the visitor is currently online
+ */
+export function formatOnlineDuration(minutes: number | null | undefined, isOnline: boolean): string {
+  if (minutes == null) {
+    return '-';
+  }
+
+  if (isOnline && minutes === 0) {
+    return i18n.t('visitor.onlineStatus.online', '在线');
+  }
+
+  if (minutes === 0) {
+    return i18n.t('visitor.onlineStatus.justNow', '刚刚');
+  }
+
+  if (minutes < 60) {
+    return i18n.t('visitor.onlineStatus.minutesAgo', { count: minutes, defaultValue: `${minutes} 分钟前` });
+  }
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return i18n.t('visitor.onlineStatus.hoursAgo', { count: hours, defaultValue: `${hours} 小时前` });
+  }
+
+  const days = Math.floor(hours / 24);
+  if (days < 7) {
+    return i18n.t('visitor.onlineStatus.daysAgo', { count: days, defaultValue: `${days} 天前` });
+  }
+
+  const weeks = Math.floor(days / 7);
+  return i18n.t('visitor.onlineStatus.weeksAgo', { count: weeks, defaultValue: `${weeks} 周前` });
 }
 

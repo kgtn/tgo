@@ -33,7 +33,7 @@ export class WuKongIMApiService extends BaseApiService {
   protected readonly apiVersion = 'v1';
   protected readonly endpoints = {
     ROUTE: `/${this.apiVersion}/wukongim/route`,
-    CONVERSATIONS_SYNC: `/${this.apiVersion}/conversations/all`,
+    CONVERSATIONS_SYNC: `/${this.apiVersion}/conversations/my`,
     CONVERSATIONS_DELETE: `/${this.apiVersion}/conversations`,
     CONVERSATIONS_SET_UNREAD: `/${this.apiVersion}/conversations/unread`,
     MESSAGES_SYNC: `/${this.apiVersion}/conversations/messages`,
@@ -137,9 +137,22 @@ export class WuKongIMApiService extends BaseApiService {
   ): Promise<WuKongIMConversationSyncResponse> {
     const service = new WuKongIMApiService();
     try {
+      const qs = new URLSearchParams();
+      if (request.tag_ids && request.tag_ids.length > 0) {
+        request.tag_ids.forEach((id) => qs.append('tag_ids', id));
+      }
+      if (request.manual_service_contain !== undefined) {
+        qs.set('manual_service_contain', String(request.manual_service_contain));
+      }
+      
+      const endpoint = `${service.endpoints.CONVERSATIONS_SYNC}${qs.toString() ? `?${qs.toString()}` : ''}`;
+      
+      // Filter out tag_ids and manual_service_contain from body as they are in query params
+      const { tag_ids, manual_service_contain, ...body } = request;
+      
       return await service.post<WuKongIMConversationSyncResponse>(
-        service.endpoints.CONVERSATIONS_SYNC,
-        request
+        endpoint,
+        body
       );
     } catch (error) {
       console.error('Failed to sync WuKongIM conversations:', error);
@@ -153,11 +166,14 @@ export class WuKongIMApiService extends BaseApiService {
    * @returns Promise with conversation sync response
    */
   static async syncConversationsInitial(
-    msgCount: number = 20
+    msgCount: number = 20,
+    options?: { tag_ids?: string[] | null; manual_service_contain?: boolean }
   ): Promise<WuKongIMConversationSyncResponse> {
     const request: WuKongIMConversationSyncRequest = {
       version: 0, // 0 indicates no local data
       msg_count: msgCount,
+      tag_ids: options?.tag_ids,
+      manual_service_contain: options?.manual_service_contain,
     };
     return this.syncConversations(request);
   }
@@ -172,12 +188,15 @@ export class WuKongIMApiService extends BaseApiService {
   static async syncConversationsIncremental(
     version: number,
     lastMsgSeqs?: string,
-    msgCount: number = 20
+    msgCount: number = 20,
+    options?: { tag_ids?: string[] | null; manual_service_contain?: boolean }
   ): Promise<WuKongIMConversationSyncResponse> {
     const request: WuKongIMConversationSyncRequest = {
       version,
       last_msg_seqs: lastMsgSeqs || null,
       msg_count: msgCount,
+      tag_ids: options?.tag_ids,
+      manual_service_contain: options?.manual_service_contain,
     };
     return this.syncConversations(request);
   }

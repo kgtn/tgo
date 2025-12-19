@@ -3,6 +3,7 @@ import RootLayout from '../components/layout/RootLayout';
 import Layout from '../components/layout/Layout';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import ChatPage from '../pages/ChatPage';
+import VisitorManagement from '../pages/VisitorManagement';
 import AIInterface from '../pages/AIInterface';
 import AgentManagement from '../components/ai/AgentManagement';
 import MCPTools from '../components/ai/MCPTools';
@@ -95,6 +96,10 @@ export const router = createBrowserRouter([
           { index: true, element: null },
           { path: ':channelType/:channelId', element: null }
         ]
+      },
+      {
+        path: 'visitors',
+        element: <VisitorManagement />
       },
       {
         path: 'ai',

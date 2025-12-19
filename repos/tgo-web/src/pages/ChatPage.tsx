@@ -47,8 +47,8 @@ const ChatPage: React.FC = () => {
     const channelInfo = channelStore.getChannel(channelId, channelType);
     const extra = channelInfo?.extra as ChannelVisitorExtra | undefined;
     const serviceStatus = extra?.service_status;
-    // Don't clear unread if visitor is in queued status
-    return serviceStatus !== 'queued';
+    // Don't clear unread if visitor is in queued or new status
+    return serviceStatus !== 'queued' && serviceStatus !== 'new';
   }, []);
   
   const activeChat = useChatStore(chatSelectors.activeChat);
@@ -199,7 +199,7 @@ const ChatPage: React.FC = () => {
           const channelInfo = channelStore.getChannel(cur.channelId, cur.channelType);
           const extra = channelInfo?.extra as ChannelVisitorExtra | undefined;
           const serviceStatus = extra?.service_status;
-          if (serviceStatus !== 'queued') {
+          if (serviceStatus !== 'queued' && serviceStatus !== 'new') {
             clearFn(cur.channelId, cur.channelType);
           }
         }

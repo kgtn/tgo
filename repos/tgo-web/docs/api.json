@@ -1384,7 +1384,7 @@
           "Visitors"
         ],
         "summary": "List Visitors",
-        "description": "List visitors.\n\nRetrieve a paginated list of visitors with optional filtering by platform,\nonline status, and search query. Requires visitors:list permission.",
+        "description": "List visitors.\n\nRetrieve a paginated list of visitors with optional filtering by platform,\nonline status, tags, and search query. Requires visitors:list permission.",
         "operationId": "list_visitors_v1_visitors_get",
         "security": [
           {
@@ -1406,8 +1406,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter visitors by platform ID",
               "title": "Platform Id"
-            }
+            },
+            "description": "Filter visitors by platform ID"
           },
           {
             "name": "is_online",
@@ -1422,8 +1424,70 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter visitors by online status",
               "title": "Is Online"
-            }
+            },
+            "description": "Filter visitors by online status"
+          },
+          {
+            "name": "recent_online_minutes",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter visitors who were online within this many minutes (including currently online)",
+              "title": "Recent Online Minutes"
+            },
+            "description": "Filter visitors who were online within this many minutes (including currently online)"
+          },
+          {
+            "name": "service_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter visitors by service status (e.g., 'new', 'queued', 'active', 'closed')",
+              "title": "Service Status"
+            },
+            "description": "Filter visitors by service status (e.g., 'new', 'queued', 'active', 'closed')"
+          },
+          {
+            "name": "tag_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter visitors by tag IDs (OR relationship)",
+              "title": "Tag Ids"
+            },
+            "description": "Filter visitors by tag IDs (OR relationship)"
           },
           {
             "name": "search",
@@ -1438,18 +1502,34 @@
                   "type": "null"
                 }
               ],
+              "description": "Search visitors by name, nickname, geo, ip, etc.",
               "title": "Search"
-            }
+            },
+            "description": "Search visitors by name, nickname, geo, ip, etc."
           },
           {
-            "name": "limit",
+            "name": "sort_by",
             "in": "query",
             "required": false,
             "schema": {
-              "type": "integer",
-              "default": 20,
-              "title": "Limit"
-            }
+              "type": "string",
+              "description": "Sort field: 'created_at' or 'last_visit_time'",
+              "default": "created_at",
+              "title": "Sort By"
+            },
+            "description": "Sort field: 'created_at' or 'last_visit_time'"
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Sort order: 'asc' or 'desc'",
+              "default": "desc",
+              "title": "Sort Order"
+            },
+            "description": "Sort order: 'asc' or 'desc'"
           },
           {
             "name": "offset",
@@ -1457,9 +1537,26 @@
             "required": false,
             "schema": {
               "type": "integer",
+              "minimum": 0,
+              "description": "Number of visitors to skip",
               "default": 0,
               "title": "Offset"
-            }
+            },
+            "description": "Number of visitors to skip"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of visitors to return",
+              "default": 20,
+              "title": "Limit"
+            },
+            "description": "Number of visitors to return"
           },
           {
             "name": "x-user-language",
@@ -1668,6 +1765,55 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/VisitorActivityCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/visitors/{visitor_id}/accept": {
+      "post": {
+        "tags": [
+          "Visitors"
+        ],
+        "summary": "接入访客",
+        "description": "客服接入访客（无论访客是否在排队中）。如果访客正在排队，会自动更新其排队状态。",
+        "operationId": "accept_visitor_direct_v1_visitors__visitor_id__accept_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "visitor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Visitor Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptVisitorResponse"
                 }
               }
             }
@@ -2777,7 +2923,7 @@
           "Visitor Waiting Queue"
         ],
         "summary": "接入访客",
-        "description": "客服接入等待队列中的访客。",
+        "description": "客服接入等待队列中的访客。（改用 /visitors/{visitor_id}/accept 接口）",
         "operationId": "accept_visitor_v1_visitor_waiting_queue_accept_post",
         "requestBody": {
           "content": {
@@ -12069,10 +12215,17 @@
             "description": "Result message"
           },
           "entry_id": {
-            "type": "string",
-            "format": "uuid",
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Entry Id",
-            "description": "Queue entry ID"
+            "description": "Queue entry ID (if accepted from queue)"
           },
           "visitor_id": {
             "type": "string",
@@ -12140,7 +12293,6 @@
         "required": [
           "success",
           "message",
-          "entry_id",
           "visitor_id",
           "staff_id"
         ],
@@ -21319,6 +21471,19 @@
             "title": "Is Online",
             "description": "Whether the visitor is currently online/active"
           },
+          "last_offline_time": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Offline Time",
+            "description": "Most recent time visitor went offline"
+          },
           "service_status": {
             "type": "string",
             "title": "Service Status",
@@ -21420,6 +21585,42 @@
             ],
             "title": "Geo Isp",
             "description": "Internet Service Provider (available with ip2region)"
+          },
+          "display_location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Location",
+            "description": "Friendly display of geographic location (e.g., 'China, Guangdong, Shenzhen')"
+          },
+          "source_display": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Display",
+            "description": "Friendly display of visitor source platform/website"
+          },
+          "last_online_duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Online Duration Minutes",
+            "description": "How many minutes ago the visitor was last online (0 if online, null if never online)"
           },
           "created_at": {
             "type": "string",
@@ -21959,7 +22160,7 @@
             "additionalProperties": {
               "anyOf": [
                 {
-                  "type": "string"
+
                 },
                 {
                   "type": "null"
@@ -22027,7 +22228,8 @@
         "required": [
           "platform_api_key"
         ],
-        "title": "VisitorRegisterRequest"
+        "title": "VisitorRegisterRequest",
+        "description": "Incoming payload for visitor registration."
       },
       "VisitorRegisterResponse": {
         "properties": {
@@ -22447,6 +22649,42 @@
             "title": "Recent Activities",
             "description": "Recent visitor activities"
           },
+          "display_location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Location",
+            "description": "Friendly display of geographic location (e.g., 'China, Guangdong, Shenzhen')"
+          },
+          "source_display": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Display",
+            "description": "Friendly display of visitor source platform/website"
+          },
+          "last_online_duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Online Duration Minutes",
+            "description": "How many minutes ago the visitor was last online (0 if online, null if never online)"
+          },
           "channel_id": {
             "type": "string",
             "title": "Channel Id"
@@ -22475,7 +22713,8 @@
           "channel_id",
           "im_token"
         ],
-        "title": "VisitorRegisterResponse"
+        "title": "VisitorRegisterResponse",
+        "description": "Response payload for visitor registration."
       },
       "VisitorResponse": {
         "properties": {
@@ -22894,6 +23133,42 @@
             "type": "array",
             "title": "Recent Activities",
             "description": "Recent visitor activities"
+          },
+          "display_location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Location",
+            "description": "Friendly display of geographic location (e.g., 'China, Guangdong, Shenzhen')"
+          },
+          "source_display": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Display",
+            "description": "Friendly display of visitor source platform/website"
+          },
+          "last_online_duration_minutes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Online Duration Minutes",
+            "description": "How many minutes ago the visitor was last online (0 if online, null if never online)"
           }
         },
         "type": "object",

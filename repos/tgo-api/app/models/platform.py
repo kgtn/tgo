@@ -2,8 +2,12 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from uuid import UUID, uuid4
+
+if TYPE_CHECKING:
+    from app.models.project import Project
+    from app.models.visitor import Visitor
 
 from sqlalchemy import Boolean, ForeignKey, String, Text, func, event, inspect as sa_inspect
 from sqlalchemy.dialects.postgresql import JSONB
@@ -151,6 +155,24 @@ class Platform(Base):
         nullable=True,
         default=False,
         comment="Whether AI responses are disabled for this platform"
+    )
+
+    # Website usage tracking
+    is_used: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        comment="Whether the platform (specifically website type) has been used"
+    )
+    used_website_url: Mapped[Optional[str]] = mapped_column(
+        String(1024),
+        nullable=True,
+        comment="The URL of the website where this platform was first used"
+    )
+    used_website_title: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        comment="The title of the website where this platform was first used"
     )
 
 

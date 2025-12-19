@@ -106,20 +106,55 @@
       transform:'scale(1)', opacity:'1',
       transition:'transform 120ms ease-out, opacity 220ms ease-out, background-color 200ms ease, color 200ms ease, box-shadow 200ms ease, top 200ms, bottom 200ms, left 200ms, right 200ms'
     });
+
+    // Center content container
+    const contentWrap = document.createElement('div');
+    Object.assign(contentWrap.style, {
+      display: 'grid', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%'
+    });
+    btn.appendChild(contentWrap);
+
     // default icon: TGO logo image (preserve original color)
-    const logoImg = document.createElement('img');
     const _scriptEl = getCurrentScript();
     const _baseDir = dirnameFromScript(_scriptEl);
+    const logoImg = document.createElement('img');
     logoImg.src = new URL('./logo.svg', _baseDir).toString();
     logoImg.alt = 'TGO';
     logoImg.setAttribute('aria-hidden', 'true');
     Object.assign(logoImg.style, { width:'28px', height:'28px', display:'block' });
-    // Center image inside the button
-    btn.style.display = 'grid';
-    btn.style.alignItems = 'center';
-    btn.style.justifyContent = 'center';
-    btn.textContent = '';
-    btn.appendChild(logoImg);
+    contentWrap.appendChild(logoImg);
+
+    // Unread badge
+    const badge = document.createElement('span');
+    Object.assign(badge.style, {
+      position: 'absolute',
+      top: '-4px',
+      right: '-4px',
+      minWidth: '20px',
+      height: '20px',
+      padding: '0 6px',
+      borderRadius: '10px',
+      background: '#ef4444',
+      color: '#fff',
+      fontSize: '12px',
+      fontWeight: '600',
+      lineHeight: '20px',
+      textAlign: 'center',
+      display: 'none',
+      boxShadow: '0 2px 4px rgba(0,0,0,.2)'
+    });
+    btn.appendChild(badge);
+
+    // Update badge count
+    btn.setUnreadCount = (count) => {
+      const n = parseInt(count, 10) || 0;
+      if (n > 0) {
+        badge.textContent = n > 99 ? '99+' : String(n);
+        badge.style.display = 'block';
+      } else {
+        badge.style.display = 'none';
+      }
+    };
 
     // press/hover state machine with priority: pressed > hover
     let pressed = false;
@@ -142,22 +177,21 @@
     // Track dark mode state for proper styling
     let isDarkMode = false;
 
-    // expose a small API to update visual state (do not set transform here)
+    // expose a small API to update visual state
     btn.setOpenVisual = (open)=>{
       if(open){
         btn.setAttribute('aria-label', 'Close chat');
         // remove logo image if present, show ✕ icon
-        try { if (logoImg.parentNode === btn) btn.removeChild(logoImg); } catch {}
-        btn.textContent = '✕';
+        contentWrap.innerHTML = '✕';
         btn.style.background = 'var(--primary, #2f80ed)';
         btn.style.color = '#fff';
         btn.style.boxShadow = isDarkMode ? '0 8px 20px rgba(0,0,0,.4)' : '0 8px 20px rgba(0,0,0,.2)';
         btn.style.opacity = '1';
       } else {
         btn.setAttribute('aria-label', 'Open chat');
-        btn.textContent = '';
+        contentWrap.innerHTML = '';
         // ensure logo is attached on closed state
-        try { if (logoImg.parentNode !== btn) btn.appendChild(logoImg); } catch {}
+        contentWrap.appendChild(logoImg);
         btn.style.background = isDarkMode ? '#2d2d2d' : '#fff';
         btn.style.color = isDarkMode ? '#f3f4f6' : '#111827';
         btn.style.boxShadow = isDarkMode ? '0 8px 20px rgba(0,0,0,.4)' : '0 8px 20px rgba(0,0,0,.2)';
@@ -194,8 +228,8 @@
         const c = String(color||'').trim() || '#2f80ed';
         btn.style.setProperty('--primary', c);
         // apply background depending on state (open => primary, closed => white)
-        const isClosed = btn.contains(logoImg);
-        btn.style.background = isClosed ? '#fff' : 'var(--primary, #2f80ed)';
+        const isClosed = contentWrap.contains(logoImg);
+        btn.style.background = isClosed ? (isDarkMode ? '#2d2d2d' : '#fff') : 'var(--primary, #2f80ed)';
       } catch(_){}
     };
 
@@ -245,6 +279,10 @@
         state.uiContainer.style.opacity = '1';
         state.uiContainer.style.transform = 'scale(1)';
         state.uiContainer.style.pointerEvents = 'all';
+        // Clear unread badge when opened
+        try { state.launcher && state.launcher.setUnreadCount && state.launcher.setUnreadCount(0); } catch(e) {}
+        // Notify iframe that widget is shown (to clear unread count in store)
+        try { window.frames[CTRL_IFRAME_NAME]?.postMessage({ type:'TGO_WIDGET_SHOWN' }, '*'); } catch(e) {}
       } else {
         // hide container
         state.uiContainer.style.transform = 'scale(0)';
@@ -362,6 +400,159 @@
         try { notifyPageInfoDebounced(); } catch(_){ }
       }
 
+      // Toast container for message previews
+      let toastContainer = null;
+      let toastTimer = null;
+      const TOAST_DURATION = 5000;
+
+      function createToastContainer() {
+        if (toastContainer) return toastContainer;
+        const container = document.createElement('div');
+        container.id = 'tgo-toast-container';
+        Object.assign(container.style, {
+          position: 'fixed',
+          bottom: '80px',
+          right: '16px',
+          zIndex: 2147483002,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          pointerEvents: 'none'
+        });
+        document.body.appendChild(container);
+        toastContainer = container;
+        return container;
+      }
+
+      function showToast(payload) {
+        if (state.isOpen) return; // Don't show toast when widget is open
+        const container = createToastContainer();
+        
+        // Clear existing toast
+        if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+        container.innerHTML = '';
+
+        const toast = document.createElement('div');
+        Object.assign(toast.style, {
+          background: '#fff',
+          borderRadius: '12px',
+          boxShadow: '0 4px 20px rgba(0,0,0,.15)',
+          padding: '12px 16px',
+          maxWidth: '300px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '10px',
+          cursor: 'pointer',
+          pointerEvents: 'auto',
+          transform: 'translateX(120%)',
+          opacity: '0',
+          transition: 'transform 300ms ease-out, opacity 200ms ease-out'
+        });
+
+        // Icon/Avatar
+        if (payload.icon) {
+          const icon = document.createElement('img');
+          icon.src = payload.icon;
+          icon.alt = '';
+          Object.assign(icon.style, {
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            flexShrink: '0'
+          });
+          toast.appendChild(icon);
+        }
+
+        // Content
+        const content = document.createElement('div');
+        Object.assign(content.style, { flex: '1', minWidth: '0' });
+
+        const title = document.createElement('div');
+        title.textContent = payload.title || 'New message';
+        Object.assign(title.style, {
+          fontWeight: '600',
+          fontSize: '13px',
+          color: '#111827',
+          marginBottom: '2px',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        });
+        content.appendChild(title);
+
+        const body = document.createElement('div');
+        const bodyText = payload.body || '';
+        body.textContent = bodyText.length > 80 ? bodyText.substring(0, 80) + '...' : bodyText;
+        Object.assign(body.style, {
+          fontSize: '13px',
+          color: '#6b7280',
+          lineHeight: '1.4',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          fontFamily: 'system-ui, -apple-system, sans-serif'
+        });
+        content.appendChild(body);
+
+        toast.appendChild(content);
+
+        // Close button
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '×';
+        Object.assign(closeBtn.style, {
+          background: 'none',
+          border: 'none',
+          fontSize: '18px',
+          color: '#9ca3af',
+          cursor: 'pointer',
+          padding: '0',
+          lineHeight: '1',
+          flexShrink: '0'
+        });
+        closeBtn.onclick = (e) => {
+          e.stopPropagation();
+          hideToast();
+        };
+        toast.appendChild(closeBtn);
+
+        // Click to open widget
+        toast.onclick = () => {
+          hideToast();
+          apiShow();
+        };
+
+        container.appendChild(toast);
+
+        // Animate in
+        requestAnimationFrame(() => {
+          toast.style.transform = 'translateX(0)';
+          toast.style.opacity = '1';
+        });
+
+        // Auto hide
+        toastTimer = setTimeout(hideToast, TOAST_DURATION);
+
+        function hideToast() {
+          if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+          toast.style.transform = 'translateX(120%)';
+          toast.style.opacity = '0';
+          setTimeout(() => {
+            try { container.removeChild(toast); } catch(_) {}
+          }, 300);
+        }
+      }
+
+      // Update toast position based on widget position
+      function updateToastPosition(pos) {
+        if (!toastContainer) return;
+        toastContainer.style.left = 'auto';
+        toastContainer.style.right = 'auto';
+        switch(String(pos||'bottom-right')){
+          case 'bottom-left': toastContainer.style.left = '16px'; break;
+          case 'top-right': toastContainer.style.right = '16px'; toastContainer.style.bottom = 'auto'; toastContainer.style.top = '80px'; break;
+          case 'top-left': toastContainer.style.left = '16px'; toastContainer.style.bottom = 'auto'; toastContainer.style.top = '80px'; break;
+          case 'bottom-right': default: toastContainer.style.right = '16px'; break;
+        }
+      }
+
       // Listen to controller messages (e.g., header close requests)
       window.addEventListener('message', (e)=>{
         const d = e.data || {};
@@ -372,7 +563,10 @@
           try { state.launcher && state.launcher.setDarkMode && state.launcher.setDarkMode(d.isDark); } catch(_){}
         }
         if(d && d.type === 'TGO_WIDGET_CONFIG' && d.payload){
-          if (typeof d.payload.position === 'string') applyPosition(d.payload.position);
+          if (typeof d.payload.position === 'string') {
+            applyPosition(d.payload.position);
+            updateToastPosition(d.payload.position);
+          }
           if (typeof d.payload.theme_color === 'string') {
             try { state.launcher && state.launcher.setThemeColor && state.launcher.setThemeColor(d.payload.theme_color); } catch(_){}
           }
@@ -380,6 +574,23 @@
         }
         if(d && d.type === 'TGO_REQUEST_PAGE_INFO'){
           try { notifyPageInfoDebounced(); } catch(_){}
+        }
+        // Handle unread count
+        if(d && d.type === 'TGO_WIDGET_UNREAD' && d.payload){
+          console.log('[TGO SDK] Received TGO_WIDGET_UNREAD, count:', d.payload.count);
+          try { 
+            if (state.launcher && state.launcher.setUnreadCount) {
+              state.launcher.setUnreadCount(d.payload.count);
+              console.log('[TGO SDK] Called setUnreadCount with:', d.payload.count);
+            } else {
+              console.warn('[TGO SDK] Launcher or setUnreadCount not available');
+            }
+          } catch(e){ console.error('[TGO SDK] Error setting unread count:', e); }
+        }
+        // Handle toast message preview
+        if(d && d.type === 'TGO_SHOW_TOAST' && d.payload){
+          console.log('[TGO SDK] Received TGO_SHOW_TOAST:', d.payload);
+          try { showToast(d.payload); } catch(e){ console.error('[TGO SDK] Error showing toast:', e); }
         }
       });
 

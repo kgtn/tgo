@@ -17,6 +17,7 @@ export interface VisitorBasicInfo {
   source?: string;
   note?: string;
   avatarUrl?: string;
+  lastOnlineDurationMinutes?: number | null;
   customAttributes?: CustomAttribute[];
 }
 

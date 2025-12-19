@@ -190,7 +190,6 @@ from app.schemas.visitor import (
     VisitorAIProfileResponse,
     VisitorActivityResponse,
     VisitorInDB,
-    VisitorListParams,
     VisitorListResponse,
     VisitorResponse,
     VisitorBasicResponse,
@@ -198,6 +197,9 @@ from app.schemas.visitor import (
     VisitorSystemInfoResponse,
     VisitorUpdate,
     VisitorAvatarUploadResponse,
+    VisitorRegisterRequest,
+    VisitorRegisterResponse,
+    VisitorMessageSyncRequest,
 )
 from app.schemas.visitor_activity import (
     VisitorActivityContext,
@@ -315,7 +317,6 @@ __all__ = [
     "VisitorInDB",
     "VisitorResponse",
     "VisitorBasicResponse",
-    "VisitorListParams",
     "VisitorListResponse",
     "VisitorAvatarUploadResponse",
     # Tag schemas

@@ -18,7 +18,8 @@
     "interrupt": "Stop",
     "attach": "Attach file",
     "emoji": "Emoji",
-    "fileTooLarge": "File too large (>{{size}}MB): {{name}}"
+    "fileTooLarge": "File too large (>{{size}}MB): {{name}}",
+    "typing": "is typing..."
   },
   "messageList": {
     "loadingHistory": "Loading...",
@@ -41,5 +42,11 @@
   },
   "file": {
     "download": "Download"
+  },
+  "system": {
+    "staffAssigned": "You have been connected to customer service. Agent {{name0}} will assist you.",
+    "sessionTransferred": "Session transferred. Agent {{name0}} has transferred you to Agent {{name1}}.",
+    "sessionClosed": "Session ended. Agent {{name0}} has completed the service.",
+    "sessionClosedNoAgent": "Session ended."
   }
 }

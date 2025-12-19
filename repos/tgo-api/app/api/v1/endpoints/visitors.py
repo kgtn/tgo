@@ -7,12 +7,13 @@ import re
 import secrets
 import time
 import uuid
-from datetime import datetime
+from urllib.parse import urlparse
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, Header, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, Depends, File, Header, HTTPException, Request, UploadFile, status, Query
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseModel, Field
@@ -27,6 +28,7 @@ from app.utils.intent import localize_visitor_response_intent
 from app.utils.const import CHANNEL_TYPE_CUSTOMER_SERVICE, MEMBER_TYPE_VISITOR
 from app.utils.request import get_client_ip, get_client_language
 from app.services.geoip_service import geoip_service
+import app.services.visitor_service as visitor_service
 from app.utils.encoding import (
     build_visitor_channel_id,
     parse_visitor_channel_id,
@@ -38,12 +40,17 @@ from app.core.logging import get_logger
 from app.core.security import get_current_active_user, get_user_language, UserLanguage, require_permission
 from app.models import (
     Platform,
+    PlatformType,
     Staff,
     Visitor,
     VisitorActivity,
     VisitorSystemInfo,
     VisitorTag,
     ChannelMember,
+    VisitorWaitingQueue,
+    WaitingStatus,
+    AssignmentSource,
+    VisitorServiceStatus,
 )
 from app.schemas import (
     VisitorAIInsightResponse,
@@ -52,7 +59,6 @@ from app.schemas import (
     VisitorAttributesUpdate,
     VisitorAvatarUploadResponse,
     VisitorCreate,
-    VisitorListParams,
     VisitorListResponse,
     VisitorResponse,
     VisitorBasicResponse,
@@ -62,492 +68,35 @@ from app.schemas import (
     TagResponse,
     VisitorActivityCreateRequest,
     VisitorActivityCreateResponse,
+    AcceptVisitorResponse,
+    VisitorRegisterRequest,
+    VisitorRegisterResponse,
+    VisitorMessageSyncRequest,
 )
 from app.schemas.visitor import set_visitor_display_nickname, set_visitor_list_display_nickname
 from app.schemas.tag import set_tag_list_display_name
 
 from app.schemas.wukongim import WuKongIMChannelMessageSyncResponse
+from app.services.transfer_service import transfer_to_staff
 
-
-class VisitorRegisterRequest(BaseModel):
-    platform_api_key: str
-    # Optional visitor identifier on the platform (maps to Visitor.platform_open_id)
-    platform_open_id: Optional[str] = None
-    # Optional profile fields (aligned with VisitorBase)
-    name: Optional[str] = None
-    nickname: Optional[str] = Field(None, description="Visitor nickname in English")
-    nickname_zh: Optional[str] = Field(None, description="Visitor nickname in Chinese")
-    avatar_url: Optional[str] = Field(None, description="Visitor avatar URL")
-    phone_number: Optional[str] = None
-    email: Optional[str] = None
-    company: Optional[str] = None
-    job_title: Optional[str] = None
-    source: Optional[str] = None
-    note: Optional[str] = None
-    custom_attributes: dict[str, Optional[str]] = {}
-    system_info: Optional[VisitorSystemInfoRequest] = Field(
-        None,
-        description="Visitor system metadata payload (browser, OS, timestamps, etc.)",
-    )
-    timezone: Optional[str] = Field(
-        None,
-        max_length=50,
-        description="Visitor timezone (e.g., 'Asia/Shanghai', 'America/New_York')",
-    )
-    language: Optional[str] = Field(
-        None,
-        max_length=10,
-        description="Visitor preferred language code (e.g., 'en', 'zh-CN')",
-    )
-    ip_address: Optional[str] = Field(
-        None,
-        max_length=45,
-        description="Visitor IP address (if not provided, will be extracted from request headers)",
-    )
-
-
-class VisitorRegisterResponse(VisitorResponse):
-    channel_id: str
-    channel_type: int = 2
-    im_token: str
 
 logger = get_logger("endpoints.visitors")
 router = APIRouter()
-
-# Predefined array of realistic visitor names for default visitor generation
-DEFAULT_VISITOR_NAMES = [
-    "Alex Chen",
-    "Sarah Johnson",
-    "Michael Zhang",
-    "Emma Wilson",
-    "David Kumar",
-    "Jessica Martinez",
-    "Ryan O'Connor",
-    "Sophia Lee",
-    "James Anderson",
-    "Olivia Brown",
-    "Daniel Garcia",
-    "Isabella Rodriguez",
-    "Matthew Taylor",
-    "Ava Thompson",
-    "Christopher White",
-    "Mia Harris",
-    "Andrew Clark",
-    "Emily Lewis",
-    "Joshua Walker",
-    "Charlotte Hall",
-    "Kevin Young",
-    "Amelia Allen",
-    "Brandon King",
-    "Harper Wright",
-    "Tyler Scott",
-    "Evelyn Green",
-    "Justin Adams",
-    "Abigail Baker",
-    "Nathan Nelson",
-    "Ella Carter",
-]
-
-# Chinese nickname components
-CUSTOMER_SERVICE_ADJECTIVES_ZH = [
-    "星光",
-    "温暖",
-    "清晨",
-    "晴空",
-    "暖阳",
-    "微风",
-    "云端",
-    "静谧",
-    "灵动",
-    "璀璨",
-    "悠然",
-    "暮色",
-]
-
-CUSTOMER_SERVICE_NOUNS_ZH = [
-    "海豚",
-    "星猫",
-    "向日葵",
-    "松果",
-    "雨燕",
-    "晨露",
-    "珊瑚",
-    "雪狐",
-    "轻舟",
-    "薰衣草",
-    "流萤",
-    "橄榄树",
-]
-
-# English nickname components
-CUSTOMER_SERVICE_ADJECTIVES_EN = [
-    "Starry",
-    "Warm",
-    "Morning",
-    "Sunny",
-    "Bright",
-    "Breezy",
-    "Cloud",
-    "Quiet",
-    "Swift",
-    "Shiny",
-    "Calm",
-    "Twilight",
-]
-
-CUSTOMER_SERVICE_NOUNS_EN = [
-    "Dolphin",
-    "Cat",
-    "Sunflower",
-    "Pine",
-    "Swallow",
-    "Dew",
-    "Coral",
-    "Fox",
-    "Boat",
-    "Lavender",
-    "Firefly",
-    "Olive",
-]
-
-
-def _generate_default_visitor_name(visitor_id: str) -> str:
-    """
-    Generate a deterministic visitor name based on the visitor_id.
-
-    Args:
-        visitor_id: The string ID of the visitor
-
-    Returns:
-        A name selected from the DEFAULT_VISITOR_NAMES array
-    """
-    # Convert string to bytes and hash it
-    id_bytes = visitor_id.encode('utf-8')
-    hash_digest = hashlib.sha256(id_bytes).digest()
-
-    # Convert first 4 bytes to an integer for indexing
-    index = int.from_bytes(hash_digest[:4], byteorder='big') % len(DEFAULT_VISITOR_NAMES)
-
-    return DEFAULT_VISITOR_NAMES[index]
-
-
-def _generate_customer_service_nickname(identifier: Optional[str]) -> tuple[str, str]:
-    """
-    Generate friendly fallback nicknames for visitor-facing scenarios.
-
-    Combines curated adjective/noun pairs for flavor and adds a short suffix
-    derived from the identifier to keep names stable yet varied.
-
-    Returns:
-        A tuple of (english_nickname, chinese_nickname)
-    """
-    base_identifier = (identifier or "").strip()
-    if not base_identifier:
-        base_identifier = datetime.utcnow().isoformat()
-
-    digest = hashlib.sha256(base_identifier.encode("utf-8")).digest()
-
-    # English nickname
-    adjective_en = CUSTOMER_SERVICE_ADJECTIVES_EN[digest[0] % len(CUSTOMER_SERVICE_ADJECTIVES_EN)]
-    noun_en = CUSTOMER_SERVICE_NOUNS_EN[digest[1] % len(CUSTOMER_SERVICE_NOUNS_EN)]
-
-    # Chinese nickname
-    adjective_zh = CUSTOMER_SERVICE_ADJECTIVES_ZH[digest[0] % len(CUSTOMER_SERVICE_ADJECTIVES_ZH)]
-    noun_zh = CUSTOMER_SERVICE_NOUNS_ZH[digest[1] % len(CUSTOMER_SERVICE_NOUNS_ZH)]
-
-    suffix_value = int.from_bytes(digest[2:4], byteorder="big")
-    suffix = format(suffix_value, "x").upper()[:3]
-
-    nickname_en = f"{adjective_en}{noun_en}{suffix}"
-    nickname_zh = f"{adjective_zh}{noun_zh}{suffix}"
-
-    return nickname_en, nickname_zh
-
-
-def _resolve_visitor_nickname(
-    provided_nickname: Optional[str],
-    provided_nickname_zh: Optional[str],
-    identifier: Optional[str],
-) -> tuple[str, str]:
-    """
-    Return cleaned nicknames or generate defaults when blank.
-
-    Args:
-        provided_nickname: English nickname from request
-        provided_nickname_zh: Chinese nickname from request
-        identifier: Identifier used to generate deterministic nicknames
-
-    Returns:
-        A tuple of (english_nickname, chinese_nickname)
-    """
-    nickname_en = (provided_nickname or "").strip()
-    nickname_zh = (provided_nickname_zh or "").strip()
-
-    # If both are provided, return them
-    if nickname_en and nickname_zh:
-        return nickname_en, nickname_zh
-
-    # Generate defaults for missing nicknames
-    generated_en, generated_zh = _generate_customer_service_nickname(identifier)
-
-    return nickname_en or generated_en, nickname_zh or generated_zh
-
-
-async def _ensure_visitor_channel(
-    db: Session,
-    visitor: Visitor,
-    platform: Platform,
-) -> None:
-    """
-    Ensure WuKongIM channel exists for a visitor.
-
-    This function creates the channel and channel member records if they don't exist.
-    It's idempotent - safe to call multiple times for the same visitor.
-    
-    Only the visitor is added as initial subscriber. Staff will be added
-    when they are assigned to the visitor via transfer_to_staff.
-
-    Args:
-        db: Database session
-        visitor: Visitor object
-        platform: Platform object
-
-    Raises:
-        Exception: If WuKongIM channel creation fails (logged but not raised)
-    """
-    channel_id = build_visitor_channel_id(visitor.id)
-
-    try:
-        # Only visitor as initial subscriber
-        subscribers = [str(visitor.id)+"-vtr"]
-
-        # Check if visitor is already a channel member
-        existing_visitor_member = (
-            db.query(ChannelMember)
-            .filter(
-                ChannelMember.project_id == platform.project_id,
-                ChannelMember.channel_id == channel_id,
-                ChannelMember.member_id == visitor.id,
-                ChannelMember.deleted_at.is_(None),
-            )
-            .first()
-        )
-
-        # Add visitor as channel member if not exists
-        if not existing_visitor_member:
-            visitor_member = ChannelMember(
-                project_id=platform.project_id,
-                channel_id=channel_id,
-                channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-                member_id=visitor.id,
-                member_type=MEMBER_TYPE_VISITOR,
-            )
-            db.add(visitor_member)
-
-        # Ensure channel exists in WuKongIM and then commit membership
-        await wukongim_client.create_channel(
-            channel_id=channel_id,
-            channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-            subscribers=subscribers,
-        )
-        if not existing_visitor_member:
-            db.commit()
-
-        logger.info(
-            "WuKongIM channel ensured for visitor",
-            extra={
-                "channel_id": channel_id,
-                "channel_type": CHANNEL_TYPE_CUSTOMER_SERVICE,
-                "subscribers_count": len(subscribers),
-                "visitor_id": str(visitor.id),
-            },
-        )
-    except Exception as e:
-        # Roll back any pending channel membership inserts if WuKongIM call fails
-        try:
-            db.rollback()
-        except Exception:
-            pass
-        logger.error(
-            f"Failed to create WuKongIM channel for visitor: {e}",
-            extra={
-                "channel_id": channel_id,
-                "channel_type": CHANNEL_TYPE_CUSTOMER_SERVICE,
-                "visitor_id": str(visitor.id),
-            },
-        )
-        # Don't raise - visitor is still created, channel can be created later
-
-
-async def _create_visitor_with_channel(
-    db: Session,
-    platform: Platform,
-    platform_open_id: Optional[str] = None,
-    name: Optional[str] = None,
-    nickname: Optional[str] = None,
-    nickname_zh: Optional[str] = None,
-    avatar_url: Optional[str] = None,
-    phone_number: Optional[str] = None,
-    email: Optional[str] = None,
-    company: Optional[str] = None,
-    job_title: Optional[str] = None,
-    source: Optional[str] = None,
-    note: Optional[str] = None,
-    custom_attributes: Optional[dict[str, Optional[str]]] = None,
-    timezone: Optional[str] = None,
-    language: Optional[str] = None,
-    ip_address: Optional[str] = None,
-) -> Visitor:
-    """
-    Create a new visitor with WuKongIM channel setup.
-
-    This is a shared internal method used by chat_completion_openai_compatible,
-    register_visitor, and other endpoints that need visitor auto-registration.
-
-    Args:
-        db: Database session
-        platform: Platform object
-        platform_open_id: Platform open ID for the visitor. If None, visitor.id will be used.
-        name: Optional visitor name
-        nickname: Optional visitor nickname in English (will be auto-generated if not provided)
-        nickname_zh: Optional visitor nickname in Chinese (will be auto-generated if not provided)
-        avatar_url: Optional avatar URL
-        phone_number: Optional phone number
-        email: Optional email
-        company: Optional company
-        job_title: Optional job title
-        source: Optional source
-        note: Optional note
-        custom_attributes: Optional custom attributes dict
-        timezone: Optional visitor timezone (e.g., 'Asia/Shanghai')
-        language: Optional visitor language code (e.g., 'en', 'zh-CN')
-        ip_address: Optional visitor IP address
-
-    Returns:
-        Created Visitor object with WuKongIM channel set up
-
-    Raises:
-        Exception: If WuKongIM channel creation fails (logged but not raised)
-    """
-    # Handle case where platform_open_id is not provided
-    # We need to create visitor first to get its ID, then use it as platform_open_id
-    use_visitor_id_as_open_id = not platform_open_id
-    
-    if use_visitor_id_as_open_id:
-        # Use a temporary placeholder, will be updated after flush
-        initial_platform_open_id = f"pending-{uuid.uuid4().hex}"
-    else:
-        initial_platform_open_id = platform_open_id
-    
-    # Resolve nicknames (generate if not provided)
-    resolved_nickname, resolved_nickname_zh = _resolve_visitor_nickname(
-        nickname, nickname_zh, platform_open_id or None
-    )
-    
-    # Lookup geolocation from IP address
-    geo_location = geoip_service.lookup(ip_address)
-
-    # Create visitor record
-    visitor = Visitor(
-        project_id=platform.project_id,
-        platform_id=platform.id,
-        platform_open_id=initial_platform_open_id,
-        name=name,
-        nickname=resolved_nickname,
-        nickname_zh=resolved_nickname_zh,
-        avatar_url=avatar_url,
-        phone_number=phone_number,
-        email=email,
-        company=company,
-        job_title=job_title,
-        source=source,
-        note=note,
-        custom_attributes=custom_attributes or {},
-        timezone=timezone,
-        language=language,
-        ip_address=ip_address,
-        geo_country=geo_location.country,
-        geo_country_code=geo_location.country_code,
-        geo_region=geo_location.region,
-        geo_city=geo_location.city,
-        geo_isp=geo_location.isp,
-    )
-    db.add(visitor)
-    
-    if use_visitor_id_as_open_id:
-        # Flush to get visitor ID, then update platform_open_id
-        db.flush()
-        visitor.platform_open_id = str(visitor.id) + "-vtr"
-    
-    db.commit()
-    db.refresh(visitor)
-
-    # Create WuKongIM channel with admin staff members as subscribers
-    await _ensure_visitor_channel(db, visitor, platform)
-
-    return visitor
-
-
-def _upsert_visitor_system_info(
-    db: Session,
-    visitor: Visitor,
-    platform: Platform,
-    system_info_payload: Optional[VisitorSystemInfoRequest],
-) -> bool:
-    """
-    Create or update the visitor's system info record based on payload.
-
-    Returns True if any data was applied.
-    """
-    system_info = visitor.system_info
-    created = False
-    if not system_info:
-        system_info = VisitorSystemInfo(
-            project_id=platform.project_id,
-            visitor_id=visitor.id,
-        )
-        db.add(system_info)
-        visitor.system_info = system_info
-        created = True
-
-    changed = created
-
-    # Always align platform name with current platform
-    if system_info.platform != platform.name:
-        system_info.platform = platform.name
-        changed = True
-
-    # Ensure first_seen_at is set once from server-side clock
-    if system_info.first_seen_at is None:
-        system_info.first_seen_at = datetime.utcnow()
-        changed = True
-
-    info_data = system_info_payload.model_dump(exclude_none=True) if system_info_payload else {}
-    for field in ("source_detail", "browser", "operating_system"):
-        if field in info_data and getattr(system_info, field) != info_data[field]:
-            setattr(system_info, field, info_data[field])
-            changed = True
-
-    # Ignore any unsupported fields silently
-    return changed
-
-
-
-class VisitorMessageSyncRequest(BaseModel):
-    """Visitor-facing request to sync channel messages."""
-    platform_api_key: Optional[str] = Field(None, description="Platform API key for authentication")
-    channel_id: str = Field(..., description="WuKongIM channel identifier")
-    channel_type: int = Field(..., description="WuKongIM channel type (1=personal, 251=customer service)")
-    start_message_seq: Optional[int] = Field(None, description="Start message sequence (inclusive)")
-    end_message_seq: Optional[int] = Field(None, description="End message sequence (exclusive)")
-    limit: Optional[int] = Field(100, description="Max messages to return (default 100)")
-    pull_mode: Optional[int] = Field(0, description="Pull mode (0=down, 1=up); default 0")
 
 
 @router.get("", response_model=VisitorListResponse)
 async def list_visitors(
     request: Request,
-    params: VisitorListParams = Depends(),
+    platform_id: Optional[UUID] = Query(None, description="Filter visitors by platform ID"),
+    is_online: Optional[bool] = Query(None, description="Filter visitors by online status"),
+    recent_online_minutes: Optional[int] = Query(None, description="Filter visitors who were online within this many minutes (including currently online)"),
+    service_status: Optional[List[str]] = Query(None, description="Filter visitors by service status (e.g., 'new', 'queued', 'active', 'closed')"),
+    tag_ids: Optional[List[str]] = Query(None, description="Filter visitors by tag IDs (OR relationship)"),
+    search: Optional[str] = Query(None, description="Search visitors by name, nickname, geo, ip, etc."),
+    sort_by: str = Query("created_at", description="Sort field: 'created_at' or 'last_visit_time'"),
+    sort_order: str = Query("desc", description="Sort order: 'asc' or 'desc'"),
+    offset: int = Query(0, ge=0, description="Number of visitors to skip"),
+    limit: int = Query(20, ge=1, le=100, description="Number of visitors to return"),
     db: Session = Depends(get_db),
     current_user: Staff = Depends(require_permission("visitors:list")),
     user_language: UserLanguage = Depends(get_user_language),
@@ -556,50 +105,99 @@ async def list_visitors(
     List visitors.
 
     Retrieve a paginated list of visitors with optional filtering by platform,
-    online status, and search query. Requires visitors:list permission.
+    online status, tags, and search query. Requires visitors:list permission.
     """
-    logger.info(f"User {current_user.username} listing visitors")
+    logger.info(f"User {current_user.username} listing visitors (tag_ids={tag_ids}, recent_online_minutes={recent_online_minutes}, service_status={service_status})")
 
     # Build query
-    query = db.query(Visitor).filter(
+    query = db.query(Visitor).options(
+        selectinload(Visitor.visitor_tags).selectinload(VisitorTag.tag)
+    ).filter(
         Visitor.project_id == current_user.project_id,
         Visitor.deleted_at.is_(None)
     )
 
     # Apply filters
-    if params.platform_id:
-        query = query.filter(Visitor.platform_id == params.platform_id)
-    if params.is_online is not None:
-        query = query.filter(Visitor.is_online == params.is_online)
-    if params.search:
-        search_term = f"%{params.search}%"
+    if platform_id:
+        query = query.filter(Visitor.platform_id == platform_id)
+    if is_online is not None:
+        query = query.filter(Visitor.is_online == is_online)
+    
+    # Filter by service status
+    if service_status:
+        query = query.filter(Visitor.service_status.in_(service_status))
+    
+    # Filter by recent online status (online or offline within X minutes)
+    if recent_online_minutes is not None:
+        cutoff = datetime.utcnow() - timedelta(minutes=recent_online_minutes)
+        query = query.filter(
+            (Visitor.is_online == True) | (Visitor.last_offline_time >= cutoff)
+        )
+    
+    # Filter by tags
+    if tag_ids:
+        # Use subquery for tag filtering to ensure count() works correctly with distinct visitors
+        tag_visitor_ids = (
+            db.query(VisitorTag.visitor_id)
+            .filter(
+                VisitorTag.tag_id.in_(tag_ids),
+                VisitorTag.deleted_at.is_(None)
+            )
+            .subquery()
+        )
+        query = query.filter(Visitor.id.in_(tag_visitor_ids))
+
+    if search:
+        search_term = f"%{search}%"
         query = query.filter(
             (Visitor.name.ilike(search_term)) |
             (Visitor.nickname.ilike(search_term)) |
-            (Visitor.platform_open_id.ilike(search_term))
+            (Visitor.nickname_zh.ilike(search_term)) |
+            (Visitor.phone_number.ilike(search_term)) |
+            (Visitor.email.ilike(search_term)) |
+            (Visitor.company.ilike(search_term)) |
+            (Visitor.geo_country.ilike(search_term)) |
+            (Visitor.geo_region.ilike(search_term)) |
+            (Visitor.geo_city.ilike(search_term)) |
+            (Visitor.geo_isp.ilike(search_term)) |
+            (Visitor.ip_address.ilike(search_term)) |
+            (Visitor.note.ilike(search_term))
         )
 
     # Get total count
     total = query.count()
 
+    # Apply sorting
+    if sort_by == "last_visit_time":
+        sort_attr = Visitor.last_visit_time
+    else:
+        sort_attr = Visitor.created_at
+
+    if sort_order == "asc":
+        query = query.order_by(sort_attr.asc())
+    else:
+        query = query.order_by(sort_attr.desc())
+
     # Apply pagination
-    visitors = query.offset(params.offset).limit(params.limit).all()
+    visitors = query.offset(offset).limit(limit).all()
 
     # Convert to response models
     accept_language = request.headers.get("Accept-Language")
     visitor_responses = [VisitorResponse.model_validate(visitor) for visitor in visitors]
     for vr in visitor_responses:
         localize_visitor_response_intent(vr, accept_language)
+        if vr.tags:
+            set_tag_list_display_name(vr.tags, user_language)
     set_visitor_list_display_nickname(visitor_responses, user_language)
 
     return VisitorListResponse(
         data=visitor_responses,
         pagination={
             "total": total,
-            "limit": params.limit,
-            "offset": params.offset,
-            "has_next": params.offset + params.limit < total,
-            "has_prev": params.offset > 0,
+            "limit": limit,
+            "offset": offset,
+            "has_next": offset + limit < total,
+            "has_prev": offset > 0,
         }
     )
 
@@ -755,9 +353,9 @@ async def register_visitor(
         real_ip = get_client_ip(request, req.ip_address)
         real_language = get_client_language(request, req.language)
 
-        # Use _create_visitor_with_channel for complete setup
+        # Use visitor_service.create_visitor_with_channel for complete setup
         # If normalized_open_id is None, visitor.id will be used as platform_open_id
-        visitor = await _create_visitor_with_channel(
+        visitor = await visitor_service.create_visitor_with_channel(
             db=db,
             platform=platform,
             platform_open_id=normalized_open_id,
@@ -783,7 +381,7 @@ async def register_visitor(
 
         # Handle nickname updates
         if "nickname" in update_data or "nickname_zh" in update_data:
-            resolved_nickname, resolved_nickname_zh = _resolve_visitor_nickname(
+            resolved_nickname, resolved_nickname_zh = visitor_service.resolve_visitor_nickname(
                 update_data.get("nickname"),
                 update_data.get("nickname_zh"),
                 normalized_open_id or str(visitor.id),
@@ -819,17 +417,17 @@ async def register_visitor(
             db.refresh(visitor)
             profile_changed = True
 
-    system_info_changed = _upsert_visitor_system_info(db, visitor, platform, req.system_info)
+    system_info_changed = visitor_service.upsert_visitor_system_info(db, visitor, platform, req.system_info)
     if system_info_changed:
         db.commit()
         db.refresh(visitor)
         profile_changed = True
 
     # 3) Ensure WuKongIM channel exists
-    # For new visitors, channel was already created by _create_visitor_with_channel or _ensure_visitor_channel
+    # For new visitors, channel was already created by visitor_service.create_visitor_with_channel or visitor_service.ensure_visitor_channel
     # For existing visitors, we need to ensure channel exists
     if not is_new_visitor:
-        await _ensure_visitor_channel(db, visitor, platform)
+        await visitor_service.ensure_visitor_channel(db, visitor, platform)
 
     if profile_changed:
         await notify_visitor_profile_updated(db, visitor)
@@ -909,6 +507,33 @@ async def record_visitor_activity(
     )
     if not visitor:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Visitor not found")
+
+    # 1.5) Update platform website info if it's a website type and not yet marked as used
+    if platform.type == PlatformType.WEBSITE.value and not getattr(platform, "is_used", False):
+        website_url = None
+        if req.context and req.context.page_url:
+            try:
+                parsed_url = urlparse(req.context.page_url)
+                if parsed_url.netloc:
+                    website_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+            except Exception:
+                pass
+        
+        # Use req.title as website_title as requested
+        website_title = req.title
+
+        if website_url or website_title:
+            # Truncate if data is too long for DB columns (URL: 1024, Title: 255)
+            if website_url and len(website_url) > 1024:
+                website_url = website_url[:1021] + "..."
+            if website_title and len(website_title) > 255:
+                website_title = website_title[:252] + "..."
+
+            platform.is_used = True
+            platform.used_website_url = website_url
+            platform.used_website_title = website_title
+            db.commit()
+            db.refresh(platform)
 
     data = req.model_dump(exclude_unset=True)
 
@@ -990,6 +615,114 @@ async def record_visitor_activity(
         occurred_at=activity.occurred_at,
         duration_seconds=activity.duration_seconds,
         context=activity.context,
+    )
+
+
+@router.post(
+    "/{visitor_id}/accept",
+    response_model=AcceptVisitorResponse,
+    summary="接入访客",
+    description="客服接入访客（无论访客是否在排队中）。如果访客正在排队，会自动更新其排队状态。",
+)
+async def accept_visitor_direct(
+    visitor_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Staff = Depends(require_permission("visitors:update")),
+) -> AcceptVisitorResponse:
+    """
+    客服接入访客。
+    
+    - 无论访客是否在等待队列中均可接入
+    - 如果访客在等待队列中，会自动更新其队列条目状态
+    - 调用 transfer_to_staff 完成实际分配和 WuKongIM 关联
+    """
+    # 1. 查找访客
+    visitor = (
+        db.query(Visitor)
+        .filter(
+            Visitor.id == visitor_id,
+            Visitor.project_id == current_user.project_id,
+            Visitor.deleted_at.is_(None),
+        )
+        .first()
+    )
+    if not visitor:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Visitor not found",
+        )
+
+    # 1a. 检查访客服务状态，如果已经是 ACTIVE 则不允许再次接入
+    if visitor.service_status == VisitorServiceStatus.ACTIVE.value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Visitor is already being served (status is active)",
+        )
+
+    # 2. 检查是否有处于等待中的队列条目
+    queue_entry = (
+        db.query(VisitorWaitingQueue)
+        .filter(
+            VisitorWaitingQueue.visitor_id == visitor_id,
+            VisitorWaitingQueue.project_id == current_user.project_id,
+            VisitorWaitingQueue.status == WaitingStatus.WAITING.value,
+        )
+        .order_by(VisitorWaitingQueue.entered_at.desc())
+        .first()
+    )
+
+    # 3. 调用 transfer_to_staff 完成接入
+    # transfer_to_staff 内部会处理：
+    # - 状态迁移 (ACTIVE)
+    # - 会话创建/更新 (VisitorSession)
+    # - 历史记录 (VisitorAssignmentHistory)
+    # - WuKongIM 频道订阅和系统消息
+    result = await transfer_to_staff(
+        db=db,
+        visitor_id=visitor_id,
+        project_id=current_user.project_id,
+        source=AssignmentSource.MANUAL,
+        assigned_by_staff_id=current_user.id,
+        target_staff_id=current_user.id,  # 指定由当前客服接入
+        platform_id=visitor.platform_id,
+        ai_disabled=True,  # 人工接入通常禁用 AI
+        add_to_queue_if_no_staff=False,
+        notes=f"Accepted manually by {current_user.username}",
+    )
+
+    if not result.success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=result.message or "Failed to accept visitor",
+        )
+
+    # 4. 如果之前在排队，更新队列状态
+    wait_duration = 0
+    if queue_entry:
+        wait_duration = queue_entry.wait_duration_seconds
+        queue_entry.assign_to_staff(current_user.id)
+        db.commit()
+
+    logger.info(
+        f"Staff {current_user.id} accepted visitor {visitor_id} (direct)",
+        extra={
+            "staff_id": str(current_user.id),
+            "visitor_id": str(visitor_id),
+            "has_queue": queue_entry is not None,
+            "wait_duration": wait_duration,
+        },
+    )
+
+    return AcceptVisitorResponse(
+        success=True,
+        message="访客已成功接入",
+        entry_id=queue_entry.id if queue_entry else None,
+        visitor_id=visitor_id,
+        staff_id=current_user.id,
+        session_id=result.session.id if result.session else None,
+        channel_id=build_visitor_channel_id(visitor_id),
+        channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
+        wait_duration_seconds=wait_duration,
     )
 
 
@@ -1116,7 +849,7 @@ async def get_visitor(
         logger.info(f"Visitor {visitor_id} not found, generating default visitor response")
 
         # Generate deterministic name based on visitor_id
-        default_name = _generate_default_visitor_name(visitor_id)
+        default_name = visitor_service.generate_default_visitor_name(visitor_id)
 
         # Get the first platform for the project as a default
         default_platform = (
@@ -1628,31 +1361,6 @@ async def sync_visitor_channel_messages(
 # Visitor Avatar Upload Endpoints
 # ============================================================================
 
-# Allowed image types for avatar upload
-AVATAR_ALLOWED_MIME_TYPES = {
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/gif",
-    "image/webp",
-}
-AVATAR_ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp"}
-AVATAR_MAX_SIZE_MB = 5  # 5MB limit for avatar
-
-
-def _sanitize_avatar_filename(name: str, limit: int = 100) -> str:
-    """Sanitize filename for avatar upload."""
-    name = name.replace("\\", "_").replace("/", "_").replace("..", ".")
-    name = re.sub(r"[^A-Za-z0-9._-]", "_", name)
-    if len(name) <= limit:
-        return name
-    # Preserve extension if present
-    if "." in name:
-        base, ext = name.rsplit(".", 1)
-        base = base[: max(1, limit - len(ext) - 1)]
-        return f"{base}.{ext}"
-    return name[:limit]
-
 
 @router.post(
     "/{visitor_id}/avatar",
@@ -1702,23 +1410,23 @@ async def upload_visitor_avatar(
 
     # 4) Validate file type and extension
     original_name = file.filename or "avatar.jpg"
-    sanitized_name = _sanitize_avatar_filename(original_name)
+    sanitized_name = visitor_service.sanitize_avatar_filename(original_name)
     ext = sanitized_name.rsplit(".", 1)[-1].lower() if "." in sanitized_name else ""
     mime = file.content_type or mimetypes.guess_type(sanitized_name)[0] or "application/octet-stream"
 
-    if ext not in AVATAR_ALLOWED_EXTENSIONS:
+    if ext not in visitor_service.AVATAR_ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File type not allowed. Allowed types: {', '.join(AVATAR_ALLOWED_EXTENSIONS)}"
+            detail=f"File type not allowed. Allowed types: {', '.join(visitor_service.AVATAR_ALLOWED_EXTENSIONS)}"
         )
 
-    if mime not in AVATAR_ALLOWED_MIME_TYPES:
+    if mime not in visitor_service.AVATAR_ALLOWED_MIME_TYPES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"MIME type not allowed. Allowed types: {', '.join(AVATAR_ALLOWED_MIME_TYPES)}"
+            detail=f"MIME type not allowed. Allowed types: {', '.join(visitor_service.AVATAR_ALLOWED_MIME_TYPES)}"
         )
 
-    max_bytes = AVATAR_MAX_SIZE_MB * 1024 * 1024
+    max_bytes = visitor_service.AVATAR_MAX_SIZE_MB * 1024 * 1024
 
     # 5) Build storage path
     ts_ms = int(time.time() * 1000)

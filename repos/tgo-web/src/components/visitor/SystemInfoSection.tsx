@@ -1,6 +1,7 @@
 import React from 'react';
 import type { SystemInfo as ChannelSystemInfo } from '@/types';
 import { useTranslation } from 'react-i18next';
+import { formatLocalDateTime } from '@/utils/dateUtils';
 
 // 常用语言代码到显示名称的映射（简体中文版本）
 const LANGUAGE_DISPLAY_NAMES_ZH_CN: Record<string, string> = {
@@ -221,27 +222,6 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({
   const currentLang = i18n.language || 'zh-CN';
   const isUrl = (v?: string | null) => !!v && /^(https?:)\/\//i.test(v.trim());
 
-  const parseAPITimestampToLocalDate = (iso?: string | null): Date | null => {
-    if (!iso) return null;
-    let s = iso.trim();
-    s = s.replace(/(\.\d{3})\d+$/, '$1');
-    const hasTZ = /[zZ]|[+-]\d{2}:\d{2}$/.test(s);
-    if (!hasTZ) s += 'Z';
-    const d = new Date(s);
-    return Number.isFinite(d.getTime()) ? d : null;
-  };
-
-  const formatLocalDateTime = (iso?: string | null): string => {
-    const d = parseAPITimestampToLocalDate(iso);
-    if (!d) return '-';
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${y}/${m}/${day} ${hh}:${mm}`;
-  };
-
   const valueOrDash = (v?: string | null) => (v && v.trim() !== '' ? v : '-');
 
   const platform = valueOrDash(systemInfo?.platform);
@@ -266,17 +246,17 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({
 
   return (
     <div className={`pt-4 space-y-3 ${className}`}>
-      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('chat.visitor.sections.systemInfo', '\u7cfb\u7edf\u4fe1\u606f')}</h4>
+      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('visitor.sections.systemInfo', '系统信息')}</h4>
       {hasAnyInfo ? (
         <div className="space-y-1.5 text-[13px] leading-5">
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.platform', '\u5e73\u53f0')}</span>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('visitor.system.fields.platform', '平台')}</span>
             <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={platform}>
               {platform}
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.sourcePage', '\u6765\u6e90\u9875\u9762')}</span>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('visitor.system.fields.sourcePage', '来源页面')}</span>
             <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2">
               {sourceDetailUrl ? (
                 <a
@@ -294,50 +274,50 @@ const SystemInfoSection: React.FC<SystemInfoSectionProps> = ({
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.browser', '\u6d4f\u89c8\u5668')}</span>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('visitor.system.fields.browser', '浏览器')}</span>
             <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={browser}>
               {browser}
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.os', '\u64cd\u4f5c\u7cfb\u7edf')}</span>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('visitor.system.fields.os', '操作系统')}</span>
             <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={os}>
               {os}
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.language', '\u8bed\u8a00')}</span>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('visitor.system.fields.language', '语言')}</span>
             <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={languageRaw !== language ? `${language} (${languageRaw})` : language}>
               {language}
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.timezone', '\u65f6\u533a')}</span>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('visitor.system.fields.timezone', '时区')}</span>
             <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={timezone}>
               {timezone}
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.ipAddress', 'IP \u5730\u5740')}</span>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('visitor.system.fields.ipAddress', 'IP 地址')}</span>
             <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={ipAddress}>
               {ipAddress}
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.location', '\u4f4d\u7f6e')}</span>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('visitor.system.fields.location', '位置')}</span>
             <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={displayLocation}>
               {displayLocation}
             </span>
           </div>
           <div className="flex justify-between items-start">
-            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('chat.visitor.system.fields.firstSeen', '\u9996\u6b21\u8bbf\u95ee')}</span>
+            <span className="text-gray-500 dark:text-gray-400 flex-shrink-0 pt-0.5">{t('visitor.system.fields.firstSeen', '首次访问')}</span>
             <span className="text-gray-800 dark:text-gray-200 font-medium flex-1 min-w-0 ml-2 text-right line-clamp-2" title={firstSeen}>
               {firstSeen}
             </span>
           </div>
         </div>
       ) : (
-        <div className="text-xs text-gray-400 dark:text-gray-500">{t('chat.visitor.system.empty', '\u6682\u65e0\u7cfb\u7edf\u4fe1\u606f')}</div>
+        <div className="text-xs text-gray-400 dark:text-gray-500">{t('visitor.system.empty', '暂无系统信息')}</div>
       )}
     </div>
   );

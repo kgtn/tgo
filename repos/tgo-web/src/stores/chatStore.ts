@@ -549,11 +549,11 @@ export const useChatStore = create<ChatState>()(
               }
 
               // Clear unread for active conversation when receiving messages (user is viewing it)
-              // Only if page is visible and service_status is not 'queued'
+              // Only if page is visible and service_status is not 'queued' or 'new'
               const isPageVisible = typeof document !== 'undefined' && !document.hidden;
               if (isPageVisible) {
                 const extra = channelStore.getChannel(channelId, channelType)?.extra as { service_status?: string } | undefined;
-                if (extra?.service_status !== 'queued') {
+                if (extra?.service_status !== 'queued' && extra?.service_status !== 'new') {
                   convStore.clearConversationUnread(channelId, channelType);
                 }
               }

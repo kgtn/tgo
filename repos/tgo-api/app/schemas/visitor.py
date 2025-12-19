@@ -339,6 +339,14 @@ class VisitorResponse(VisitorInDB):
         None,
         description="Friendly display of geographic location (e.g., 'China, Guangdong, Shenzhen')"
     )
+    source_display: Optional[str] = Field(
+        None,
+        description="Friendly display of visitor source platform/website"
+    )
+    last_online_duration_minutes: Optional[int] = Field(
+        None,
+        description="How many minutes ago the visitor was last online (0 if online, null if never online)"
+    )
 
     @field_validator("avatar_url", mode="after")
     @classmethod
@@ -368,6 +376,7 @@ class VisitorBasicResponse(BaseSchema):
         None, description="Whether AI responses are disabled for this visitor"
     )
     is_online: bool = Field(..., description="Whether the visitor is currently online/active")
+    last_offline_time: Optional[datetime] = Field(None, description="Most recent time visitor went offline")
     service_status: str = Field(
         default="new",
         description="Visitor service status: new, queued, active, closed"
@@ -400,6 +409,14 @@ class VisitorBasicResponse(BaseSchema):
         None,
         description="Friendly display of geographic location (e.g., 'China, Guangdong, Shenzhen')"
     )
+    source_display: Optional[str] = Field(
+        None,
+        description="Friendly display of visitor source platform/website"
+    )
+    last_online_duration_minutes: Optional[int] = Field(
+        None,
+        description="How many minutes ago the visitor was last online (0 if online, null if never online)"
+    )
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -408,36 +425,6 @@ class VisitorBasicResponse(BaseSchema):
     def resolve_avatar_url(cls, v: Optional[str]) -> Optional[str]:
         """Resolve relative avatar URL to full URL."""
         return _resolve_avatar_url(v)
-
-
-class VisitorListParams(BaseSchema):
-    """Parameters for listing visitors."""
-
-    platform_id: Optional[UUID] = Field(
-        None,
-        description="Filter visitors by platform ID"
-    )
-    is_online: Optional[bool] = Field(
-        None,
-        description="Filter visitors by online status"
-    )
-    search: Optional[str] = Field(
-        None,
-        min_length=1,
-        max_length=255,
-        description="Search visitors by name, nickname, or platform_open_id"
-    )
-    limit: int = Field(
-        default=20,
-        ge=1,
-        le=100,
-        description="Number of visitors to return"
-    )
-    offset: int = Field(
-        default=0,
-        ge=0,
-        description="Number of visitors to skip"
-    )
 
 
 class VisitorListResponse(PaginatedResponse):
@@ -455,6 +442,62 @@ class VisitorAvatarUploadResponse(BaseSchema):
     file_size: int = Field(..., description="File size in bytes")
     file_type: str = Field(..., description="MIME type of the file")
     uploaded_at: datetime = Field(..., description="Upload timestamp")
+
+
+class VisitorRegisterRequest(BaseSchema):
+    """Incoming payload for visitor registration."""
+    platform_api_key: str
+    # Optional visitor identifier on the platform (maps to Visitor.platform_open_id)
+    platform_open_id: Optional[str] = None
+    # Optional profile fields (aligned with VisitorBase)
+    name: Optional[str] = None
+    nickname: Optional[str] = Field(None, description="Visitor nickname in English")
+    nickname_zh: Optional[str] = Field(None, description="Visitor nickname in Chinese")
+    avatar_url: Optional[str] = Field(None, description="Visitor avatar URL")
+    phone_number: Optional[str] = None
+    email: Optional[str] = None
+    company: Optional[str] = None
+    job_title: Optional[str] = None
+    source: Optional[str] = None
+    note: Optional[str] = None
+    custom_attributes: dict[str, Optional[Any]] = {}
+    system_info: Optional[VisitorSystemInfoRequest] = Field(
+        None,
+        description="Visitor system metadata payload (browser, OS, timestamps, etc.)",
+    )
+    timezone: Optional[str] = Field(
+        None,
+        max_length=50,
+        description="Visitor timezone (e.g., 'Asia/Shanghai', 'America/New_York')",
+    )
+    language: Optional[str] = Field(
+        None,
+        max_length=10,
+        description="Visitor preferred language code (e.g., 'en', 'zh-CN')",
+    )
+    ip_address: Optional[str] = Field(
+        None,
+        max_length=45,
+        description="Visitor IP address (if not provided, will be extracted from request headers)",
+    )
+
+
+class VisitorRegisterResponse(VisitorResponse):
+    """Response payload for visitor registration."""
+    channel_id: str
+    channel_type: int = 2
+    im_token: str
+
+
+class VisitorMessageSyncRequest(BaseSchema):
+    """Visitor-facing request to sync channel messages."""
+    platform_api_key: Optional[str] = Field(None, description="Platform API key for authentication")
+    channel_id: str = Field(..., description="WuKongIM channel identifier")
+    channel_type: int = Field(..., description="WuKongIM channel type (1=personal, 251=customer service)")
+    start_message_seq: Optional[int] = Field(None, description="Start message sequence (inclusive)")
+    end_message_seq: Optional[int] = Field(None, description="End message sequence (exclusive)")
+    limit: Optional[int] = Field(100, description="Max messages to return (default 100)")
+    pull_mode: Optional[int] = Field(0, description="Pull mode (0=down, 1=up); default 0")
 
 
 # Helper functions for language-aware display
@@ -578,6 +621,22 @@ def set_visitor_display_nickname(
         getattr(response, "geo_city", None),
         getattr(response, "geo_isp", None),
     )
+    
+    # Calculate last_online_duration_minutes from last_offline_time
+    is_online = getattr(response, "is_online", False)
+    if is_online:
+        response.last_online_duration_minutes = 0
+    else:
+        last_offline_time = getattr(response, "last_offline_time", None)
+        if last_offline_time:
+            now = datetime.utcnow()
+            # Ensure both are UTC or both naive
+            if last_offline_time.tzinfo:
+                now = now.replace(tzinfo=last_offline_time.tzinfo)
+            delta = now - last_offline_time
+            response.last_online_duration_minutes = max(0, int(delta.total_seconds() // 60))
+        else:
+            response.last_online_duration_minutes = None
     
     return response
 

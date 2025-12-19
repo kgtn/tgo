@@ -129,7 +129,7 @@ export default function MessageList({ messages }: { messages: ChatMessage[] }){
             const sysPayload = m.payload as SystemMessagePayload
             return (
               <li key={m.key}>
-                <SystemMessage content={sysPayload.content} extra={sysPayload.extra} />
+                <SystemMessage type={sysPayload.type} content={sysPayload.content} extra={sysPayload.extra} />
               </li>
             )
           }

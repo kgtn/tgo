@@ -10,6 +10,7 @@ export type PlatformState = {
   config: Required<Pick<PlatformConfig, 'position' | 'theme_color' | 'widget_title'>> & {
     welcome_message?: string
     logo_url?: string
+    display_mode?: 'small' | 'big'
   }
   init: (apiBase: string, platformApiKey: string) => Promise<void>
   setConfig: (cfg: Partial<PlatformConfig>) => void
@@ -18,6 +19,9 @@ export type PlatformState = {
   isExpanded: boolean
   toggleExpanded: () => void
   setExpanded: (v: boolean) => void
+  // visibility state (open/closed)
+  isVisible: boolean
+  setVisible: (v: boolean) => void
   welcomeInjected: boolean
   markWelcomeInjected: () => void
   // for persistence keying
@@ -41,6 +45,7 @@ export const usePlatformStore = create<PlatformState>((set, get) => ({
   error: null,
   config: defaultConfig,
   isExpanded: false,
+  isVisible: false,
   welcomeInjected: false,
   _apiBase: undefined,
   _platformApiKey: undefined,
@@ -79,6 +84,10 @@ export const usePlatformStore = create<PlatformState>((set, get) => ({
     get().setExpanded(!cur)
   },
 
+  setVisible: (v: boolean) => {
+    set({ isVisible: !!v })
+  },
+
   markWelcomeInjected: () => {
     set({ welcomeInjected: true })
     try {
@@ -107,9 +116,23 @@ export const usePlatformStore = create<PlatformState>((set, get) => ({
 
       const info = await fetchPlatformInfo({ apiBase, platformApiKey })
       const cfg = (info?.config ?? {}) as PlatformConfig
+      console.log('[Platform] Loaded config:', cfg)
       set(s => ({
         config: { ...s.config, ...cfg },
       }))
+
+      // Apply display_mode: if set, use it as default (unless user has explicitly toggled before)
+      const cachedExpandedRaw = localStorage.getItem(EXPANDED_KEY(apiBase, platformApiKey))
+      const hasUserToggled = cachedExpandedRaw !== null
+      console.log('[Platform] display_mode:', cfg.display_mode, 'cachedExpandedRaw:', cachedExpandedRaw, 'hasUserToggled:', hasUserToggled)
+
+      if (cfg.display_mode === 'big' && !hasUserToggled) {
+        console.log('[Platform] Setting expanded to true (display_mode=big)')
+        get().setExpanded(true)
+      } else if (cfg.display_mode === 'small' && !hasUserToggled) {
+        console.log('[Platform] Setting expanded to false (display_mode=small)')
+        get().setExpanded(false)
+      }
     } catch (e: any) {
       set({ error: e?.message || String(e) })
     } finally {

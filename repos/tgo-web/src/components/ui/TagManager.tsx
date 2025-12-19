@@ -185,7 +185,7 @@ const TagManager: React.FC<TagManagerProps> = ({
       const data = await fetchCommonTags();
       setSuggestions(data);
     } catch (e) {
-      setSuggestionsError(t('chat.visitor.tags.common.loadFailed', '获取常用标签失败'));
+      setSuggestionsError(t('visitor.tags.common.loadFailed', '获取常用标签失败'));
     } finally {
       setSuggestionsLoading(false);
     }
@@ -284,14 +284,14 @@ const TagManager: React.FC<TagManagerProps> = ({
               <button
                 onClick={() => handleStartEdit(tag)}
                 className="w-3.5 h-3.5 bg-blue-500 text-white rounded-full flex items-center justify-center"
-                title={t('chat.visitor.tags.editTagTitle', '编辑标签')}
+                title={t('visitor.tags.editTagTitle', '编辑标签')}
               >
                 <Edit3 className="w-2 h-2" />
               </button>
               <button
                 onClick={() => onRemoveTag(tag.id)}
                 className="w-3.5 h-3.5 bg-red-500 text-white rounded-full flex items-center justify-center"
-                title={t('chat.visitor.tags.deleteTagTitle', '删除标签')}
+                title={t('visitor.tags.deleteTagTitle', '删除标签')}
               >
                 <X className="w-2 h-2" />
               </button>
@@ -310,7 +310,7 @@ const TagManager: React.FC<TagManagerProps> = ({
               >
                 <div className="space-y-2">
                   <div>
-                    <label className="text-[10px] text-gray-500 dark:text-gray-400 block mb-1">{t('chat.visitor.tags.editPanel.weightLabel', '权重 (0-10)')}</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-400 block mb-1">{t('visitor.tags.editPanel.weightLabel', '权重 (0-10)')}</label>
                     <input
                       type="range"
                       min="0"
@@ -323,7 +323,7 @@ const TagManager: React.FC<TagManagerProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-[10px] text-gray-500 dark:text-gray-400 block mb-1">{t('chat.visitor.tags.editPanel.colorLabel', '颜色')}</label>
+                    <label className="text-[10px] text-gray-500 dark:text-gray-400 block mb-1">{t('visitor.tags.editPanel.colorLabel', '颜色')}</label>
                     <div className="flex flex-wrap gap-1.5">
                       {COLOR_OPTIONS.map((color) => {
                         // 比较颜色：支持颜色名称和 hex 值
@@ -339,7 +339,7 @@ const TagManager: React.FC<TagManagerProps> = ({
                               : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
                           }`}
                           style={{ backgroundColor: color.hex }}
-                          title={t(`chat.visitor.tags.colors.${color.name}`, color.label)}
+                          title={t(`visitor.tags.colors.${color.name}`, color.label)}
                         />
                         );
                       })}
@@ -368,14 +368,14 @@ const TagManager: React.FC<TagManagerProps> = ({
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={t('chat.visitor.tags.inputPlaceholder', '输入标签名称')}
+                placeholder={t('visitor.tags.inputPlaceholder', '输入标签名称')}
                 className="w-20 px-2 py-1 text-[11px] border border-gray-300 dark:border-gray-600 rounded-full focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-gray-700 dark:text-gray-200"
                 autoFocus
               />
               <button
                 onClick={() => setShowColorPicker(!showColorPicker)}
                 className="p-1 border border-gray-300 dark:border-gray-600 rounded-full"
-                title={t('chat.visitor.tags.colorPicker.title', '选择颜色')}
+                title={t('visitor.tags.colorPicker.title', '选择颜色')}
               >
                 <div
                   className="w-3 h-3 rounded-full"
@@ -389,7 +389,7 @@ const TagManager: React.FC<TagManagerProps> = ({
                 value={newWeight}
                 onChange={(e) => setNewWeight(parseInt(e.target.value))}
                 className="w-8 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                title={t('chat.visitor.tags.weightTitle', { weight: newWeight, defaultValue: '权重: {{weight}}' })}
+                title={t('visitor.tags.weightTitle', { weight: newWeight, defaultValue: '权重: {{weight}}' })}
               />
               <button
                 onClick={handleSaveAdd}
@@ -438,7 +438,7 @@ const TagManager: React.FC<TagManagerProps> = ({
               onClick={handleStartAdd}
               className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 px-2 py-1 rounded-full transition-colors font-medium"
             >
-              + {t('chat.visitor.tags.addButton', '添加')}
+              + {t('visitor.tags.addButton', '添加')}
             </button>
           )
         )}
@@ -448,10 +448,10 @@ const TagManager: React.FC<TagManagerProps> = ({
       {isAdding && showPresets && (
         <div className="mt-2 space-y-1">
           <div className="flex items-center justify-between">
-            <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{t('chat.visitor.tags.common.title', '常用标签:')}</div>
+            <div className="text-[10px] text-gray-500 dark:text-gray-400 font-medium">{t('visitor.tags.common.title', '常用标签:')}</div>
             {suggestionsLoading && (
               <div className="flex items-center text-[10px] text-gray-400 dark:text-gray-500">
-                <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> {t('chat.visitor.tags.common.loading', '加载中')}
+                <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> {t('visitor.tags.common.loading', '加载中')}
               </div>
             )}
           </div>
@@ -480,7 +480,7 @@ const TagManager: React.FC<TagManagerProps> = ({
               );
             })}
             {!suggestionsLoading && availablePresets.length === 0 && (
-              <div className="text-[10px] text-gray-400 dark:text-gray-500">{t('chat.visitor.tags.common.empty', '暂无可用标签')}</div>
+              <div className="text-[10px] text-gray-400 dark:text-gray-500">{t('visitor.tags.common.empty', '暂无可用标签')}</div>
             )}
           </div>
         </div>
@@ -489,7 +489,7 @@ const TagManager: React.FC<TagManagerProps> = ({
       {/* 标签数量提示 */}
       {tags.length >= maxTags && (
         <div className="mt-1 text-[10px] text-gray-400 dark:text-gray-500">
-          {t('chat.visitor.tags.limitReached', { max: maxTags, defaultValue: '已达到标签数量上限 ({{max}}个)' })}
+          {t('visitor.tags.limitReached', { max: maxTags, defaultValue: '已达到标签数量上限 ({{max}}个)' })}
         </div>
       )}
     </div>

@@ -19,6 +19,7 @@ from app.models.visitor_system_info import VisitorSystemInfo
 if TYPE_CHECKING:
     from app.models.visitor_activity import VisitorActivity
     from app.models.visitor_tag import VisitorTag
+    from app.models.tag import Tag
     from app.models.visitor_customer_update import VisitorCustomerUpdate
     from app.models.visitor_session import VisitorSession
 
@@ -321,6 +322,15 @@ class Visitor(Base):
     def is_unassigned(self) -> bool:
         """Check if visitor is unassigned (can be assigned to staff)."""
         return self.service_status in UNASSIGNED_STATUSES
+
+    @property
+    def tags(self) -> List["Tag"]:
+        """Get active tags for the visitor."""
+        return [
+            vt.tag 
+            for vt in self.visitor_tags 
+            if vt.tag and vt.deleted_at is None and vt.tag.deleted_at is None
+        ]
 
     def set_status_queued(self) -> None:
         """Set visitor status to QUEUED."""

@@ -961,7 +961,7 @@ const ModelProvidersSettings: React.FC = () => {
                   <span>{t('settings.providers.fields.kind', '提供商')}: {providerLabel(p.kind)}</span>
                   {p.apiBaseUrl && <span className="truncate max-w-[320px]">{t('settings.providers.baseUrl', 'Base URL')}: {p.apiBaseUrl}</span>}
                   <span className="text-gray-300 dark:text-gray-600">·</span>
-                  <span>{t('settings.providers.updateButton', '更新')}: {new Date(p.updatedAt).toLocaleString()}</span>
+                  <span>{t('settings.providers.updateButton', '更新')}: {p.updatedAt ? new Date(p.updatedAt).toLocaleString() : '-'}</span>
                 </div>
                 {(p.models && p.models.length > 0) && (
                   <div className="mt-2 flex flex-wrap gap-1">

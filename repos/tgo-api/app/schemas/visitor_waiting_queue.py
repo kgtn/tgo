@@ -160,7 +160,7 @@ class AcceptVisitorResponse(BaseSchema):
     
     success: bool = Field(..., description="Whether the operation was successful")
     message: str = Field(..., description="Result message")
-    entry_id: UUID = Field(..., description="Queue entry ID")
+    entry_id: Optional[UUID] = Field(None, description="Queue entry ID (if accepted from queue)")
     visitor_id: UUID = Field(..., description="Visitor ID")
     staff_id: UUID = Field(..., description="Assigned staff ID")
     session_id: Optional[UUID] = Field(None, description="Session ID")

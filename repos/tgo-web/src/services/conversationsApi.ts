@@ -40,7 +40,7 @@ class ConversationsApiServiceClass extends BaseApiService {
     ALL_CONVERSATIONS: `/${this.apiVersion}/conversations/all`,
     BY_TAGS_RECENT: `/${this.apiVersion}/conversations/by-tags/recent`,
     WAITING_QUEUE_COUNT: `/${this.apiVersion}/visitor-waiting-queue/count`,
-    ACCEPT_VISITOR: `/${this.apiVersion}/visitor-waiting-queue/accept`,
+    ACCEPT_VISITOR: (visitorId: string) => `/${this.apiVersion}/visitors/${visitorId}/accept`,
   } as const;
 
   /**
@@ -164,9 +164,8 @@ class ConversationsApiServiceClass extends BaseApiService {
    */
   async acceptVisitor(visitorId: string): Promise<AcceptVisitorResponse> {
     try {
-      return await this.post<AcceptVisitorResponse>(this.endpoints.ACCEPT_VISITOR, {
-        visitor_id: visitorId,
-      });
+      const endpoint = (this.endpoints.ACCEPT_VISITOR as (id: string) => string)(visitorId);
+      return await this.post<AcceptVisitorResponse>(endpoint, {});
     } catch (error) {
       console.error('Failed to accept visitor:', error);
       throw new Error(this['handleApiError'](error));

@@ -15,14 +15,14 @@ const VisitorInfo: React.FC<VisitorInfoProps> = ({ visitor }) => {
 
   return (
     <div className="space-y-3">
-      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('chat.visitor.sections.basicInfo', '\u57fa\u672c\u4fe1\u606f')}</h4>
+      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('visitor.sections.basicInfo', '基本信息')}</h4>
       <div className="space-y-2">
         <div className="flex justify-between">
-          <span className="text-gray-500">{t('chat.visitor.fields.name', '\u59d3\u540d')}</span>
+          <span className="text-gray-500">{t('visitor.fields.name', '姓名')}</span>
           <span className="text-gray-800 font-medium">{visitor.basicInfo.name}</span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-gray-500">{t('chat.visitor.fields.email', '\u90ae\u7bb1')}</span>
+          <span className="text-gray-500">{t('visitor.fields.email', '邮箱')}</span>
           {visitor.basicInfo.email !== '-' ? (
             <a 
               href={`mailto:${visitor.basicInfo.email}`} 
@@ -36,7 +36,7 @@ const VisitorInfo: React.FC<VisitorInfoProps> = ({ visitor }) => {
           )}
         </div>
         <div className="flex justify-between">
-          <span className="text-gray-500">{t('chat.visitor.fields.phone', '\u7535\u8bdd')}</span>
+          <span className="text-gray-500">{t('visitor.fields.phone', '电话')}</span>
           <span className="text-gray-800">{visitor.basicInfo.phone}</span>
         </div>
       </div>

@@ -222,6 +222,14 @@ class APIClient {
     return this.request<T>(endpoint, { method: 'GET' });
   }
 
+  // GET request with body (some APIs use this for complex queries)
+  async getWithBody<T>(endpoint: string, data?: any): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'GET',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+
   // POST request
   async post<T>(endpoint: string, data?: any): Promise<T> {
     return this.request<T>(endpoint, {

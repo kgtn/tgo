@@ -81,6 +81,13 @@ export const useSyncStore = create<SyncState>()(
         }
 
         const lastMessage = latestWkMsg ? WuKongIMUtils.extractMessageContent(latestWkMsg) : '暂无消息';
+        const rawPayload = latestWkMsg?.payload;
+        let lastPayload: any = undefined;
+        if (typeof rawPayload === 'object' && rawPayload !== null) {
+          lastPayload = rawPayload;
+        } else if (typeof rawPayload === 'string') {
+          try { lastPayload = JSON.parse(rawPayload); } catch {}
+        }
         const payloadType = latestWkMsg ? (typeof latestWkMsg.payload === 'object' ? (latestWkMsg.payload as any)?.type : undefined) : undefined;
 
         const channelId = conversation.channel_id;
@@ -94,6 +101,7 @@ export const useSyncStore = create<SyncState>()(
           platform,
           lastMessage,
           payloadType,
+          lastPayload,
           timestamp: new Date(conversation.timestamp * 1000).toISOString(),
           lastTimestampSec: conversation.timestamp,
           status: CHAT_STATUS_CONST.ACTIVE as ChatStatus,
@@ -116,9 +124,10 @@ export const useSyncStore = create<SyncState>()(
         setSyncError(null);
 
         try {
+          const { mineTagIds } = useConversationStore.getState();
           let response: WuKongIMConversationSyncResponse;
 
-          response = await WuKongIMApiService.syncConversationsInitial();
+          response = await WuKongIMApiService.syncConversationsInitial(20, { tag_ids: mineTagIds });
 
           // Debug: Log sync response to see if stream_data is present
           console.log('📋 syncConversations - API response:', {

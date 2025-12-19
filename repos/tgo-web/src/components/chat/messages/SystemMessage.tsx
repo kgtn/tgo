@@ -1,5 +1,6 @@
-import React from 'react';
-import type { PayloadSystem, SystemMessageExtraItem } from '@/types';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { MessagePayloadType, type PayloadSystem, SystemMessageExtraItem } from '@/types';
 
 interface SystemMessageProps {
   payload: PayloadSystem;
@@ -40,7 +41,7 @@ function parseSystemMessageContent(
       result.push(
         <span
           key={`extra-${placeholderIndex}`}
-          className="font-medium text-gray-600 dark:text-gray-300"
+          className="font-medium text-gray-600 dark:text-gray-300 mx-0.5"
         >
           {extraItem.name}
         </span>
@@ -66,13 +67,42 @@ function parseSystemMessageContent(
  * 显示类似微信的 "xxx加入群聊" 风格的系统通知
  */
 const SystemMessage: React.FC<SystemMessageProps> = ({ payload }) => {
-  const content = parseSystemMessageContent(payload.content, payload.extra);
+  const { t } = useTranslation();
+
+  const localizedContent = useMemo(() => {
+    const { type, extra } = payload;
+    const hasExtra = extra && extra.length > 0;
+
+    switch (type) {
+      case MessagePayloadType.SYSTEM_STAFF_ASSIGNED:
+        return parseSystemMessageContent(
+          t('chat.messages.system.staffAssigned', 'You have been connected to customer service. Agent {0} will assist you.'),
+          extra
+        );
+      case MessagePayloadType.SESSION_TRANSFERRED:
+        return parseSystemMessageContent(
+          t('chat.messages.system.sessionTransferred', 'Session transferred. Agent {0} has transferred you to Agent {1}.'),
+          extra
+        );
+      case MessagePayloadType.SYSTEM_SESSION_CLOSED:
+        if (!hasExtra) {
+          return [t('chat.messages.system.sessionClosedEmpty', 'Session ended.')];
+        }
+        return parseSystemMessageContent(
+          t('chat.messages.system.sessionClosed', 'Session ended. Agent {0} has completed the service.'),
+          extra
+        );
+      default:
+        // Fallback to original content for unknown types
+        return parseSystemMessageContent(payload.content, payload.extra);
+    }
+  }, [payload, t]);
 
   return (
     <div className="flex justify-center my-3">
-      <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100/80 dark:bg-gray-700/50 text-xs text-gray-500 dark:text-gray-400 max-w-[80%]">
+      <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100/80 dark:bg-gray-700/50 text-[11px] text-gray-500 dark:text-gray-400 max-w-[90%]">
         <span className="text-center leading-relaxed">
-          {content}
+          {localizedContent}
         </span>
       </div>
     </div>

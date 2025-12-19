@@ -38,6 +38,7 @@ export interface VisitorAttributesUpdateRequest {
   email?: string | null;
   company?: string | null;
   job_title?: string | null;
+  platform_type?: string | null;
   source?: string | null;
   note?: string | null;
   custom_attributes?: Record<string, string | null> | null;
@@ -51,17 +52,21 @@ export interface VisitorResponse {
   platform_open_id: string;
   name?: string | null;
   nickname?: string | null;
+  nickname_zh?: string | null;
+  display_nickname?: string | null;
   avatar_url?: string | null;
   phone_number?: string | null;
   email?: string | null;
   company?: string | null;
   job_title?: string | null;
+  platform_type?: string | null;
   source?: string | null;
   note?: string | null;
   custom_attributes: Record<string, string | null>;
   first_visit_time: string;
   last_visit_time: string;
   last_offline_time?: string | null;
+  last_online_duration_minutes?: number | null;
   is_online: boolean;
   ai_disabled?: boolean; // True if AI is disabled for this visitor
   tags: TagResponse[];
@@ -69,6 +74,18 @@ export interface VisitorResponse {
   ai_insights?: ChannelAIInsights | null;
   system_info?: any | null;
   recent_activities: any[];
+  // Additional fields from API
+  language?: string | null;
+  timezone?: string | null;
+  ip_address?: string | null;
+  display_location?: string | null;
+  geo_country?: string | null;
+  geo_country_code?: string | null;
+  geo_region?: string | null;
+  geo_city?: string | null;
+  geo_isp?: string | null;
+  service_status?: string | null;
+  assigned_staff_id?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
@@ -90,6 +107,32 @@ export interface VisitorAvatarUploadResponse {
   uploaded_at: string;
 }
 
+
+// Request params for GET /v1/visitors
+export interface VisitorListParams {
+  platform_id?: string;
+  is_online?: boolean;
+  recent_online_minutes?: number;
+  service_status?: string[];
+  search?: string;
+  limit?: number;
+  offset?: number;
+  tag_ids?: string[];
+  sort_by?: string;
+  sort_order?: 'asc' | 'desc';
+}
+
+// Response for GET /v1/visitors
+export interface VisitorListResponse {
+  data: VisitorResponse[];
+  pagination: {
+    total: number;
+    limit: number;
+    offset: number;
+    has_next: boolean;
+    has_prev: boolean;
+  };
+}
 
 // Response for POST /v1/sessions/visitor/{visitor_id}/close
 export interface VisitorSessionResponse {
@@ -139,6 +182,35 @@ class VisitorApiService extends BaseApiService {
   };
 
   protected readonly apiVersion = 'v1';
+
+  /**
+   * List visitors with pagination and filters
+   */
+  async listVisitors(params: VisitorListParams): Promise<VisitorListResponse> {
+    const endpoint = this.endpoints.visitors;
+    const qp = new URLSearchParams();
+    
+    // Add query parameters
+    if (params.platform_id) qp.set('platform_id', params.platform_id);
+    if (params.is_online !== undefined) qp.set('is_online', String(params.is_online));
+    if (params.recent_online_minutes !== undefined) qp.set('recent_online_minutes', String(params.recent_online_minutes));
+    if (params.service_status && params.service_status.length > 0) {
+      params.service_status.forEach(status => qp.append('service_status', status));
+    }
+    if (params.search) qp.set('search', params.search);
+    if (params.limit !== undefined) qp.set('limit', String(params.limit));
+    if (params.offset !== undefined) qp.set('offset', String(params.offset));
+    if (params.sort_by) qp.set('sort_by', params.sort_by);
+    if (params.sort_order) qp.set('sort_order', params.sort_order);
+    
+    // Add multiple tag_ids as query parameters: ?tag_ids=id1&tag_ids=id2
+    if (params.tag_ids && params.tag_ids.length > 0) {
+      params.tag_ids.forEach(id => qp.append('tag_ids', id));
+    }
+
+    const url = `${endpoint}${qp.toString() ? `?${qp.toString()}` : ''}`;
+    return this.get<VisitorListResponse>(url);
+  }
 
   /**
    * Get visitor by ID

@@ -16,6 +16,12 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     path: '/ai'
   },
   {
+    id: 'visitors',
+    title: 'navigation.visitors',
+    icon: 'Users',
+    path: '/visitors'
+  },
+  {
     id: 'knowledge',
     title: 'navigation.knowledge',
     icon: 'Library',

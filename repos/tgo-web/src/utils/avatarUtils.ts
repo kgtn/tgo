@@ -72,7 +72,9 @@ export const generateDefaultAvatar = (name: string, colorSeed?: string): Default
   
   // If colorSeed is provided, use it to determine the color
   if (colorSeed && colorSeed.trim() !== '') {
-    colorIndex = hashString(colorSeed) % AVATAR_COLORS.length;
+    // Only use first 5 characters for hashing to maintain consistency
+    const seed = colorSeed.length > 5 ? colorSeed.slice(0, 5) : colorSeed;
+    colorIndex = hashString(seed) % AVATAR_COLORS.length;
   } else {
     // Fallback: use the name's first character for color
     const charCode = firstChar.charCodeAt(0);
@@ -103,7 +105,9 @@ export const getAvatarColorFromId = (id?: string): string => {
   if (!id || id.trim() === '') {
     return 'bg-gradient-to-br from-gray-400 to-gray-500';
   }
-  const colorIndex = hashString(id) % AVATAR_COLORS.length;
+  // Only use first 5 characters for hashing
+  const seed = id.length > 5 ? id.slice(0, 5) : id;
+  const colorIndex = hashString(seed) % AVATAR_COLORS.length;
   return AVATAR_COLORS[colorIndex] || AVATAR_COLORS[0];
 };
 

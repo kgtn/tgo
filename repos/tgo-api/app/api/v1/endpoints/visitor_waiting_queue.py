@@ -305,7 +305,7 @@ async def get_queue_entry(
     "/accept",
     response_model=AcceptVisitorResponse,
     summary="接入访客",
-    description="客服接入等待队列中的访客。",
+    description="客服接入等待队列中的访客。（改用 /visitors/{visitor_id}/accept 接口）",
 )
 async def accept_visitor(
     request: AcceptVisitorRequest,

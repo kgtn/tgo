@@ -4,6 +4,7 @@ export type PlatformConfig = {
   widget_title?: string
   welcome_message?: string
   logo_url?: string
+  display_mode?: 'small' | 'big'
 }
 
 export type PlatformInfo = {

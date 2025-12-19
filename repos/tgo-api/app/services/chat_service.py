@@ -17,7 +17,7 @@ from app.models import (
     QueueSource,
     WaitingStatus,
 )
-from app.api.v1.endpoints.visitors import _create_visitor_with_channel
+import app.services.visitor_service as visitor_service
 from app.tasks.process_waiting_queue import trigger_process_entry
 from app.services.wukongim_client import wukongim_client
 from app.utils.encoding import build_project_staff_channel_id
@@ -58,7 +58,7 @@ async def get_or_create_visitor(
     
     if not visitor:
         # 创建新访客
-        visitor = await _create_visitor_with_channel(
+        visitor = await visitor_service.create_visitor_with_channel(
             db=db,
             platform=platform,
             platform_open_id=platform_open_id,

@@ -1,4 +1,5 @@
 import { PlatformType } from '@/types';
+import i18n from '@/i18n';
 import type { ComponentType } from 'react';
 // react-icons brand/generic icons
 import { IoLogoWechat } from 'react-icons/io5';
@@ -130,30 +131,30 @@ export function getPlatformColor(platformType: PlatformType): string {
 
 
 /**
- * Map platform type to a human-readable Chinese label
+ * Map platform type to a human-readable localized label
  */
 export function getPlatformLabel(platformType: PlatformType): string {
   switch (platformType) {
-    case PlatformType.WEBSITE: return '官网客服';
-    case PlatformType.WECHAT: return '微信公众号';
-    case PlatformType.WHATSAPP: return 'WhatsApp';
-    case PlatformType.TELEGRAM: return 'Telegram';
-    case PlatformType.EMAIL: return '邮件';
-    case PlatformType.SMS: return '短信';
-    case PlatformType.FACEBOOK: return 'Facebook';
-    case PlatformType.INSTAGRAM: return 'Instagram';
-    case PlatformType.TWITTER: return 'Twitter';
-    case PlatformType.LINKEDIN: return '领英';
-    case PlatformType.DISCORD: return 'Discord';
-    case PlatformType.SLACK: return 'Slack';
-    case PlatformType.TEAMS: return 'Microsoft Teams';
-    case PlatformType.WEBCHAT: return '网页聊天';
-    case PlatformType.PHONE: return '电话';
-    case PlatformType.DOUYIN: return '抖音';
-    case PlatformType.TIKTOK: return 'TikTok';
-    case PlatformType.CUSTOM: return '自定义平台';
-    case PlatformType.WECOM: return '企业微信';
-    default: return '未知平台';
+    case PlatformType.WEBSITE: return i18n.t('platforms.website.label', '官网客服');
+    case PlatformType.WECHAT: return i18n.t('platforms.wechat.label', '微信公众号');
+    case PlatformType.WHATSAPP: return i18n.t('platforms.whatsapp.label', 'WhatsApp');
+    case PlatformType.TELEGRAM: return i18n.t('platforms.telegram.label', 'Telegram');
+    case PlatformType.EMAIL: return i18n.t('platforms.email.label', '邮件');
+    case PlatformType.SMS: return i18n.t('platforms.sms.label', '短信');
+    case PlatformType.FACEBOOK: return i18n.t('platforms.facebook.label', 'Facebook');
+    case PlatformType.INSTAGRAM: return i18n.t('platforms.instagram.label', 'Instagram');
+    case PlatformType.TWITTER: return i18n.t('platforms.twitter.label', 'Twitter');
+    case PlatformType.LINKEDIN: return i18n.t('platforms.linkedin.label', '领英');
+    case PlatformType.DISCORD: return i18n.t('platforms.discord.label', 'Discord');
+    case PlatformType.SLACK: return i18n.t('platforms.slack.label', 'Slack');
+    case PlatformType.TEAMS: return i18n.t('platforms.teams.label', 'Microsoft Teams');
+    case PlatformType.WEBCHAT: return i18n.t('platforms.webchat.label', '网页聊天');
+    case PlatformType.PHONE: return i18n.t('platforms.phone.label', '电话');
+    case PlatformType.DOUYIN: return i18n.t('platforms.douyin.label', '抖音');
+    case PlatformType.TIKTOK: return i18n.t('platforms.tiktok.label', 'TikTok');
+    case PlatformType.CUSTOM: return i18n.t('platforms.custom.label', '自定义平台');
+    case PlatformType.WECOM: return i18n.t('platforms.wecom.label', '企业微信');
+    default: return i18n.t('platforms.unknown.label', '未知平台');
   }
 }
 

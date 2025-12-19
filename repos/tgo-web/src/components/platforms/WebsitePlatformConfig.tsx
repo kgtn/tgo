@@ -25,6 +25,7 @@ type WebsiteWidgetConfig = {
   logoUrl: string;
   welcomeMessage: string;
   position: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  displayMode: 'small' | 'big';
 };
 
 // Note: Default values will be translated at runtime using t() function
@@ -34,6 +35,7 @@ const getDefaultWebsiteConfig = (t: any): WebsiteWidgetConfig => ({
   logoUrl: '',
   welcomeMessage: t('platforms.website.defaults.welcomeMessage', '您好！有什么可以帮您？'),
   position: 'bottom-right',
+  displayMode: 'small',
 });
 
 // Widget preview URL and origin (configurable via runtime config)
@@ -151,6 +153,7 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
       logoUrl: platform.logo_url ?? defaultWebsiteConfig.logoUrl,
       welcomeMessage: (cfg.welcomeMessage ?? cfg.welcome_message) ?? defaultWebsiteConfig.welcomeMessage,
       position: cfg.position ?? defaultWebsiteConfig.position,
+      displayMode: (cfg.displayMode ?? cfg.display_mode) ?? defaultWebsiteConfig.displayMode,
     } as WebsiteWidgetConfig;
   }, [platform.config, platform.logo_url]);
 
@@ -188,6 +191,7 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
         logoUrl: formValues.logoUrl,
         welcomeMessage: formValues.welcomeMessage,
         position: formValues.position,
+        displayMode: formValues.displayMode,
         lang: widgetLang,
       }
     }, targetOrigin);
@@ -348,6 +352,7 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
           themeColor: (formValues.themeColor || '').trim(),
           welcomeMessage: (formValues.welcomeMessage || '').trim(),
           position: formValues.position,
+          displayMode: formValues.displayMode,
         };
 
         // Transform keys to snake_case for backend API
@@ -554,6 +559,18 @@ const WebsitePlatformConfig: React.FC<WebsitePlatformConfigProps> = ({ platform 
               <option value="bottom-left">{t('platforms.website.form.positionBottomLeft', '左下角')}</option>
               <option value="top-right">{t('platforms.website.form.positionTopRight', '右上角')}</option>
               <option value="top-left">{t('platforms.website.form.positionTopLeft', '左上角')}</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">{t('platforms.website.form.displayMode', '默认显示方式')}</label>
+            <select
+              value={formValues.displayMode}
+              onChange={e => handleChange({ displayMode: e.target.value as WebsiteWidgetConfig['displayMode'] })}
+              className="w-full text-sm p-1.5 border border-gray-300/80 dark:border-gray-600/80 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 bg-white/90 dark:bg-gray-700/50 dark:text-gray-200"
+            >
+              <option value="small">{t('platforms.website.form.displayModeSmall', '小窗口')}</option>
+              <option value="big">{t('platforms.website.form.displayModeBig', '大窗口')}</option>
             </select>
           </div>
 

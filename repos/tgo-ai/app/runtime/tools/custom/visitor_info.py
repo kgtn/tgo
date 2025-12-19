@@ -109,7 +109,7 @@ def create_visitor_info_tool(
     return [
         Function(
             name="get_visitor_info",
-            description="获取当前访客的详细背景资料，包括姓名、联系方式、公司职位、标签画像及最近 10 条活动记录。",
+            description="获取当前访客的详细背景资料，包括姓名、联系方式、公司职位、标签画像、来源渠道及最近 10 条活动记录。",
             entrypoint=get_visitor_info,
         ),
         Function(

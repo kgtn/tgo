@@ -200,7 +200,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
     focusTimeoutRef.current = window.setTimeout(() => {
       if (textareaRef.current && shouldMaintainFocus.current) {
         textareaRef.current.focus();
-        console.log('Delayed focus applied - new active element:', document.activeElement);
       }
     }, 50);
 
@@ -231,7 +230,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const visitorId = visitorExtra?.id;
   const serviceStatus = visitorExtra?.service_status;
   const assignedStaffId = visitorExtra?.assigned_staff_id;
-  const isQueued = serviceStatus === 'queued';
+  const isQueued = serviceStatus === 'queued' || serviceStatus === 'new';
   const isClosed = serviceStatus === 'closed';
   const isAIDisabled = visitorExtra?.ai_disabled ?? false;
   

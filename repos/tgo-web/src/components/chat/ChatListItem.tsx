@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Chat, ChannelVisitorExtra } from '@/types';
-import { MessagePayloadType } from '@/types';
 import { DEFAULT_CHANNEL_TYPE } from '@/constants';
 import { useChannelDisplay } from '@/hooks/useChannelDisplay';
 import { toPlatformType } from '@/utils/platformUtils';
 import { formatWeChatConversationTime } from '@/utils/timeFormatting';
+import { formatChatLastMessage } from '@/utils/messageFormatting';
 import { ChatAvatar } from './ChatAvatar';
 import { ChatPlatformIcon } from './ChatPlatformIcon';
 import { ChatTags } from './ChatTags';
@@ -21,6 +22,7 @@ export interface ChatListItemProps {
  * Individual chat list item in the sidebar list. Memoized for performance.
  */
 export const ChatListItem: React.FC<ChatListItemProps> = React.memo(({ chat, isActive, onClick }) => {
+  const { t } = useTranslation();
   const channelId = chat.channelId;
   const channelType = chat.channelType ?? DEFAULT_CHANNEL_TYPE;
 
@@ -131,9 +133,7 @@ export const ChatListItem: React.FC<ChatListItemProps> = React.memo(({ chat, isA
 
         <div className="flex justify-between items-center mt-1">
           <p className={`text-xs truncate flex-1 ${isActive ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
-            {chat.payloadType === MessagePayloadType.STREAM && !chat.lastMessage 
-              ? 'AI 正在输入...' 
-              : chat.lastMessage}
+            {formatChatLastMessage(chat, t)}
           </p>
           {(chat.unreadCount > 0 || fadeOut) && (
             <div className={`min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-medium rounded-full flex items-center justify-center px-1 flex-shrink-0 ml-2 transition-opacity duration-200 ${fadeOut && chat.unreadCount === 0 ? 'opacity-0' : 'opacity-100'}`}>

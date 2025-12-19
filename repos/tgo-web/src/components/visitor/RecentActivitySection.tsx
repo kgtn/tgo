@@ -49,13 +49,13 @@ function formatRelativeTime(iso: string, t: any): string {
 function formatDuration(seconds?: number | null, t?: any): string | null {
   if (seconds == null || !Number.isFinite(seconds)) return null;
   const s = Math.floor(seconds);
-  if (s < 60) return t ? t('chat.visitor.activity.duration.seconds', { count: s, defaultValue: `\u6301\u7eed ${s}\u79d2` }) : `持续 ${s}秒`;
+  if (s < 60) return t ? t('visitor.activity.duration.seconds', { count: s, defaultValue: `\u6301\u7eed ${s}\u79d2` }) : `持续 ${s}秒`;
   const m = Math.floor(s / 60);
   const rs = s % 60;
   if (rs) {
-    return t ? t('chat.visitor.activity.duration.minutesSeconds', { m, s: rs, defaultValue: `\u6301\u7eed ${m}\u5206${rs}\u79d2` }) : `持续 ${m}分${rs}秒`;
+    return t ? t('visitor.activity.duration.minutesSeconds', { m, s: rs, defaultValue: `\u6301\u7eed ${m}\u5206${rs}\u79d2` }) : `持续 ${m}分${rs}秒`;
   }
-  return t ? t('chat.visitor.activity.duration.minutes', { count: m, defaultValue: `\u6301\u7eed ${m}\u5206\u949f` }) : `持续 ${m}分钟`;
+  return t ? t('visitor.activity.duration.minutes', { count: m, defaultValue: `\u6301\u7eed ${m}\u5206\u949f` }) : `持续 ${m}分钟`;
 }
 
 function getActivityIconAndColor(type: string) {
@@ -92,7 +92,7 @@ const RecentActivitySection: React.FC<RecentActivitySectionProps> = ({ activitie
 
   return (
     <div className={`pt-4 space-y-3 ${className}`}>
-      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('chat.visitor.sections.recentActivity', '\u6700\u8fd1\u6d3b\u52a8')}</h4>
+      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">{t('visitor.sections.recentActivity', '最近活动')}</h4>
       <ul className="space-y-2.5 text-gray-700 dark:text-gray-300 text-[13px] leading-5">
         {list.map((act) => {
           const durationText = formatDuration(act.duration_seconds, t);
@@ -126,11 +126,11 @@ const RecentActivitySection: React.FC<RecentActivitySectionProps> = ({ activitie
             </li>
           );
         })}
-        {list.length === 0 && (
+        {(!list || list.length === 0) && (
           <li>
             <div className="px-3 py-6 rounded-md border border-gray-200/60 dark:border-gray-700/60 bg-white/50 dark:bg-gray-800/50 text-center">
               <History className="w-5 h-5 mx-auto mb-1.5 text-gray-300 dark:text-gray-600" />
-              <div className="text-xs text-gray-400 dark:text-gray-500">{t('chat.visitor.activity.noActivity', '\u6682\u65e0\u6d3b\u52a8\u8bb0\u5f55')}</div>
+              <div className="text-xs text-gray-400 dark:text-gray-500">{t('visitor.activity.noActivity', '\u6682\u65e0\u6d3b\u52a8\u8bb0\u5f55')}</div>
             </div>
           </li>
         )}

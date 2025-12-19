@@ -1,5 +1,6 @@
 import React from 'react';
 import { Ticket } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface TicketItem {
   id: string;
@@ -21,6 +22,7 @@ const RelatedTicketsSection: React.FC<RelatedTicketsSectionProps> = ({
   tickets,
   className = ''
 }) => {
+  const { t } = useTranslation();
   const getStatusColor = (status?: TicketItem['status']) => {
     switch (status) {
       case 'open':
@@ -36,7 +38,7 @@ const RelatedTicketsSection: React.FC<RelatedTicketsSectionProps> = ({
 
   return (
     <div className={`pt-4 space-y-3 ${className}`}>
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">相关工单</h4>
+      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('visitor.sections.relatedTickets', '相关工单')}</h4>
       <div className="space-y-2">
         {tickets.map((ticket) => (
           <a
@@ -50,8 +52,8 @@ const RelatedTicketsSection: React.FC<RelatedTicketsSectionProps> = ({
             </span>
           </a>
         ))}
-        {tickets.length === 0 && (
-          <div className="text-gray-400 text-xs">暂无相关工单</div>
+        {(!tickets || tickets.length === 0) && (
+          <div className="text-gray-400 text-xs">{t('visitor.activity.noTickets', '暂无相关工单')}</div>
         )}
       </div>
     </div>

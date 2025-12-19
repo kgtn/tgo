@@ -790,6 +790,7 @@
     "aiFeatures": "AI Features",
     "agents": "Agent Teams",
     "mcpTools": "MCP Tools",
+    "visitors": "Visitors",
     "knowledge": "Knowledge Base",
     "channels": "Channel Management",
     "settings": "Settings"
@@ -1183,7 +1184,238 @@
     "description": "This feature is under development. Stay tuned..."
   },
   "visitor": {
-    "fallbackName": "Visitor {{suffix}}"
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "management": {
+      "title": "Visitor Management",
+      "subtitle": "View and manage visitor information from all platforms",
+      "totalVisitors": "Total Visitors",
+      "errorTitle": "Load Failed"
+    },
+    "table": {
+      "visitor": "Visitor",
+      "platform": "Platform",
+      "lastVisit": "Last Visit",
+      "lastOnline": "Last Online",
+      "tags": "Tags",
+      "actions": "Actions",
+      "empty": "No visitor data"
+    },
+    "filters": {
+      "search": {
+        "placeholder": "Search name, email or phone..."
+      },
+      "platform": {
+        "all": "All Platforms"
+      },
+      "tags": {
+        "all": "All Tags",
+        "select": "Filter by Tag",
+        "selected": "Selected Tags"
+      },
+      "sort": {
+        "lastVisit": "Last Active",
+        "createdAt": "Newest"
+      },
+      "online": {
+        "all": "All Statuses",
+        "online": "Online",
+        "offline": "Offline"
+      }
+    },
+    "detail": {
+      "title": "Visitor Details",
+      "basicInfo": "Basic Info",
+      "email": "Email",
+      "phone": "Phone",
+      "company": "Company",
+      "jobTitle": "Job Title",
+      "source": "Source",
+      "note": "Note",
+      "systemInfo": "System Info",
+      "platform": "Platform",
+      "firstVisit": "First Visit",
+      "lastVisit": "Last Visit"
+    },
+    "unknown": "Unknown Visitor",
+    "fallbackName": "Visitor {{suffix}}",
+    "onlineStatus": {
+      "online": "Online",
+      "justNow": "Just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago",
+      "weeksAgo": "{{count}}w ago"
+    },
+    "ai": {
+      "emotion": {
+        "neutral": "Neutral"
+      }
+    },
+    "system": {
+      "defaultSource": "Official Website",
+      "fields": {
+        "platform": "Platform",
+        "sourcePage": "Source Page",
+        "browser": "Browser",
+        "os": "Operating System",
+        "language": "Language",
+        "timezone": "Timezone",
+        "ipAddress": "IP Address",
+        "location": "Location",
+        "firstSeen": "First Seen"
+      },
+      "empty": "No system information"
+    },
+    "sections": {
+      "basicInfo": "Basic Info",
+      "aiInsights": "AI Insights",
+      "systemInfo": "System Information",
+      "recentActivity": "Recent Activity",
+      "aiPersona": "AI Persona",
+      "relatedTickets": "Related Tickets"
+    },
+    "aiInsights": {
+      "satisfactionScore": "Satisfaction Score",
+      "emotionScore": "Emotion Score",
+      "intent": "Intent",
+      "insightSummary": "Insight Summary",
+      "currentSatisfaction": "Current Satisfaction",
+      "currentEmotion": "Current Emotion"
+    },
+    "activity": {
+      "noActivity": "No activity yet",
+      "noTickets": "No related tickets",
+      "duration": {
+        "seconds": "Duration {{count}}s",
+        "minutes": "Duration {{count}} minutes",
+        "minutesSeconds": "Duration {{m}}m {{s}}s"
+      }
+    },
+    "persona": {
+      "noData": "No persona data"
+    },
+    "load": {
+      "failedTitle": "Failed to load visitor information",
+      "failedDesc": "Failed to load visitor data"
+    },
+    "ui": {
+      "loading": "Loading visitor information...",
+      "loadFailed": "Load Failed",
+      "selectConversation": "Select a chat to view visitor information",
+      "noInfo": "No visitor information"
+    },
+    "fields": {
+      "name": "Name",
+      "nickname": "Nickname",
+      "email": "Email",
+      "phone": "Phone",
+      "note": "Note",
+      "field": "Field"
+    },
+    "update": {
+      "successTitle": "Updated successfully",
+      "fieldUpdated": "{{field}} has been updated",
+      "failedTitle": "Update failed",
+      "failedDesc": "Update failed"
+    },
+    "validation": {
+      "invalidEmail": "Please enter a valid email address",
+      "invalidPhone": "Please enter a valid phone number"
+    },
+    "avatar": {
+      "uploadTitle": "Click to upload avatar",
+      "cropTitle": "Crop Avatar",
+      "invalidTypeTitle": "Invalid file type",
+      "invalidTypeDesc": "Please select a JPEG, PNG, GIF, or WebP image",
+      "fileTooLargeTitle": "File too large",
+      "fileTooLargeDesc": "Image size must not exceed 5MB",
+      "uploadSuccessTitle": "Upload successful",
+      "uploadSuccessDesc": "Visitor avatar has been updated",
+      "uploadFailedTitle": "Upload failed",
+      "uploadFailedDesc": "Upload failed"
+    },
+    "customAttr": {
+      "addButton": "Add Custom Attribute",
+      "namePlaceholder": "Attribute name",
+      "valuePlaceholder": "Attribute value",
+      "templates": {
+        "company": "Company",
+        "jobTitle": "Job Title",
+        "department": "Department",
+        "industry": "Industry",
+        "sourceChannel": "Source Channel",
+        "budgetRange": "Budget Range",
+        "decisionAuthority": "Decision Authority",
+        "urgency": "Urgency",
+        "note": "Note"
+      },
+      "addSuccessTitle": "Added successfully",
+      "addSuccessDesc": "Custom attribute added",
+      "addFailedTitle": "Add failed",
+      "addFailedDesc": "Add failed",
+      "updateSuccessTitle": "Updated successfully",
+      "updateSuccessDesc": "Custom attribute updated",
+      "updateFailedTitle": "Update failed",
+      "updateFailedDesc": "Update failed",
+      "deleteSuccessTitle": "Deleted successfully",
+      "deleteSuccessDesc": "Custom attribute deleted",
+      "deleteFailedTitle": "Delete failed",
+      "deleteFailedDesc": "Delete failed"
+    },
+    "tags": {
+      "title": "Tags",
+      "addButton": "Add",
+      "editTagTitle": "Edit Tag",
+      "deleteTagTitle": "Delete Tag",
+      "inputPlaceholder": "Enter tag name",
+      "editPanel": {
+        "weightLabel": "Weight (0-10)",
+        "colorLabel": "Color"
+      },
+      "colorPicker": {
+        "title": "Choose color"
+      },
+      "weightTitle": "Weight: {{weight}}",
+      "limitReached": "Tag limit reached ({{max}} max)",
+      "common": {
+        "title": "Common Tags:",
+        "loading": "Loading",
+        "loadFailed": "Failed to fetch common tags",
+        "empty": "No available tags"
+      },
+      "colors": {
+        "red": "Red",
+        "orange": "Orange",
+        "yellow": "Yellow",
+        "green": "Green",
+        "emerald": "Emerald",
+        "teal": "Teal",
+        "blue": "Blue",
+        "indigo": "Indigo",
+        "purple": "Purple",
+        "pink": "Pink",
+        "gray": "Gray"
+      },
+      "addSuccessTitle": "Added successfully",
+      "addSuccessDesc": "Tag added",
+      "addFailedTitle": "Add failed",
+      "addFailedDesc": "Failed to add tag",
+      "updateSuccessTitle": "Updated successfully",
+      "updateSuccessDesc": "Tag updated",
+      "updateFailedTitle": "Update failed",
+      "updateFailedDesc": "Failed to update tag",
+      "removeSuccessTitle": "Deleted successfully",
+      "removeSuccessDesc": "Tag deleted",
+      "removeFailedTitle": "Delete failed",
+      "removeFailedDesc": "Failed to delete tag",
+      "errors": {
+        "notFound": "Tag not found",
+        "noTagId": "Failed to get tag ID"
+      }
+    }
   },
   "errors": {
     "incompleteVisitorInfo": "Visitor information is incomplete",
@@ -1266,6 +1498,7 @@
   },
   "chat": {
     "title": "Chat Management",
+    "openChat": "Open Chat",
     "sync": {
       "syncing": "Syncing conversations...",
       "success": "Conversations synced successfully",
@@ -1281,7 +1514,8 @@
       "offline": "Offline",
       "connecting": "Connecting...",
       "connected": "Connected",
-      "disconnected": "Disconnected"
+      "disconnected": "Disconnected",
+      "ai_typing": "AI typing..."
     },
     "actions": {
       "refresh": "Refresh",
@@ -1328,8 +1562,18 @@
       "tabs": {
         "mine": "Mine",
         "unassigned": "Unassigned",
+        "recent": "Recently Online",
         "all": "Completed",
         "manual": "Manual Service"
+      },
+      "waiting": {
+        "justNow": "Just now",
+        "minutes": "{{count}}m",
+        "hours": "{{count}}h",
+        "hoursMinutes": "{{h}}h {{m}}m",
+        "days": "{{count}}d",
+        "daysHours": "{{d}}d {{h}}h",
+        "status": "Waiting"
       }
     },
     "header": {
@@ -1382,6 +1626,12 @@
         "error": "AI response generation failed",
         "cancelled": "AI response cancelled",
         "force": "AI response forcefully terminated"
+      },
+      "system": {
+        "staffAssigned": "You have been connected to customer service. Agent {0} will assist you.",
+        "sessionTransferred": "Session transferred. Agent {0} has transferred you to Agent {1}.",
+        "sessionClosed": "Session ended. Agent {0} has completed the service.",
+        "sessionClosedEmpty": "Session ended."
       }
     },
     "input": {
@@ -1481,177 +1731,9 @@
       "closed": "Conversation ended",
       "notMyVisitor": "This visitor is assigned to {{name}}",
       "otherAgent": "another agent"
-    },
-    "visitor": {
-      "unknown": "Unknown Visitor",
-      "ai": {
-        "emotion": {
-          "neutral": "Neutral"
-        }
-      },
-      "system": {
-        "defaultSource": "Official Website",
-        "fields": {
-          "platform": "Platform",
-          "sourcePage": "Source Page",
-          "browser": "Browser",
-          "os": "Operating System",
-          "language": "Language",
-          "timezone": "Timezone",
-          "ipAddress": "IP Address",
-          "location": "Location",
-          "firstSeen": "First Seen"
-        },
-        "empty": "No system information"
-      },
-      "sections": {
-        "basicInfo": "Basic Info",
-        "aiInsights": "AI Insights",
-        "systemInfo": "System Information",
-        "recentActivity": "Recent Activity",
-        "aiPersona": "AI Persona"
-      },
-      "aiInsights": {
-        "satisfactionScore": "Satisfaction Score",
-        "emotionScore": "Emotion Score",
-        "intent": "Intent",
-        "insightSummary": "Insight Summary",
-        "currentSatisfaction": "Current Satisfaction",
-        "currentEmotion": "Current Emotion"
-      },
-      "activity": {
-        "noActivity": "No activity yet",
-        "duration": {
-          "seconds": "Duration {{count}}s",
-          "minutes": "Duration {{count}} minutes",
-          "minutesSeconds": "Duration {{m}}m {{s}}s"
-        }
-      },
-      "persona": {
-        "noData": "No persona data"
-      },
-      "load": {
-        "failedTitle": "Failed to load visitor information",
-        "failedDesc": "Failed to load visitor data"
-      },
-      "ui": {
-        "loading": "Loading visitor information...",
-        "loadFailed": "Load Failed",
-        "selectConversation": "Select a chat to view visitor information",
-        "noInfo": "No visitor information"
-      },
-      "fields": {
-        "name": "Name",
-        "nickname": "Nickname",
-        "email": "Email",
-        "phone": "Phone",
-        "note": "Note",
-        "field": "Field"
-      },
-      "update": {
-        "successTitle": "Updated successfully",
-        "fieldUpdated": "{{field}} has been updated",
-        "failedTitle": "Update failed",
-        "failedDesc": "Update failed"
-      },
-      "validation": {
-        "invalidEmail": "Please enter a valid email address",
-        "invalidPhone": "Please enter a valid phone number"
-      },
-      "avatar": {
-        "uploadTitle": "Click to upload avatar",
-        "cropTitle": "Crop Avatar",
-        "invalidTypeTitle": "Invalid file type",
-        "invalidTypeDesc": "Please select a JPEG, PNG, GIF, or WebP image",
-        "fileTooLargeTitle": "File too large",
-        "fileTooLargeDesc": "Image size must not exceed 5MB",
-        "uploadSuccessTitle": "Upload successful",
-        "uploadSuccessDesc": "Visitor avatar has been updated",
-        "uploadFailedTitle": "Upload failed",
-        "uploadFailedDesc": "Upload failed"
-      },
-      "customAttr": {
-        "addButton": "Add Custom Attribute",
-        "namePlaceholder": "Attribute name",
-        "valuePlaceholder": "Attribute value",
-        "templates": {
-          "company": "Company",
-          "jobTitle": "Job Title",
-          "department": "Department",
-          "industry": "Industry",
-          "sourceChannel": "Source Channel",
-          "budgetRange": "Budget Range",
-          "decisionAuthority": "Decision Authority",
-          "urgency": "Urgency",
-          "note": "Note"
-        },
-        "addSuccessTitle": "Added successfully",
-        "addSuccessDesc": "Custom attribute added",
-        "addFailedTitle": "Add failed",
-        "addFailedDesc": "Add failed",
-        "updateSuccessTitle": "Updated successfully",
-        "updateSuccessDesc": "Custom attribute updated",
-        "updateFailedTitle": "Update failed",
-        "updateFailedDesc": "Update failed",
-        "deleteSuccessTitle": "Deleted successfully",
-        "deleteSuccessDesc": "Custom attribute deleted",
-        "deleteFailedTitle": "Delete failed",
-        "deleteFailedDesc": "Delete failed"
-      },
-      "tags": {
-        "title": "Tags",
-        "addButton": "Add",
-        "editTagTitle": "Edit Tag",
-        "deleteTagTitle": "Delete Tag",
-        "inputPlaceholder": "Enter tag name",
-        "editPanel": {
-          "weightLabel": "Weight (0-10)",
-          "colorLabel": "Color"
-        },
-        "colorPicker": {
-          "title": "Choose color"
-        },
-        "weightTitle": "Weight: {{weight}}",
-        "limitReached": "Tag limit reached ({{max}} max)",
-        "common": {
-          "title": "Common Tags:",
-          "loading": "Loading",
-          "loadFailed": "Failed to fetch common tags",
-          "empty": "No available tags"
-        },
-        "colors": {
-          "red": "Red",
-          "orange": "Orange",
-          "yellow": "Yellow",
-          "green": "Green",
-          "emerald": "Emerald",
-          "teal": "Teal",
-          "blue": "Blue",
-          "indigo": "Indigo",
-          "purple": "Purple",
-          "pink": "Pink",
-          "gray": "Gray"
-        },
-        "addSuccessTitle": "Added successfully",
-        "addSuccessDesc": "Tag added",
-        "addFailedTitle": "Add failed",
-        "addFailedDesc": "Failed to add tag",
-        "updateSuccessTitle": "Updated successfully",
-        "updateSuccessDesc": "Tag updated",
-        "updateFailedTitle": "Update failed",
-        "updateFailedDesc": "Failed to update tag",
-        "removeSuccessTitle": "Deleted successfully",
-        "removeSuccessDesc": "Tag deleted",
-        "removeFailedTitle": "Delete failed",
-        "removeFailedDesc": "Failed to delete tag",
-        "errors": {
-          "notFound": "Tag not found",
-          "noTagId": "Cannot get tag ID"
-        }
-      }
     }
   },
-   "mcp": {
+  "mcp": {
       "source": {
         "marketplace": "Tool Marketplace",
         "custom": "Custom",
@@ -1900,6 +1982,7 @@
       }
     },
     "website": {
+      "label": "Official Website",
       "header": {
         "title": "Website Widget Configuration",
         "subtitle": "Adjust the configuration on the left, the preview on the right will update in real-time"
@@ -1947,6 +2030,9 @@
         "positionBottomLeft": "Bottom Left",
         "positionTopRight": "Top Right",
         "positionTopLeft": "Top Left",
+        "displayMode": "Default Display Mode",
+        "displayModeSmall": "Small Window",
+        "displayModeBig": "Big Window",
         "apiKey": "API Key",
         "apiKeyPlaceholder": "No API Key",
         "apiKeyHint": "Authentication identifier for website integration script, please keep it safe."
@@ -1988,10 +2074,57 @@
       },
       "defaults": {
         "widgetTitle": "Welcome",
-        "welcomeMessage": "Hello! How can I help you?"
+        "welcomeMessage": "Hello! How can I help you?",
+        "displayMode": "small"
       }
     },
+    "wechat": {
+      "label": "WeChat OA"
+    },
+    "whatsapp": {
+      "label": "WhatsApp"
+    },
+    "telegram": {
+      "label": "Telegram"
+    },
+    "sms": {
+      "label": "SMS"
+    },
+    "facebook": {
+      "label": "Facebook"
+    },
+    "instagram": {
+      "label": "Instagram"
+    },
+    "twitter": {
+      "label": "Twitter"
+    },
+    "linkedin": {
+      "label": "LinkedIn"
+    },
+    "discord": {
+      "label": "Discord"
+    },
+    "slack": {
+      "label": "Slack"
+    },
+    "teams": {
+      "label": "Microsoft Teams"
+    },
+    "webchat": {
+      "label": "Web Chat"
+    },
+    "phone": {
+      "label": "Phone"
+    },
+    "tiktok": {
+      "label": "TikTok"
+    },
+    "unknown": {
+      "label": "Unknown Platform"
+    },
     "wecom": {
+      "label": "WeCom",
       "header": {
         "title": "{{name}} - WeCom Configuration",
         "subtitle": "Configure credentials and callbacks required for WeCom integration."
@@ -2081,6 +2214,7 @@
       }
     },
     "email": {
+      "label": "Email",
       "header": {
         "title": "Email Platform Configuration",
         "subtitle": "Configure IMAP (receiving) and SMTP (sending) information."
@@ -2199,6 +2333,7 @@
       }
     },
     "douyin": {
+      "label": "Douyin",
       "title": "{{name}} - Douyin Platform Configuration",
       "subtitle": "Configure Douyin Open Platform credentials and callback information.",
       "buttons": {
@@ -2270,6 +2405,7 @@
       }
     },
     "custom": {
+      "label": "Custom Platform",
       "title": "Custom Platform Configuration",
       "subtitle": "Configure API information and callback URL for third-party program integration.",
       "configSection": "Configuration",

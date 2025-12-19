@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Chat, ChannelVisitorExtra } from '@/types';
 import { DEFAULT_CHANNEL_TYPE } from '@/constants';
 import { useChannelDisplay } from '@/hooks/useChannelDisplay';
@@ -6,6 +7,7 @@ import { ChatAvatar } from './ChatAvatar';
 import { ChatPlatformIcon } from './ChatPlatformIcon';
 import { PlatformType } from '@/types';
 import { toPlatformType } from '@/utils/platformUtils';
+import { formatChatLastMessage } from '@/utils/messageFormatting';
 import { Clock } from 'lucide-react';
 
 export interface UnassignedChatListItemProps {
@@ -13,33 +15,6 @@ export interface UnassignedChatListItemProps {
   isActive: boolean;
   onClick: (chat: Chat) => void;
 }
-
-/**
- * Format waiting time duration
- * @param timestampSec - Unix timestamp in seconds when the chat started
- * @returns Formatted waiting time string
- */
-const formatWaitingTime = (timestampSec: number | undefined): string => {
-  if (!timestampSec) return '刚刚';
-  
-  const now = Math.floor(Date.now() / 1000);
-  const diffSeconds = now - timestampSec;
-  
-  if (diffSeconds < 60) {
-    return '刚刚';
-  } else if (diffSeconds < 3600) {
-    const minutes = Math.floor(diffSeconds / 60);
-    return `${minutes}分钟`;
-  } else if (diffSeconds < 86400) {
-    const hours = Math.floor(diffSeconds / 3600);
-    const minutes = Math.floor((diffSeconds % 3600) / 60);
-    return minutes > 0 ? `${hours}小时${minutes}分` : `${hours}小时`;
-  } else {
-    const days = Math.floor(diffSeconds / 86400);
-    const hours = Math.floor((diffSeconds % 86400) / 3600);
-    return hours > 0 ? `${days}天${hours}小时` : `${days}天`;
-  }
-};
 
 /**
  * Get urgency level based on waiting time
@@ -62,12 +37,9 @@ const getUrgencyLevel = (timestampSec: number | undefined): 'normal' | 'warning'
 
 /**
  * Individual chat list item for unassigned/waiting conversations.
- * Different from regular ChatListItem:
- * - No unread badge
- * - Prominently displays waiting time
- * - Clicking does not trigger unread clearing
  */
 export const UnassignedChatListItem: React.FC<UnassignedChatListItemProps> = React.memo(({ chat, isActive, onClick }) => {
+  const { t } = useTranslation();
   const channelId = chat.channelId;
   const channelType = chat.channelType ?? DEFAULT_CHANNEL_TYPE;
 
@@ -121,8 +93,36 @@ export const UnassignedChatListItem: React.FC<UnassignedChatListItemProps> = Rea
     onClick(chat); 
   }, [onClick, chat]);
 
-  // Calculate waiting time and urgency
-  const waitingTime = useMemo(() => formatWaitingTime(chat.lastTimestampSec), [chat.lastTimestampSec]);
+  /**
+   * Format waiting time duration with i18n
+   */
+  const waitingTime = useMemo(() => {
+    const timestampSec = chat.lastTimestampSec;
+    if (!timestampSec) return t('chat.list.waiting.justNow', '刚刚');
+    
+    const now = Math.floor(Date.now() / 1000);
+    const diffSeconds = now - timestampSec;
+    
+    if (diffSeconds < 60) {
+      return t('chat.list.waiting.justNow', '刚刚');
+    } else if (diffSeconds < 3600) {
+      const minutes = Math.floor(diffSeconds / 60);
+      return t('chat.list.waiting.minutes', { count: minutes, defaultValue: `${minutes}分钟` });
+    } else if (diffSeconds < 86400) {
+      const hours = Math.floor(diffSeconds / 3600);
+      const minutes = Math.floor((diffSeconds % 3600) / 60);
+      return minutes > 0 
+        ? t('chat.list.waiting.hoursMinutes', { h: hours, m: minutes, defaultValue: `${hours}小时${minutes}分` })
+        : t('chat.list.waiting.hours', { count: hours, defaultValue: `${hours}小时` });
+    } else {
+      const days = Math.floor(diffSeconds / 86400);
+      const hours = Math.floor((diffSeconds % 86400) / 3600);
+      return hours > 0 
+        ? t('chat.list.waiting.daysHours', { d: days, h: hours, defaultValue: `${days}天${hours}小时` })
+        : t('chat.list.waiting.days', { count: days, defaultValue: `${days}天` });
+    }
+  }, [chat.lastTimestampSec, t]);
+
   const urgencyLevel = useMemo(() => getUrgencyLevel(chat.lastTimestampSec), [chat.lastTimestampSec]);
 
   // Urgency-based styling
@@ -197,7 +197,7 @@ export const UnassignedChatListItem: React.FC<UnassignedChatListItemProps> = Rea
         {/* Second row: Last message preview + "等待接入" badge (in place of unread count) */}
         <div className="flex justify-between items-center mt-1">
           <p className={`text-xs truncate flex-1 ${isActive ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'}`}>
-            {chat.lastMessage}
+            {formatChatLastMessage(chat, t)}
           </p>
           {/* Status indicator - in place of unread badge */}
           <span className={`
@@ -207,7 +207,7 @@ export const UnassignedChatListItem: React.FC<UnassignedChatListItemProps> = Rea
               : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
             }
           `}>
-            等待接入
+            {t('chat.list.waiting.status', '等待接入')}
           </span>
         </div>
       </div>

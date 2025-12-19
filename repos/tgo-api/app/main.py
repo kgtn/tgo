@@ -182,6 +182,14 @@ async def startup_event():
         # best-effort; don't block startup
         pass
 
+    # Start periodic visitor online status sync task (best-effort)
+    try:
+        from app.tasks.sync_visitor_online_status import start_visitor_online_sync_task
+        await start_visitor_online_sync_task()
+    except Exception:
+        # best-effort; don't block startup
+        pass
+
     # Server ready
     startup_log("🌐 Server starting...")
     startup_log(f"   📍 Listening on: http://0.0.0.0:8000")
@@ -220,6 +228,13 @@ async def shutdown_event():
     try:
         from app.tasks.close_timeout_sessions import stop_session_timeout_task
         await stop_session_timeout_task()
+    except Exception:
+        pass
+
+    # Stop periodic visitor online status sync task (best-effort)
+    try:
+        from app.tasks.sync_visitor_online_status import stop_visitor_online_sync_task
+        await stop_visitor_online_sync_task()
     except Exception:
         pass
 

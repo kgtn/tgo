@@ -29,8 +29,9 @@ export const WebSocketManager: React.FC = () => {
   const markStreamMessageEnd = useChatStore(state => state.markStreamMessageEnd);
   const activeChat = useChatStore(state => state.activeChat);
   
-  // Get notification preferences from uiStore
+  // Get connection/notification actions from uiStore
   const uiPreferences = useUIStore(state => state.preferences);
+  const setConnectionStatus = useUIStore(state => state.setConnectionStatus);
 
   /**
    * Handle notification click - navigate to the conversation
@@ -103,6 +104,9 @@ export const WebSocketManager: React.FC = () => {
    */
   const handleConnectionStatus = React.useCallback((status: ConnectionStatus) => {
     console.log('🔌 WebSocket Manager: Connection status changed:', status);
+    
+    // Sync status to UI store
+    setConnectionStatus(status);
     
     // If we're now connected and we were previously connected (i.e., this is a reconnection)
     if (status.isConnected) {

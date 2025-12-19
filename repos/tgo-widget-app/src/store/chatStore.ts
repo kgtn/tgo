@@ -10,6 +10,9 @@ import { fetchChannelInfo, type ChannelInfo } from '../services/channel'
 import type { StaffInfo } from '../services/channel'
 import { uploadChatFile, readImageDimensions, makeChatFileUrl } from '../services/upload'
 import { collectVisitorSystemInfo } from '../utils/systemInfo'
+import { playNotificationSound, showBrowserNotification, requestNotificationPermission } from '../utils/notification'
+import usePlatformStore from './platformStore'
+import i18n from '../i18n'
 
 
 // Keep module-level unsubs to avoid duplicate registrations on re-init
@@ -67,6 +70,10 @@ export type ChatState = {
   appendStreamData: (clientMsgNo: string, data: string) => void
   finalizeStreamMessage: (clientMsgNo: string, errorMessage?: string) => void
   ensureWelcomeMessage: (text: string) => void
+  // unread count
+  unreadCount: number
+  clearUnreadCount: () => void
+  incrementUnreadCount: () => void
 }
 
 const initialMessages: ChatMessage[] = []
@@ -144,6 +151,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isStreaming: false,
   streamCanceling: false,
   streamingClientMsgNo: undefined,
+  unreadCount: 0,
   staffInfoCache: {},
   fetchStaffInfo: async (uid: string) => {
     const st = get()
@@ -183,6 +191,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Resolve platform API key from URL (?apiKey=...) on the control iframe URL
       const platformApiKey = resolveApiKey() || ''
       if (!platformApiKey) throw new Error('[Visitor] Missing apiKey in URL (?apiKey=...). Ensure the SDK injects it into the control iframe URL via history.replaceState.')
+
+      // Request notification permission
+      requestNotificationPermission()
 
       // Load cached visitor/channel or register
       let cached = loadCachedVisitor(cfg.apiBase, platformApiKey)
@@ -242,9 +253,30 @@ export const useChatStore = create<ChatState>((set, get) => ({
           channelId: m.channelId,
           channelType: m.channelType,
         }
+        // Check if message already exists (de-duplicate)
+        const currentState = get()
+        if (currentState.messages.some(x => x.id === chat.id)) return
+
+        // New message received: play sound and show notification
+        playNotificationSound()
+        const pConfig = usePlatformStore.getState().config
+        const title = pConfig.widget_title || 'Tgo'
+        let content = ''
+        if (chat.payload.type === 1) content = chat.payload.content
+        else if (chat.payload.type === 2) content = '[图片]'
+        else if (chat.payload.type === 3) content = '[文件]'
+        
+        if (content) {
+          void showBrowserNotification(title, {
+            body: content,
+            icon: pConfig.logo_url || undefined,
+          })
+        }
+
+        // Increment unread count (outside of set to avoid nested updates)
+        get().incrementUnreadCount()
+
         set(state => {
-          // de-duplicate by message id
-          if (state.messages.some(x => x.id === chat.id)) return state
           // If there is a streaming placeholder with the same clientMsgNo, merge into it
           if (chat.clientMsgNo) {
             const idx = state.messages.findIndex(x => x.clientMsgNo && x.clientMsgNo === chat.clientMsgNo)
@@ -268,6 +300,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
             const id = ev?.id ? String(ev.id) : ''
             if (!id) return
             console.log('[Chat] Stream started for message:', id)
+
+            // Stream started: play sound
+            playNotificationSound()
+            const pConfig = usePlatformStore.getState().config
+            void showBrowserNotification(pConfig.widget_title || 'Tgo', {
+              body: i18n.t('messageInput.typing'),
+              icon: pConfig.logo_url || undefined,
+            })
+
+            // Increment unread count for AI start
+            get().incrementUnreadCount()
+
             try { get().markStreamingStart(id) } catch {}
             return
           }
@@ -772,6 +816,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const welcome: ChatMessage = { id: 'welcome', role: 'agent', payload: { type: 1, content: t }, time: new Date() }
       return { messages: [welcome, ...state.messages] }
     })
+  },
+
+  clearUnreadCount: () => {
+    set({ unreadCount: 0 })
+  },
+
+  incrementUnreadCount: () => {
+    // Only increment if window is not visible (hidden/closed)
+    const { isVisible } = usePlatformStore.getState()
+    console.log('[Chat] incrementUnreadCount called, isVisible:', isVisible)
+    if (!isVisible) {
+      set(s => {
+        const newCount = s.unreadCount + 1
+        console.log('[Chat] Incrementing unread count to:', newCount)
+        return { unreadCount: newCount }
+      })
+    }
   }
 }))
 

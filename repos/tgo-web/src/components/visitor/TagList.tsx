@@ -19,7 +19,7 @@ const TagList: React.FC<TagListProps> = ({ tags = [], onAddTag }) => {
 
   return (
     <div className="pt-4 space-y-3">
-      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('chat.visitor.tags.title', '\u6807\u7b7e')}</h4>
+      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{t('visitor.tags.title', '\u6807\u7b7e')}</h4>
       <div className="flex flex-wrap gap-1.5 mt-1">
         {tags.map((tag, index) => (
           <Badge 
@@ -37,7 +37,7 @@ const TagList: React.FC<TagListProps> = ({ tags = [], onAddTag }) => {
           className="text-blue-600 hover:bg-blue-100 px-1 py-0.5 rounded-full"
           onClick={handleAddTag}
         >
-          + {t('chat.visitor.tags.addButton', '\u6dfb\u52a0')}
+          + {t('visitor.tags.addButton', '\u6dfb\u52a0')}
         </Button>
       </div>
     </div>

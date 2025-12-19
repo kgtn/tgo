@@ -3,9 +3,11 @@ import EditableField from '../ui/EditableField';
 import CustomAttributeManager from '../ui/CustomAttributeManager';
 import type { VisitorBasicInfo } from '@/data/mockVisitor';
 import { useTranslation } from 'react-i18next';
+import { formatOnlineDuration } from '@/utils/dateUtils';
 
 interface BasicInfoSectionProps {
   basicInfo: VisitorBasicInfo;
+  isOnline?: boolean;
   onUpdateBasicInfo: (
     field: 'name' | 'nickname' | 'email' | 'phone' | 'note',
     value: string
@@ -23,6 +25,7 @@ interface BasicInfoSectionProps {
  */
 const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   basicInfo,
+  isOnline = false,
   onUpdateBasicInfo,
   onAddCustomAttribute,
   onUpdateCustomAttribute,
@@ -33,31 +36,31 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
   const validateEmail = (email: string): string | null => {
     if (!email.trim()) return null;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email) ? null : t('chat.visitor.validation.invalidEmail', '\u8bf7\u8f93\u5165\u6709\u6548\u7684\u90ae\u7bb1\u5730\u5740');
+    return emailRegex.test(email) ? null : t('visitor.validation.invalidEmail', '\u8bf7\u8f93\u5165\u6709\u6548\u7684\u90ae\u7bb1\u5730\u5740');
   };
   const validatePhone = (phone: string): string | null => {
     if (!phone.trim()) return null;
     const phoneRegex = /^[\d\s\-\+\(\)]{7,}$/;
-    return phoneRegex.test(phone) ? null : t('chat.visitor.validation.invalidPhone', '\u8bf7\u8f93\u5165\u6709\u6548\u7684\u7535\u8bdd\u53f7\u7801');
+    return phoneRegex.test(phone) ? null : t('visitor.validation.invalidPhone', '\u8bf7\u8f93\u5165\u6709\u6548\u7684\u7535\u8bdd\u53f7\u7801');
   };
   return (
     <div className={className}>
-      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-3">{t('chat.visitor.sections.basicInfo', '\u57fa\u672c\u4fe1\u606f')}</h4>
+      <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider mb-3">{t('visitor.sections.basicInfo', '基本信息')}</h4>
       <div className="space-y-1.5 text-[13px] leading-5">
         <EditableField
-          label={t('chat.visitor.fields.name', '\u59d3\u540d')}
+          label={t('visitor.fields.name', '姓名')}
           value={basicInfo.name}
           onSave={(value) => onUpdateBasicInfo('name', value)}
           placeholder="-"
         />
         <EditableField
-          label={t('chat.visitor.fields.nickname', '\u6635\u79f0')}
+          label={t('visitor.fields.nickname', '昵称')}
           value={basicInfo.nickname || ''}
           onSave={(value) => onUpdateBasicInfo('nickname', value)}
           placeholder="-"
         />
         <EditableField
-          label={t('chat.visitor.fields.email', '\u90ae\u7bb1')}
+          label={t('visitor.fields.email', '邮箱')}
           value={basicInfo.email}
           onSave={(value) => onUpdateBasicInfo('email', value)}
           placeholder="-"
@@ -65,15 +68,21 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
           validate={validateEmail}
         />
         <EditableField
-          label={t('chat.visitor.fields.phone', '\u7535\u8bdd')}
+          label={t('visitor.fields.phone', '电话')}
           value={basicInfo.phone}
           onSave={(value) => onUpdateBasicInfo('phone', value)}
           placeholder="-"
           type="tel"
           validate={validatePhone}
         />
+        <div className="flex justify-between items-center py-1">
+          <span className="text-gray-500 dark:text-gray-400">{t('visitor.table.lastOnline', '最后在线')}</span>
+          <span className="text-gray-800 dark:text-gray-200 font-medium">
+            {formatOnlineDuration(basicInfo.lastOnlineDurationMinutes, isOnline)}
+          </span>
+        </div>
         <EditableField
-          label={t('chat.visitor.fields.note', '\u5907\u6ce8')}
+          label={t('visitor.fields.note', '备注')}
           value={basicInfo.note || ''}
           onSave={(value) => onUpdateBasicInfo('note', value)}
           placeholder="-"

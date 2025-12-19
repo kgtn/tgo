@@ -362,6 +362,22 @@ class Settings(BaseSettings):
         gt=0
     )
 
+    # Visitor online status sync settings
+    VISITOR_ONLINE_SYNC_ENABLED: bool = Field(
+        default=True,
+        description="Enable periodic sync of visitor online status with WuKongIM",
+    )
+    VISITOR_ONLINE_SYNC_INTERVAL_SECONDS: int = Field(
+        default=60,
+        description="Interval in seconds for visitor online status sync (default 1 minute)",
+        gt=0,
+    )
+    VISITOR_ONLINE_SYNC_BATCH_SIZE: int = Field(
+        default=100,
+        description="Number of visitors to check per batch in online status sync",
+        gt=0,
+    )
+
     # Unknown Platform Fallback
     UNKNOWN_PLATFORM_ID: str = Field(
         default="00000000-0000-0000-0000-000000000000",

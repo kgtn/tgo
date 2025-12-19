@@ -32,7 +32,7 @@ const AIPersonaSection: React.FC<AIPersonaSectionProps> = ({
 
   return (
     <div className={`pt-4 space-y-2 ${className}`}>
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('chat.visitor.sections.aiPersona', 'AI\u753b\u50cf')}</h4>
+      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">{t('visitor.sections.aiPersona', 'AI画像')}</h4>
       <div className="flex flex-wrap gap-1.5 mt-1">
         {personaTags.map((tag, idx) => (
           <span
@@ -42,8 +42,8 @@ const AIPersonaSection: React.FC<AIPersonaSectionProps> = ({
             {tag.label}
           </span>
         ))}
-        {personaTags.length === 0 && (
-          <span className="text-xs text-gray-400 leading-4">{t('chat.visitor.persona.noData', '\u6682\u65e0\u753b\u50cf\u6570\u636e')}</span>
+        {(!personaTags || personaTags.length === 0) && (
+          <span className="text-xs text-gray-400 leading-4">{t('visitor.persona.noData', '暂无画像数据')}</span>
         )}
       </div>
     </div>

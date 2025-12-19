@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_user_language, UserLanguage
-from app.models import Visitor
+from app.models import Visitor, PlatformType
 from app.schemas.visitor import VisitorResponse, set_visitor_display_nickname
 from app.api.v1.endpoints.channels import _build_enriched_visitor_payload, _get_visitor_with_relations
 
@@ -54,5 +54,21 @@ async def get_internal_visitor_info(
 
     # 3) Set display nickname based on language
     set_visitor_display_nickname(visitor_payload, user_language)
+
+    # 4) Set source_display for AI to know where the visitor comes from
+    if visitor.platform:
+        if visitor.platform.type == PlatformType.WEBSITE.value:
+            parts = []
+            if visitor.platform.used_website_title:
+                parts.append(visitor.platform.used_website_title)
+            if visitor.platform.used_website_url:
+                parts.append(f"({visitor.platform.used_website_url})")
+            
+            if parts:
+                visitor_payload.source_display = " ".join(parts)
+            else:
+                visitor_payload.source_display = visitor.platform.name or "Website"
+        else:
+            visitor_payload.source_display = visitor.platform.name or visitor.platform.type
 
     return visitor_payload

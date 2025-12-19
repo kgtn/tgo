@@ -34,15 +34,15 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
   const [editValue, setEditValue] = useState('');
   const COMMON_TEMPLATES = useMemo(
     () => [
-      t('chat.visitor.customAttr.templates.company', '公司'),
-      t('chat.visitor.customAttr.templates.jobTitle', '职位'),
-      t('chat.visitor.customAttr.templates.department', '部门'),
-      t('chat.visitor.customAttr.templates.industry', '行业'),
-      t('chat.visitor.customAttr.templates.sourceChannel', '来源渠道'),
-      t('chat.visitor.customAttr.templates.budgetRange', '预算范围'),
-      t('chat.visitor.customAttr.templates.decisionAuthority', '决策权限'),
-      t('chat.visitor.customAttr.templates.urgency', '紧急程度'),
-      t('chat.visitor.customAttr.templates.note', '备注'),
+      t('visitor.customAttr.templates.company', '公司'),
+      t('visitor.customAttr.templates.jobTitle', '职位'),
+      t('visitor.customAttr.templates.department', '部门'),
+      t('visitor.customAttr.templates.industry', '行业'),
+      t('visitor.customAttr.templates.sourceChannel', '来源渠道'),
+      t('visitor.customAttr.templates.budgetRange', '预算范围'),
+      t('visitor.customAttr.templates.decisionAuthority', '决策权限'),
+      t('visitor.customAttr.templates.urgency', '紧急程度'),
+      t('visitor.customAttr.templates.note', '备注'),
     ],
     [t]
   );
@@ -130,7 +130,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
                   value={editKey}
                   onChange={(e) => setEditKey(e.target.value)}
                   onKeyDown={(e) => handleKeyDown(e, 'edit')}
-                  placeholder={t('chat.visitor.customAttr.namePlaceholder', '属性名')}
+                  placeholder={t('visitor.customAttr.namePlaceholder', '属性名')}
                   className="w-16 px-2 py-1.5 text-[13px] leading-5 text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
                 />
                 <input
@@ -138,7 +138,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
                   value={editValue}
                   onChange={(e) => setEditValue(e.target.value)}
                   onKeyDown={(e) => handleKeyDown(e, 'edit')}
-                  placeholder={t('chat.visitor.customAttr.valuePlaceholder', '属性值')}
+                  placeholder={t('visitor.customAttr.valuePlaceholder', '属性值')}
                   className="flex-1 min-w-0 max-w-[100px] px-2 py-1.5 text-[13px] leading-5 text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
                 />
                 <button
@@ -204,7 +204,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
               value={newKey}
               onChange={(e) => setNewKey(e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, 'add')}
-              placeholder={t('chat.visitor.customAttr.namePlaceholder', '属性名')}
+              placeholder={t('visitor.customAttr.namePlaceholder', '属性名')}
               className="w-16 px-2 py-1.5 text-[13px] leading-5 text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
             />
             <input
@@ -212,7 +212,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
               value={newValue}
               onChange={(e) => setNewValue(e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, 'add')}
-              placeholder={t('chat.visitor.customAttr.valuePlaceholder', '属性值')}
+              placeholder={t('visitor.customAttr.valuePlaceholder', '属性值')}
               className="flex-1 min-w-0 max-w-[100px] px-2 py-1.5 text-[13px] leading-5 text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 transition-colors"
             />
             <button
@@ -256,7 +256,7 @@ const CustomAttributeManager: React.FC<CustomAttributeManagerProps> = ({
           className="flex items-center space-x-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 px-2.5 py-1.5 rounded-md transition-colors mt-2 font-medium"
         >
           <Plus className="w-3 h-3" />
-          <span>{t('chat.visitor.customAttr.addButton', '添加自定义属性')}</span>
+          <span>{t('visitor.customAttr.addButton', '添加自定义属性')}</span>
         </button>
       )}
     </div>

@@ -5,6 +5,7 @@ export interface SelectOption {
   value: string;
   label: string;
   disabled?: boolean;
+  color?: string;
 }
 
 export interface SelectProps {
@@ -156,7 +157,15 @@ const Select: React.FC<SelectProps> = ({
                 }
               `}
             >
-              <span>{option.label}</span>
+              <div className="flex items-center gap-2 overflow-hidden">
+                {option.color && (
+                  <span 
+                    className="w-2 h-2 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: option.color }}
+                  />
+                )}
+                <span className="truncate">{option.label}</span>
+              </div>
               {option.value === value && (
                 <Check className="w-4 h-4 text-blue-500" />
               )}

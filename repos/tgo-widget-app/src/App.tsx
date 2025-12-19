@@ -21,6 +21,8 @@ const Grow = styled.div`flex: 1; min-height: 0; display: flex; flex-direction: c
 
 export default function App(){
   const messages = useChatStore(s => s.messages)
+  const unreadCount = useChatStore(s => s.unreadCount)
+  const clearUnreadCount = useChatStore(s => s.clearUnreadCount)
   const initIM = useChatStore(s => s.initIM)
   const sendMessage = useChatStore(s => s.sendMessage)
   const ensureWelcomeMessage = useChatStore(s => s.ensureWelcomeMessage)
@@ -28,9 +30,72 @@ export default function App(){
 
   const pConfig = usePlatformStore(s => s.config)
   const isExpanded = usePlatformStore(s => s.isExpanded)
+  const isVisible = usePlatformStore(s => s.isVisible)
+  const setVisible = usePlatformStore(s => s.setVisible)
   const initPlatform = usePlatformStore(s => s.init)
   const welcomeInjected = usePlatformStore(s => s.welcomeInjected)
   const markWelcomeInjected = usePlatformStore(s => s.markWelcomeInjected)
+
+  // Listen for visibility changes from host SDK
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      const d = e.data
+      if (d && d.type === 'tgo:visibility' && typeof d.open === 'boolean') {
+        setVisible(d.open)
+        if (d.open) {
+          clearUnreadCount()
+        }
+      }
+    }
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [setVisible, clearUnreadCount])
+
+  // Clear unread count when window becomes visible
+  useEffect(() => {
+    if (isVisible) {
+      clearUnreadCount()
+    }
+  }, [isVisible, clearUnreadCount])
+
+  // Notify host about unread count
+  useEffect(() => {
+    console.log('[App] Sending TGO_WIDGET_UNREAD to parent, count:', unreadCount)
+    try {
+      window.parent?.postMessage({ type: 'TGO_WIDGET_UNREAD', payload: { count: unreadCount } }, '*')
+    } catch (e) {
+      console.error('[App] Failed to send TGO_WIDGET_UNREAD:', e)
+    }
+  }, [unreadCount])
+
+  // Monitor new messages for toast when widget is hidden
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1]
+    if (!lastMsg || lastMsg.role !== 'agent' || isVisible) return
+
+    // Don't show toast if it's a history message (id starting with h-)
+    if (lastMsg.id.startsWith('h-')) return
+
+    let content = ''
+    if (lastMsg.payload.type === 1) content = lastMsg.payload.content
+    else if (lastMsg.payload.type === 2) content = '[图片]'
+    else if (lastMsg.payload.type === 3) content = '[文件]'
+    else if (lastMsg.streamData) content = lastMsg.streamData
+
+    if (content) {
+      try {
+        window.parent?.postMessage({ 
+          type: 'TGO_SHOW_TOAST', 
+          payload: { 
+            title: pConfig.widget_title || 'Tgo',
+            body: content,
+            icon: pConfig.logo_url || undefined,
+            id: lastMsg.id
+          } 
+        }, '*')
+      } catch {}
+    }
+  }, [messages.length, isVisible, pConfig.widget_title, pConfig.logo_url])
 
   // Resolve theme mode from URL (?mode=dark or ?mode=light)
   const themeMode = useMemo(() => resolveMode(), [])
@@ -330,6 +395,8 @@ export default function App(){
         if (typeof p.position === 'string') patch.position = p.position
         if (typeof p.logoUrl === 'string') patch.logo_url = p.logoUrl
         try { usePlatformStore.getState().setConfig(patch as any) } catch {}
+      } else if (d?.type === 'TGO_WIDGET_SHOWN') {
+        try { useChatStore.getState().clearUnreadCount() } catch {}
       } else if (d?.type === 'TGO_TRACK_EVENT' && d.payload) {
         const uid = useChatStore.getState().myUid || myUid
         const apiKey = resolveApiKey()

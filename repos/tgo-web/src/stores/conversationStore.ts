@@ -25,10 +25,14 @@ interface ConversationState {
   activeChat: Chat | null;
   searchQuery: string;
 
+  // "我的" tab 筛选标签
+  mineTagIds: string[];
+
   // Actions - 基础操作
   setChats: (chats: Chat[]) => void;
   setActiveChat: (chat: Chat | null) => void;
   setSearchQuery: (query: string) => void;
+  setMineTagIds: (tagIds: string[]) => void;
 
   // Actions - CRUD 操作
   createChat: (_visitorName: string, platform: string) => void;
@@ -63,6 +67,7 @@ export const useConversationStore = create<ConversationState>()(
         chats: [],
         activeChat: null,
         searchQuery: '',
+        mineTagIds: [],
 
         // Basic setters
         setChats: (chats) => set({ chats }, false, 'setChats'),
@@ -72,6 +77,8 @@ export const useConversationStore = create<ConversationState>()(
         },
 
         setSearchQuery: (query) => set({ searchQuery: query }, false, 'setSearchQuery'),
+
+        setMineTagIds: (tagIds) => set({ mineTagIds: tagIds }, false, 'setMineTagIds'),
 
         // CRUD operations
         createChat: (_visitorName, platform) => {
@@ -202,6 +209,7 @@ export const useConversationStore = create<ConversationState>()(
                     ...chat,
                     lastMessage: content,
                     payloadType: message.payloadType,
+                    lastPayload: message.payload,
                     timestamp: isoTs,
                     lastTimestampSec: sec,
                   };
@@ -436,6 +444,7 @@ export const useConversationStore = create<ConversationState>()(
               chats: [],
               activeChat: null,
               searchQuery: '',
+              mineTagIds: [],
             },
             false,
             'clearConversationStore'
@@ -445,8 +454,9 @@ export const useConversationStore = create<ConversationState>()(
       {
         name: STORAGE_KEYS.CONVERSATION || 'tgo-conversation',
         partialize: (state) => ({
-          // 只持久化搜索查询
+          // 持久化搜索查询和我的标签筛选
           searchQuery: state.searchQuery,
+          mineTagIds: state.mineTagIds,
         }),
       }
     ),
