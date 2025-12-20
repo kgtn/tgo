@@ -680,14 +680,14 @@ async def check_staff_online_status(
         )
 
     try:
-        online_wukongim_uids = await wukongim_client.check_user_online_status(wukongim_uids)
+        online_uids = await wukongim_client.check_user_online_status(wukongim_uids)
 
         # Convert WuKongIM UIDs back to staff usernames for response
         reverse_mapping = {wukongim_uid: username for username, wukongim_uid in staff_uid_mapping.items()}
-        online_uids = [reverse_mapping[wukongim_uid] for wukongim_uid in online_wukongim_uids if wukongim_uid in reverse_mapping]
-        logger.info(f"Found {len(online_uids)} online staff members")
+        online_usernames = [reverse_mapping[wukongim_uid] for wukongim_uid in online_uids if wukongim_uid in reverse_mapping]
+        logger.info(f"Found {len(online_usernames)} online staff members")
 
-        return WuKongIMOnlineStatusResponse(online_uids=online_uids)
+        return WuKongIMOnlineStatusResponse(online_uids=online_usernames)
 
     except Exception as e:
         logger.error(f"Failed to check online status: {e}")

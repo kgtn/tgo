@@ -21,6 +21,7 @@ from app.schemas.wukongim import (
     WuKongIMMessage,
     WuKongIMSearchMessagesResponse,
     WuKongIMSearchResult,
+    WuKongIMOnlineStatusItem,
 )
 
 logger = logging.getLogger(__name__)
@@ -1110,8 +1111,11 @@ class WuKongIMClient:
                 json_data=uids,
             )
 
-            online_uids = result if isinstance(result, list) else []
-            logger.debug(f"Found {len(online_uids)} online users")
+            # Response is a list of objects like: [{"uid": "...", "online": 1, ...}, ...]
+            online_items = [WuKongIMOnlineStatusItem(**item) for item in result] if isinstance(result, list) else []
+            online_uids = [item.uid for item in online_items if item.online == 1]
+            
+            logger.debug(f"Found {len(online_uids)} online users out of {len(uids)} checked")
             return online_uids
 
         except Exception as e:

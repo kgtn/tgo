@@ -28,9 +28,15 @@ class WuKongIMOnlineStatusRequest(BaseSchema):
     uids: List[str] = Field(..., description="List of user IDs to check")
 
 
+class WuKongIMOnlineStatusItem(BaseSchema):
+    """Schema for a single user's online status item."""
+    uid: str = Field(..., description="User unique ID")
+    online: int = Field(..., description="Online status: 1=online, 0=offline")
+    device_flag: int = Field(..., description="Device flag")
+
+
 class WuKongIMOnlineStatusResponse(BaseSchema):
     """Schema for online status response."""
-
     online_uids: List[str] = Field(..., description="List of online user IDs")
 
 
