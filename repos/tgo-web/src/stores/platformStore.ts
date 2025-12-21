@@ -166,8 +166,15 @@ export const usePlatformStore = create<PlatformState>()(
             if (Object.prototype.hasOwnProperty.call(updates, 'config')) {
               payload.config = updates.config as Record<string, any>;
             }
+
+            // If we are updating config OR name during a "save" operation, 
+            // we should generally ensure the platform is active.
+            // For explicit status toggles, we follow the passed status.
             if (Object.prototype.hasOwnProperty.call(updates, 'status')) {
               payload.is_active = updates.status === 'connected';
+            } else {
+              // Standard update (save config/name) defaults to activating the platform
+              payload.is_active = true;
             }
 
             let apiResp: PlatformResponse | null = null;

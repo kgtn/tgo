@@ -271,7 +271,7 @@ async def _forward_ai_event_to_wukongim(
                     from_uid=from_uid,
                 )
                 return chunk_text
-        elif event_type == "workflow_completed":
+        elif event_type == "team_run_completed":
             await wukongim_client.send_event(
                 channel_id=channel_id,
                 channel_type=channel_type,
@@ -346,7 +346,7 @@ async def _process_ai_stream_to_wukongim(
                 from_uid=from_uid,
             )
 
-            if event_type in ("workflow_completed", "workflow_failed"):
+            if event_type in ("workflow_completed", "workflow_failed", "team_run_completed"):
                 break
     except Exception as e:
         logger.error(f"AI processing error: {e}")
@@ -566,6 +566,7 @@ def _authenticate_staff_or_platform(
 |------------|------|-----------|
 | `team_run_started` | AI开始处理 | `{}` |
 | `team_run_content` | AI输出内容块 | `{"content": "文本块"}` |
+| `team_run_completed` | AI处理完成 | `{}` |
 | `workflow_completed` | AI处理完成 | `{}` |
 | `accepted` | 请求已接受（wukongim_only=true时） | `{"message": "Request accepted..."}` |
 
@@ -916,7 +917,7 @@ async def chat_completion(req: ChatCompletionRequest, db: Session = Depends(get_
                 if chunk_text:
                     completion_text += chunk_text
 
-                if event_type == "workflow_completed":
+                if event_type in ("workflow_completed", "team_run_completed"):
                     break
                 
                 if event_type == "workflow_failed":
@@ -964,6 +965,7 @@ async def chat_completion(req: ChatCompletionRequest, db: Session = Depends(get_
                 event_type = event_payload.get("event_type", "team_run_content")
                 event_payload.setdefault("event_type", event_type)
                 data = event_payload.get("data") or {}
+                print("event_payload->", event_payload)
 
                 # Forward AI events to WuKongIM
                 await _forward_ai_event_to_wukongim(
@@ -977,7 +979,7 @@ async def chat_completion(req: ChatCompletionRequest, db: Session = Depends(get_
 
                 yield _sse_format(event_payload)
 
-                if event_type == "workflow_completed":
+                if event_type in ("workflow_completed", "team_run_completed"):
                     break
                 
                 if event_type == "workflow_failed":
@@ -1526,7 +1528,7 @@ async def chat_completion_openai_compatible(
                             ],
                         )
                         yield f"data: {chunk.model_dump_json()}\n\n"
-                    elif event_type == "workflow_completed":
+                    elif event_type in ("workflow_completed", "team_run_completed"):
                         final_chunk = OpenAIChatCompletionChunk(
                             id=completion_id,
                             created=created_timestamp,
@@ -1587,7 +1589,7 @@ async def chat_completion_openai_compatible(
             if chunk_text:
                 completion_text += chunk_text
 
-            if event_type == "workflow_completed":
+            if event_type in ("workflow_completed", "team_run_completed"):
                 break
 
     except Exception as e:

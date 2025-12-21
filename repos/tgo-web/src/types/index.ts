@@ -42,7 +42,10 @@ export enum PlatformType {
   DOUYIN = "douyin",
   TIKTOK = "tiktok",
   CUSTOM = "custom",
-  WECOM = "wecom"
+  WECOM = "wecom",
+  WECOM_BOT = "wecom_bot",
+  FEISHU_BOT = "feishu_bot",
+  DINGTALK_BOT = "dingtalk_bot"
 }
 
 export interface PlatformConfig {

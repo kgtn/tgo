@@ -22,10 +22,10 @@ from app.api.wecom_utils import get_wecom_visitor_profile
 class WeComPlatformConfig(BaseModel):
     """Per-platform WeCom configuration stored in Platform.config when type='wecom'."""
 
-    corp_id: str          # 企业ID
-    agent_id: str         # 应用ID
-    app_secret: str       # 应用密钥
-    token: str            # 回调签名 Token
+    corp_id: str = ""     # 企业ID (required for wecom_kf, optional for wecom_bot)
+    agent_id: str = ""    # 应用ID (required for wecom_kf, optional for wecom_bot)
+    app_secret: str = ""  # 应用密钥 (required for wecom_kf, optional for wecom_bot)
+    token: str = ""       # 回调签名 Token
     encoding_aes_key: str | None = None  # 消息加密密钥（可选）
 
     # Consumer processing configuration
@@ -40,6 +40,7 @@ class _PlatformEntry:
     project_id: uuid.UUID
     api_key: str | None
     cfg: WeComPlatformConfig
+    platform_type: str  # "wecom" (KF) or "wecom_bot"
 
 
 class WeComChannelListener:
@@ -82,18 +83,25 @@ class WeComChannelListener:
                 pass
 
     async def _load_active_wecom_platforms(self) -> list[_PlatformEntry]:
+        """Load all active WeCom platforms (both wecom_kf and wecom_bot types)."""
         async with self._session_factory() as session:
             rows = (
                 await session.execute(
-                    select(Platform.id, Platform.project_id, Platform.api_key, Platform.config)
-                    .where(Platform.is_active.is_(True), Platform.type == "wecom")
+                    select(Platform.id, Platform.project_id, Platform.api_key, Platform.config, Platform.type)
+                    .where(Platform.is_active.is_(True), Platform.type.in_(["wecom", "wecom_bot"]))
                 )
             ).all()
         platforms: list[_PlatformEntry] = []
-        for pid, project_id, api_key, cfg_dict in rows:
+        for pid, project_id, api_key, cfg_dict, platform_type in rows:
             try:
                 cfg = WeComPlatformConfig(**(cfg_dict or {}))
-                platforms.append(_PlatformEntry(id=pid, project_id=project_id, api_key=api_key, cfg=cfg))
+                platforms.append(_PlatformEntry(
+                    id=pid,
+                    project_id=project_id,
+                    api_key=api_key,
+                    cfg=cfg,
+                    platform_type=platform_type or "wecom",
+                ))
             except Exception as e:
                 print(f"[WECOM] Skip platform {pid}: invalid config: {e}")
         return platforms
@@ -181,35 +189,54 @@ class WeComChannelListener:
 
     def _build_mapped_message(self, platform: _PlatformEntry, record: WeComInbox) -> dict[str, Any]:
         """Build the NormalizedMessage-like raw dict for downstream normalization."""
+        # Determine source_type from record or fallback to platform_type
+        source_type = getattr(record, "source_type", None) or ("wecom_bot" if platform.platform_type == "wecom_bot" else "wecom_kf")
+
         # Build WeCom-specific context used by adapter selection/sending
         wecom_ctx: dict[str, Any] = {
             "is_from_colleague": bool(record.is_from_colleague),
+            "source_type": source_type,
         }
-        try:
-            raw_payload = record.raw_payload or {}
-            # KF sync messages embed original msg at raw_payload["kf_sync_msg"], which includes open_kfid/external_userid
-            kf_msg = raw_payload.get("kf_sync_msg") or {}
-            open_kfid = kf_msg.get("open_kfid") or raw_payload.get("open_kfid")
-            if open_kfid:
-                wecom_ctx["open_kfid"] = open_kfid
-        except Exception:
-            pass
-        # external_userid is needed for KF send; extract via helper
-        try:
-            wecom_ctx["external_userid"] = self._extract_external_user_id(record)
-        except Exception:
-            pass
+
+        if source_type == "wecom_kf":
+            # WeCom Customer Service specific context
+            try:
+                raw_payload = record.raw_payload or {}
+                # KF sync messages embed original msg at raw_payload["kf_sync_msg"], which includes open_kfid/external_userid
+                kf_msg = raw_payload.get("kf_sync_msg") or {}
+                open_kfid = kf_msg.get("open_kfid") or raw_payload.get("open_kfid") or record.open_kfid
+                if open_kfid:
+                    wecom_ctx["open_kfid"] = open_kfid
+            except Exception:
+                pass
+            # external_userid is needed for KF send; extract via helper
+            try:
+                wecom_ctx["external_userid"] = self._extract_external_user_id(record)
+            except Exception:
+                pass
+        else:
+            # WeCom Bot specific context
+            try:
+                raw_payload = record.raw_payload or {}
+                wecom_ctx["chat_id"] = raw_payload.get("chat_id") or record.open_kfid or ""
+                wecom_ctx["chat_type"] = raw_payload.get("chat_type") or ""
+                wecom_ctx["aibot_id"] = raw_payload.get("aibot_id") or ""
+                # response_url is required for replying to wecom_bot messages
+                wecom_ctx["response_url"] = raw_payload.get("response_url") or ""
+            except Exception:
+                pass
 
         return {
             "source": "wecom",
             "from_uid": record.from_user,
             "content": record.content or "",
             "platform_api_key": platform.api_key or "",
-            "platform_type": "wecom",
+            "platform_type": platform.platform_type,  # "wecom" or "wecom_bot"
             "platform_id": str(platform.id),
             "extra": {
                 "project_id": str(platform.project_id),
                 "msg_type": record.msg_type,
+                "source_type": source_type,  # "wecom_kf" or "wecom_bot"
                 "wecom": wecom_ctx,
             },
         }
@@ -320,15 +347,19 @@ class WeComChannelListener:
 
         Steps:
         1) Check VisitorService cache; if exists, return immediately (skip external calls)
-        2) Else, fetch profile from WeCom (if possible) to enrich nickname/avatar
+        2) Else, fetch profile from WeCom (if possible, only for wecom_kf) to enrich nickname/avatar
         3) Register or get visitor via tgo-api using nickname/avatar; return result
         """
         display_name: str | None = None
         avatar_url: str | None = None
         visitor = None
 
+        # Determine source type for platform-specific handling
+        source_type = getattr(record, "source_type", None) or ("wecom_bot" if platform.platform_type == "wecom_bot" else "wecom_kf")
+        platform_type_for_visitor = platform.platform_type  # "wecom" or "wecom_bot"
+
         try:
-            cache_key = self._visitor_service.make_cache_key(str(platform.project_id), "wecom", record.from_user)
+            cache_key = self._visitor_service.make_cache_key(str(platform.project_id), platform_type_for_visitor, record.from_user)
             cached = await self._visitor_service.get_cached(cache_key)
             if cached:
                 display_name = cached.nickname or cached.name
@@ -339,24 +370,36 @@ class WeComChannelListener:
             print(f"[WECOM] Visitor cache lookup failed for {platform.id}: {e}")
 
         # Cache miss: try to fetch profile from WeCom to enrich registration
-        external_user_id = self._extract_external_user_id(record)
-        try:
-            profile = await get_wecom_visitor_profile(
-                corp_id=platform.cfg.corp_id,
-                app_secret=platform.cfg.app_secret,
-                external_userid=external_user_id,
-            )
-            display_name = (profile or {}).get("nickname")
-            avatar_url = (profile or {}).get("avatar")
-        except Exception as e:
-            print(f"[WECOM] Fetch visitor profile failed for {external_user_id}: {e}")
+        # Only for wecom_kf (customer service) - wecom_bot doesn't have external contact APIs
+        if source_type == "wecom_kf" and platform.cfg.corp_id and platform.cfg.app_secret:
+            external_user_id = self._extract_external_user_id(record)
+            try:
+                profile = await get_wecom_visitor_profile(
+                    corp_id=platform.cfg.corp_id,
+                    app_secret=platform.cfg.app_secret,
+                    external_userid=external_user_id,
+                )
+                display_name = (profile or {}).get("nickname")
+                avatar_url = (profile or {}).get("avatar")
+            except Exception as e:
+                print(f"[WECOM] Fetch visitor profile failed for {external_user_id}: {e}")
+        elif source_type == "wecom_bot":
+            # For wecom_bot, try to extract name from raw_payload
+            try:
+                raw_payload = record.raw_payload or {}
+                parsed = raw_payload.get("parsed") or {}
+                from_info = parsed.get("from") or {}
+                if isinstance(from_info, dict):
+                    display_name = from_info.get("name") or from_info.get("alias") or from_info.get("userid")
+            except Exception:
+                pass
 
         if platform.api_key:
             try:
                 visitor = await self._visitor_service.register_or_get(
                     platform_api_key=platform.api_key,
                     project_id=str(platform.project_id),
-                    platform_type="wecom",
+                    platform_type=platform_type_for_visitor,
                     platform_open_id=record.from_user,
                     nickname=display_name,
                     avatar_url=avatar_url,
@@ -396,7 +439,6 @@ class WeComChannelListener:
                         db=db,
                         tgo_api_client=self._tgo_api_client,
                         sse_manager=self._sse_manager,
-                        visitor_id=(visitor.id if visitor and getattr(visitor, "id", None) else None),
                     )
 
                     # Finalize success

@@ -184,6 +184,7 @@ async def list_platforms(
     platforms = (
         query
         .order_by(
+            Platform.is_active.desc(),
             PlatformTypeDefinition.is_supported.desc(),
             Platform.created_at.desc(),
         )
@@ -272,19 +273,6 @@ async def create_platform(
     """
     logger.info(f"User {current_user.username} creating platform: {platform_data.name or '[auto]'}")
 
-    # Check if platform name already exists for this project (only when a name is provided)
-    if platform_data.name:
-        existing_platform = db.query(Platform).filter(
-            Platform.project_id == current_user.project_id,
-            Platform.name == platform_data.name,
-            Platform.deleted_at.is_(None)
-        ).first()
-
-        if existing_platform:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Platform name already exists"
-            )
 
     # Create platform
     platform = Platform(
@@ -746,11 +734,13 @@ async def wecom_callback_verify(
     request: Request,
     db: Session = Depends(get_db),
 ) -> Response:
-    """WeCom (企业微信) callback URL verification (GET).
+    """WeCom (企业微信/企业微信机器人) callback URL verification (GET).
 
     WeCom sends msg_signature, timestamp, nonce, and echostr for verification.
     We verify the signature and decrypt echostr (if encryption enabled), then
     return the decrypted plain text as the response body.
+    
+    Supports both 'wecom' (企业微信) and 'wecom_bot' (企业微信机器人) platform types.
     """
     # 1) Validate platform
     platform = (
@@ -759,7 +749,7 @@ async def wecom_callback_verify(
             Platform.api_key == platform_api_key,
             Platform.deleted_at.is_(None),
             Platform.is_active.is_(True),
-            Platform.type == "wecom",
+            Platform.type.in_(["wecom", "wecom_bot"]),
         )
         .first()
     )

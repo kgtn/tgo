@@ -604,8 +604,7 @@ class EmailChannelListener:
                         msg=msg,
                         db=db,
                         tgo_api_client=self._tgo_api_client,
-                        sse_manager=self._sse_manager,
-                        visitor_id=(visitor.id if visitor and getattr(visitor, "id", None) else None),
+                        sse_manager=self._sse_manager
                     )
 
                     # Success

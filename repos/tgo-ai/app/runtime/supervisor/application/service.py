@@ -200,12 +200,22 @@ class SupervisorRuntimeService:
                 )
                 workflow_events.emit_workflow_started(coordination_request)
 
+                print("--------------------------------")
+                print("Starting team stream")
+                print("--------------------------------")
                 team_result = await self._team_runner.stream(built_team, context, workflow_events)
+
+                print("--------------------------------")
+                print("Team stream completed")
+                print("--------------------------------")
 
                 workflow_events.emit_workflow_completed(
                     team_result.total_time,
                     len(team_result.agent_results),
                 )
+
+                # Give SSE handler time to process the completed event before cleanup
+                await asyncio.sleep(0.1)
             except Exception as exc:  # pragma: no cover - streaming error path
                 self._logger.exception(
                     "Coordination workflow failed during streaming",

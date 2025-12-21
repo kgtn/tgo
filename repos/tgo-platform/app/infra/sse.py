@@ -18,7 +18,6 @@ class DefaultSSEManager(SSEManager):
         buffer_event: str | None = None
         async for b in frames:
             line = b.decode("utf-8")
-            print("line---->",line)
             if line.startswith("event:"):
                 buffer_event = line.split(":", 1)[1].strip()
             elif line.startswith("data:"):

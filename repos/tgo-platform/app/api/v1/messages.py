@@ -22,6 +22,8 @@ async def ingest(req: Request, db: AsyncSession = Depends(get_db)) -> dict:
 
 
 from typing import Optional
+import base64
+import hashlib
 import logging
 import httpx
 import uuid
@@ -176,6 +178,16 @@ async def send_message(req_body: SendMessageRequest, request: Request, db: Async
                 return {"ok": True, "client_msg_no": client_msg_no, "message": "Message sent successfully"}
             else:
                 return error_response(status.HTTP_400_BAD_REQUEST, code="UNSUPPORTED_MESSAGE_TYPE", message=f"Unsupported payload type for WeCom: {msg_type}", request_id=request_id)
+
+        if platform_type == "wecom_bot":
+            # WeCom Bot (智能机器人) - direct message sending is not supported
+            # Messages can only be sent as replies via response_url from incoming callbacks
+            return error_response(
+                status.HTTP_400_BAD_REQUEST,
+                code="PLATFORM_TYPE_UNSUPPORTED",
+                message="WeCom Bot does not support direct message sending. Messages can only be sent as replies to incoming messages.",
+                request_id=request_id,
+            )
 
         if platform_type == "email":
             # Resolve target email address for visitor

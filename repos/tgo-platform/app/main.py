@@ -1,11 +1,19 @@
 from __future__ import annotations
 import asyncio
 import uuid
+import logging
 from contextlib import asynccontextmanager, suppress
 from fastapi import FastAPI, Request
 from app.api.error_utils import register_exception_handlers
 
 from app.core.config import settings
+
+# Configure logging
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
+    format="%(asctime)s %(levelname)s:%(name)s:%(message)s",
+)
+
 from app.api.v1 import health, messages
 from app.api.v1 import platforms as platforms_v1
 from app.api.v1 import callbacks as callbacks_v1
@@ -16,6 +24,8 @@ from app.domain.services.normalizer import normalizer
 from app.domain.services.listeners import EmailChannelListener
 from app.domain.services.listeners.wecom_listener import WeComChannelListener
 from app.domain.services.listeners.wukongim_listener import WuKongIMChannelListener
+from app.domain.services.listeners.feishu_listener import FeishuChannelListener
+from app.domain.services.listeners.dingtalk_listener import DingTalkChannelListener
 
 
 
@@ -49,8 +59,25 @@ async def lifespan(app: FastAPI):
         sse_manager=app.state.sse_manager,
     )
 
-    app.state.wukongim_listener_task = asyncio.create_task(app.state.wukongim_listener.start())
+    # Start Feishu Bot consumer (processes pending feishu_inbox messages)
+    app.state.feishu_listener = FeishuChannelListener(
+        session_factory=SessionLocal,
+        normalizer=normalizer,
+        tgo_api_client=app.state.tgo_api_client,
+        sse_manager=app.state.sse_manager,
+    )
 
+    # Start DingTalk Bot consumer (processes pending dingtalk_inbox messages)
+    app.state.dingtalk_listener = DingTalkChannelListener(
+        session_factory=SessionLocal,
+        normalizer=normalizer,
+        tgo_api_client=app.state.tgo_api_client,
+        sse_manager=app.state.sse_manager,
+    )
+
+    app.state.wukongim_listener_task = asyncio.create_task(app.state.wukongim_listener.start())
+    app.state.feishu_listener_task = asyncio.create_task(app.state.feishu_listener.start())
+    app.state.dingtalk_listener_task = asyncio.create_task(app.state.dingtalk_listener.start())
     app.state.wecom_listener_task = asyncio.create_task(app.state.wecom_listener.start())
 
 
@@ -61,15 +88,23 @@ async def lifespan(app: FastAPI):
         await app.state.email_listener.stop()
         await app.state.wecom_listener.stop()
         await app.state.wukongim_listener.stop()
+        await app.state.feishu_listener.stop()
+        await app.state.dingtalk_listener.stop()
         app.state.email_listener_task.cancel()
         app.state.wecom_listener_task.cancel()
         app.state.wukongim_listener_task.cancel()
+        app.state.feishu_listener_task.cancel()
+        app.state.dingtalk_listener_task.cancel()
         with suppress(asyncio.CancelledError):
             await app.state.email_listener_task
         with suppress(asyncio.CancelledError):
             await app.state.wecom_listener_task
         with suppress(asyncio.CancelledError):
             await app.state.wukongim_listener_task
+        with suppress(asyncio.CancelledError):
+            await app.state.feishu_listener_task
+        with suppress(asyncio.CancelledError):
+            await app.state.dingtalk_listener_task
         await app.state.tgo_api_client.aclose()
 
 app = FastAPI(lifespan=lifespan, docs_url="/v1/docs", redoc_url="/v1/redoc")

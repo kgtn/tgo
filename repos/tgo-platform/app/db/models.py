@@ -2,7 +2,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, Integer, Text, ForeignKey, UniqueConstraint, Index
+from sqlalchemy import Boolean, DateTime, String, Integer, BigInteger, Text, ForeignKey, UniqueConstraint, Index
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
@@ -85,7 +85,11 @@ class EmailInbox(Base):
 
 
 class WeComInbox(Base):
-    """Inbound WeCom messages stored for async processing pipeline."""
+    """Inbound WeCom messages stored for async processing pipeline.
+
+    Supports both WeCom Customer Service (客服) and WeCom Bot (群机器人) messages,
+    distinguished by the source_type field.
+    """
 
     __tablename__ = "pt_wecom_inbox"
 
@@ -97,9 +101,14 @@ class WeComInbox(Base):
     # Message identity
     message_id: Mapped[str] = mapped_column(String(255), nullable=False)
 
+    # Source type to distinguish between WeCom KF (客服) and WeCom Bot (群机器人)
+    # Values: "wecom_kf" (customer service), "wecom_bot" (group bot)
+    source_type: Mapped[str] = mapped_column(String(20), nullable=False, server_default="wecom_kf", index=True)
+
     # Sender and content
     from_user: Mapped[str] = mapped_column(String(255), nullable=False)
-    # Customer service account identifier (when applicable)
+    # Customer service account identifier (when applicable for wecom_kf)
+    # For wecom_bot, this stores the ChatId
     open_kfid: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     msg_type: Mapped[str] = mapped_column(String(50), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=True)
@@ -164,5 +173,113 @@ class WuKongIMInbox(Base):
         UniqueConstraint("platform_id", "message_id", name="uq_wukongim_inbox_platform_message"),
         Index("ix_wukongim_inbox_platform_status_fetched", "platform_id", "status", "fetched_at"),
         Index("ix_wukongim_inbox_platform_client_msg_no", "platform_id", "client_msg_no"),
+    )
+
+
+class FeishuInbox(Base):
+    """Inbound Feishu Bot messages stored for async processing pipeline.
+
+    Stores messages received from Feishu Bot callbacks for two-stage processing.
+    The message_id from Feishu is used for replying via the Reply API.
+    """
+
+    __tablename__ = "pt_feishu_inbox"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # Associations
+    platform_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("pt_platforms.id", ondelete="CASCADE"), index=True, nullable=False)
+
+    # Message identity (Feishu message_id, used for reply API)
+    message_id: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    # Sender info
+    from_user: Mapped[str] = mapped_column(String(255), nullable=False)  # open_id or user_id
+    from_user_type: Mapped[str] = mapped_column(String(20), nullable=False, server_default="open_id")  # open_id, user_id, union_id
+
+    # Chat context
+    chat_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)  # Group chat ID (null for P2P)
+    chat_type: Mapped[str] = mapped_column(String(20), nullable=False, server_default="p2p")  # p2p, group
+
+    # Message content
+    msg_type: Mapped[str] = mapped_column(String(50), nullable=False)  # text, image, file, etc.
+    content: Mapped[str] = mapped_column(Text, nullable=True)  # Extracted text content
+
+    # AI response
+    ai_reply: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Raw event payload (stores full event for debugging and message_id extraction)
+    raw_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # Timestamps
+    received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)  # From Feishu create_time
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Processing status
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="pending")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+
+    __table_args__ = (
+        UniqueConstraint("platform_id", "message_id", name="uq_feishu_inbox_platform_message"),
+        Index("ix_feishu_inbox_platform_status", "platform_id", "status"),
+        Index("ix_feishu_inbox_status_fetched", "status", "fetched_at"),
+    )
+
+
+class DingTalkInbox(Base):
+    """Inbound DingTalk Bot messages stored for async processing pipeline.
+
+    Stores messages received from DingTalk Bot callbacks for two-stage processing.
+    The sessionWebhook is used for replying to messages.
+    """
+
+    __tablename__ = "pt_dingtalk_inbox"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # Associations
+    platform_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("pt_platforms.id", ondelete="CASCADE"), index=True, nullable=False)
+
+    # Message identity
+    message_id: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    # Sender info
+    from_user: Mapped[str] = mapped_column(String(255), nullable=False)  # senderId or staffId
+    sender_nick: Mapped[str | None] = mapped_column(String(255), nullable=True)  # Sender nickname
+
+    # Conversation context
+    conversation_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    conversation_type: Mapped[str] = mapped_column(String(20), nullable=False, server_default="1")  # 1=single, 2=group
+
+    # Message content
+    msg_type: Mapped[str] = mapped_column(String(50), nullable=False)  # text, picture, richText, etc.
+    content: Mapped[str] = mapped_column(Text, nullable=True)  # Extracted text content
+
+    # Session webhook for replying (important!)
+    session_webhook: Mapped[str | None] = mapped_column(Text, nullable=True)
+    session_webhook_expired_time: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # Expiry timestamp (milliseconds)
+
+    # AI response
+    ai_reply: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Raw event payload
+    raw_payload: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+
+    # Timestamps
+    received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Processing status
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="pending")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    retry_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+
+    __table_args__ = (
+        UniqueConstraint("platform_id", "message_id", name="uq_dingtalk_inbox_platform_message"),
+        Index("ix_dingtalk_inbox_platform_status", "platform_id", "status"),
+        Index("ix_dingtalk_inbox_status_fetched", "status", "fetched_at"),
     )
 

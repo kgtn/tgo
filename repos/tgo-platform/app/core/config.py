@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     redis_url: str | None = None  # e.g. redis://127.0.0.1:6379/0
     visitor_cache_ttl_seconds: int = 24 * 60 * 60
 
+    # Logging
+    log_level: str = "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+
+
 
 settings = Settings()
 

@@ -5,6 +5,9 @@ import { platformSelectors } from '@/stores';
 import PlatformConfig from '@/components/platforms/PlatformConfig';
 import WebsitePlatformConfig from '@/components/platforms/WebsitePlatformConfig';
 import WeComPlatformConfig from '@/components/platforms/WeComPlatformConfig';
+import WeComBotPlatformConfig from '@/components/platforms/WeComBotPlatformConfig';
+import FeishuBotPlatformConfig from '@/components/platforms/FeishuBotPlatformConfig';
+import DingTalkBotPlatformConfig from '@/components/platforms/DingTalkBotPlatformConfig';
 import EmailPlatformConfig from '@/components/platforms/EmailPlatformConfig';
 import DouyinPlatformConfig from '@/components/platforms/DouyinPlatformConfig';
 import CustomPlatformConfig from '@/components/platforms/CustomPlatformConfig';
@@ -99,6 +102,18 @@ const PlatformConfigPage: React.FC = () => {
   // 企业微信（WeCom）
   if ((platform.type as any) === 'wecom') {
     return <WeComPlatformConfig platform={platform} />;
+  }
+  // 企业微信机器人（WeCom Bot）
+  if ((platform.type as any) === 'wecom_bot') {
+    return <WeComBotPlatformConfig platform={platform} />;
+  }
+  // 飞书机器人（Feishu Bot）
+  if ((platform.type as any) === 'feishu_bot') {
+    return <FeishuBotPlatformConfig platform={platform} />;
+  }
+  // 钉钉机器人（DingTalk Bot）
+  if ((platform.type as any) === 'dingtalk_bot') {
+    return <DingTalkBotPlatformConfig platform={platform} />;
   }
   // 邮件（Email）
   if (platform.type === 'email') {

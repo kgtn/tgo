@@ -8,13 +8,19 @@ from app.core.config import settings
 from app.db.models import Platform
 from app.domain.entities import NormalizedMessage, ChatCompletionRequest
 from app.domain.ports import TgoApiClient, SSEManager, PlatformAdapter
-from app.domain.services.adapters import SimpleStdoutAdapter, EmailAdapter, WeComAdapter
+from app.domain.services.adapters import SimpleStdoutAdapter, EmailAdapter, WeComAdapter, WeComBotAdapter, FeishuBotAdapter, DingTalkBotAdapter
 
 
 def _expected_output_for(ptype: str) -> str | None:
     p = (ptype or "").lower()
     if p == "wecom":
         return "text"
+    if p == "wecom_bot":
+        return "text"  # WeCom Bot supports text and markdown, default to text
+    if p == "feishu_bot":
+        return "text"  # Feishu Bot uses text for reply
+    if p == "dingtalk_bot":
+        return "text"  # DingTalk Bot uses text for reply
     if p == "email":
         return "markdown"
     return None
@@ -28,6 +34,12 @@ def _default_system_message_for(ptype: str) -> str | None:
             "email reply with appropriate greeting, body, and closing."
         )
     if p == "wecom":
+        return None
+    if p == "wecom_bot":
+        return None
+    if p == "feishu_bot":
+        return None
+    if p == "dingtalk_bot":
         return None
     return None
 
@@ -86,6 +98,35 @@ async def select_adapter_for_target(msg: NormalizedMessage, platform: Platform) 
             open_kfid=open_kfid,
             external_userid=external_userid,
         )
+    if ptype == "wecom_bot":
+        # Get wecom context which contains response_url from the incoming message
+        wc = ((msg.extra or {}).get("wecom") or {})
+        # response_url is required for replying to the message
+        response_url = wc.get("response_url") or ""
+        if not response_url:
+            return SimpleStdoutAdapter()
+        return WeComBotAdapter(response_url=response_url)
+    if ptype == "feishu_bot":
+        cfg = platform.config or {}
+        # Get feishu context which contains message_id for reply
+        fc = ((msg.extra or {}).get("feishu") or {})
+        app_id = fc.get("app_id") or cfg.get("app_id") or ""
+        app_secret = fc.get("app_secret") or cfg.get("app_secret") or ""
+        message_id = fc.get("message_id") or ""
+        if not (app_id and app_secret and message_id):
+            return SimpleStdoutAdapter()
+        return FeishuBotAdapter(
+            app_id=app_id,
+            app_secret=app_secret,
+            message_id=message_id,
+        )
+    if ptype == "dingtalk_bot":
+        # Get dingtalk context which contains session_webhook for reply
+        dc = ((msg.extra or {}).get("dingtalk") or {})
+        session_webhook = dc.get("session_webhook") or ""
+        if not session_webhook:
+            return SimpleStdoutAdapter()
+        return DingTalkBotAdapter(session_webhook=session_webhook)
     return SimpleStdoutAdapter()
 
 
@@ -94,7 +135,6 @@ async def process_message(
     db: AsyncSession,
     tgo_api_client: TgoApiClient,
     sse_manager: SSEManager,
-    visitor_id: str | None = None,
 ) -> str | None:
     """End-to-end orchestration using DB platform config + tgo-api SSE + adapter output.
 
@@ -111,7 +151,6 @@ async def process_message(
             ptype = ((platform.type if platform else msg.platform_type) or "").lower()
             expected_output = _expected_output_for(ptype)
 
-            uid_source = visitor_id or msg.from_uid or ""
             # Default system message by platform; allow explicit override via msg.extra["system_message"]
             default_system_message = _default_system_message_for(ptype)
             try:
@@ -121,7 +160,7 @@ async def process_message(
             req = ChatCompletionRequest(
                 api_key=msg.platform_api_key,
                 message=msg.content,
-                from_uid=uid_source,
+                from_uid=msg.from_uid or "",
                 system_message=system_message,
                 expected_output=expected_output,
                 extra=msg.extra,

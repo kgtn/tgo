@@ -225,6 +225,85 @@ async def wecom_kf_send_image_msg(access_token: str, open_kfid: str, external_us
         content={"media_id": media_id},
     )
 
+# --- WeCom Bot (智能机器人) response API via response_url ----------------------
+async def wecom_bot_send_response(
+    response_url: str,
+    msgtype: str,
+    content: dict,
+    timeout: Optional[int] = None,
+) -> dict:
+    """Send a response via WeCom Bot response_url (智能机器人主动回复).
+
+    This is used to reply to messages received by the bot. The response_url
+    is provided in the incoming message callback.
+
+    Docs: https://developer.work.weixin.qq.com/document/path/101138
+
+    IMPORTANT: The 主动回复消息 API only supports:
+    - markdown: {"content": "消息内容"}
+    - template_card: {...}
+
+    NOTE: "text" message type is NOT supported by this API!
+    Use "markdown" for plain text responses.
+
+    Returns JSON response dict; raises on HTTP errors or WeCom errcode != 0.
+    """
+    if not response_url:
+        raise RuntimeError("WeCom Bot response_url is required")
+
+    payload: Dict[str, Any] = {
+        "msgtype": msgtype,
+        msgtype: content,
+    }
+
+    logging.info("[WECOM_BOT] Sending response to %s, payload=%s", response_url[:80] + "...", json.dumps(payload, ensure_ascii=False)[:200])
+
+    async with httpx.AsyncClient(timeout=timeout or settings.request_timeout_seconds) as client:
+        resp = await client.post(response_url, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+        logging.info("[WECOM_BOT] Response result: %s", data)
+        if data.get("errcode") not in (0, None):
+            raise RuntimeError(f"WeCom Bot response failed: {data}")
+        return data
+
+
+async def wecom_bot_send_response_text(
+    response_url: str,
+    content: str,
+    timeout: Optional[int] = None,
+) -> dict:
+    """Send text response via WeCom Bot response_url (using markdown format).
+
+    Docs: https://developer.work.weixin.qq.com/document/path/101138
+
+    NOTE: The 主动回复消息 API does NOT support "text" type!
+    We use "markdown" type to send plain text responses.
+
+    Args:
+        response_url: The response URL from the incoming message
+        content: Message text content (max 20480 bytes)
+    """
+    # Use markdown type since text type is not supported by 主动回复消息 API
+    return await wecom_bot_send_response(response_url, msgtype="markdown", content={"content": content[:20480]}, timeout=timeout)
+
+
+async def wecom_bot_send_response_markdown(
+    response_url: str,
+    content: str,
+    timeout: Optional[int] = None,
+) -> dict:
+    """Send markdown response via WeCom Bot response_url.
+
+    Docs: https://developer.work.weixin.qq.com/document/path/101138
+
+    Args:
+        response_url: The response URL from the incoming message
+        content: Markdown content (max 20480 bytes)
+    """
+    return await wecom_bot_send_response(response_url, msgtype="markdown", content={"content": content[:20480]}, timeout=timeout)
+
+
 # --- App (colleague) send message API -----------------------------------------
 async def wecom_send_app_message(
     access_token: str,
@@ -473,6 +552,7 @@ async def sync_kf_messages(
                 db,
                 platform_id=platform_id,
                 message_id=msgid,
+                source_type="wecom_kf",  # WeCom Customer Service (客服)
                 from_user=ext_uid or "",
                 open_kfid=open_kf_id,
                 msg_type=msgtype,

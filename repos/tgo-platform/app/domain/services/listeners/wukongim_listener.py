@@ -195,7 +195,6 @@ class WuKongIMChannelListener:
                         db=db,
                         tgo_api_client=self._tgo_api_client,
                         sse_manager=self._sse_manager,
-                        visitor_id=rec.from_uid,
                     )
 
                     rec.ai_reply = reply_text

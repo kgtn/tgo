@@ -37,6 +37,9 @@ class PlatformType(str, Enum):
     TIKTOK = "tiktok"
     CUSTOM = "custom"
     WECOM = "wecom" # 企业微信
+    WECOM_BOT = "wecom_bot" # 企业微信机器人
+    FEISHU_BOT = "feishu_bot" # 飞书机器人
+    DINGTALK_BOT = "dingtalk_bot" # 钉钉机器人
 
 
 class PlatformTypeDefinition(Base):

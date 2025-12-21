@@ -41,6 +41,24 @@ SEED_PLATFORM_TYPES: List[Dict[str, object]] = [
         "name_en": "Custom",
         "is_supported": True,
     },
+    {
+        "type": "wecom_bot",
+        "name": "企业微信机器人",
+        "name_en": "WeCom Bot",
+        "is_supported": True,
+    },
+    {
+        "type": "feishu_bot",
+        "name": "飞书机器人",
+        "name_en": "Feishu Bot",
+        "is_supported": True,
+    },
+    {
+        "type": "dingtalk_bot",
+        "name": "钉钉机器人",
+        "name_en": "DingTalk Bot",
+        "is_supported": True,
+    },
     # Other platform types from PlatformType enum (currently not supported)
     {
         "type": "wechat",

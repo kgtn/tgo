@@ -377,6 +377,10 @@ async def register_visitor(
     profile_changed = False
     is_new_visitor = False
 
+    # if nickname provided, nickname_zh not provided, set nickname_zh to nickname
+    if req.nickname and not req.nickname_zh:
+        req.nickname_zh = req.nickname
+       
     if not visitor:
         is_new_visitor = True
         # Get real IP and language (from request body or headers)

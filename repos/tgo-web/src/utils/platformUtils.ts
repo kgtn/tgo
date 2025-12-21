@@ -3,10 +3,10 @@ import i18n from '@/i18n';
 import type { ComponentType } from 'react';
 // react-icons brand/generic icons
 import { IoLogoWechat } from 'react-icons/io5';
-import { AiOutlineWechatWork } from 'react-icons/ai';
+import { AiOutlineWechatWork, AiFillDingtalkCircle } from 'react-icons/ai';
 import { TbWorld, TbMessageCircle, TbUsers } from 'react-icons/tb';
 import { MdEmail, MdSms } from 'react-icons/md';
-import { FaTelegramPlane, FaWhatsapp, FaDiscord, FaSlack, FaFacebook, FaInstagram, FaLinkedin, FaPhone, FaTwitter } from 'react-icons/fa';
+import { FaTelegramPlane, FaWhatsapp, FaDiscord, FaSlack, FaFacebook, FaInstagram, FaLinkedin, FaPhone, FaTwitter, FaRobot } from 'react-icons/fa';
 import { FiShare2 } from 'react-icons/fi';
 import { SiTiktok } from 'react-icons/si';
 
@@ -38,6 +38,9 @@ export function toPlatformType(input: string | null | undefined): PlatformType {
     case PlatformType.TIKTOK: return PlatformType.TIKTOK;
     case PlatformType.CUSTOM: return PlatformType.CUSTOM;
     case PlatformType.WECOM: return PlatformType.WECOM;
+    case PlatformType.WECOM_BOT: return PlatformType.WECOM_BOT;
+    case PlatformType.FEISHU_BOT: return PlatformType.FEISHU_BOT;
+    case PlatformType.DINGTALK_BOT: return PlatformType.DINGTALK_BOT;
     default: return PlatformType.WEBSITE;
   }
 }
@@ -49,6 +52,9 @@ export function getPlatformIconComponent(platformType: PlatformType): IconCompon
   switch (platformType) {
     case PlatformType.WECHAT: return IoLogoWechat;
     case PlatformType.WECOM: return AiOutlineWechatWork;
+    case PlatformType.WECOM_BOT: return FaRobot;
+    case PlatformType.FEISHU_BOT: return FaRobot;
+    case PlatformType.DINGTALK_BOT: return AiFillDingtalkCircle;
     case PlatformType.WEBSITE: return TbWorld;
     case PlatformType.EMAIL: return MdEmail;
     case PlatformType.TELEGRAM: return FaTelegramPlane;
@@ -95,6 +101,9 @@ export function getPlatformIcon(platformType: PlatformType): string {
     case PlatformType.TIKTOK: return 'Music';
     case PlatformType.CUSTOM: return 'Share2';
     case PlatformType.WECOM: return 'MessageSquare';
+    case PlatformType.WECOM_BOT: return 'Bot';
+    case PlatformType.FEISHU_BOT: return 'Bot';
+    case PlatformType.DINGTALK_BOT: return 'Bot';
     default: return 'Globe';
   }
 }
@@ -123,6 +132,9 @@ export function getPlatformColor(platformType: PlatformType): string {
     case PlatformType.TIKTOK: return 'text-fuchsia-500';
     case PlatformType.CUSTOM: return 'text-orange-500';
     case PlatformType.WECOM: return 'text-blue-500';
+    case PlatformType.WECOM_BOT: return 'text-cyan-600';
+    case PlatformType.FEISHU_BOT: return 'text-blue-600';
+    case PlatformType.DINGTALK_BOT: return 'text-blue-500';
     case PlatformType.WEBSITE:
     default:
       return 'text-blue-500';
@@ -154,6 +166,9 @@ export function getPlatformLabel(platformType: PlatformType): string {
     case PlatformType.TIKTOK: return i18n.t('platforms.tiktok.label', 'TikTok');
     case PlatformType.CUSTOM: return i18n.t('platforms.custom.label', '自定义平台');
     case PlatformType.WECOM: return i18n.t('platforms.wecom.label', '企业微信');
+    case PlatformType.WECOM_BOT: return i18n.t('platforms.wecomBot.label', '企业微信机器人');
+    case PlatformType.FEISHU_BOT: return i18n.t('platforms.feishuBot.label', '飞书机器人');
+    case PlatformType.DINGTALK_BOT: return i18n.t('platforms.dingtalkBot.label', '钉钉机器人');
     default: return i18n.t('platforms.unknown.label', '未知平台');
   }
 }
