@@ -80,6 +80,43 @@ const sidebars: SidebarsConfig = {
         },
       ],
     },
+    {
+      type: 'category',
+      label: '插件开发',
+      collapsed: false,
+      items: [
+        {
+          type: 'doc',
+          id: 'plugin/overview',
+          label: '插件概述',
+        },
+        {
+          type: 'doc',
+          id: 'plugin/quickstart',
+          label: '快速入门',
+        },
+        {
+          type: 'doc',
+          id: 'plugin/protocol',
+          label: '通讯协议',
+        },
+        {
+          type: 'doc',
+          id: 'plugin/extension-points',
+          label: '可插点详解',
+        },
+        {
+          type: 'doc',
+          id: 'plugin/templates',
+          label: '模版规范',
+        },
+        {
+          type: 'doc',
+          id: 'plugin/examples',
+          label: '完整示例',
+        },
+      ],
+    },
   ],
 };
 
