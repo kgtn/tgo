@@ -18,6 +18,8 @@ import {
   ChevronRight,
   Globe,
   LayoutGrid,
+  Clock,
+  Zap,
 } from 'lucide-react';
 import { NODE_TYPE_CONFIG, type WorkflowNodeType } from '@/types/workflow';
 
@@ -32,6 +34,8 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   GitMerge,
   Globe,
   LayoutGrid,
+  Clock,
+  Zap,
 };
 
 interface NodePaletteProps {
@@ -40,10 +44,11 @@ interface NodePaletteProps {
 }
 
 const CATEGORIES = [
-  { id: 'basic', label: '基础组件' },
+  { id: 'trigger', label: '触发节点' },
   { id: 'ai', label: 'AI 能力' },
   { id: 'logic', label: '逻辑控制' },
   { id: 'external', label: '外部集成' },
+  { id: 'output', label: '输出' },
 ] as const;
 
 const NodePalette: React.FC<NodePaletteProps> = ({ isCollapsed, onToggleCollapse }) => {
@@ -51,8 +56,10 @@ const NodePalette: React.FC<NodePaletteProps> = ({ isCollapsed, onToggleCollapse
   const [searchQuery, setSearchQuery] = useState('');
 
   const nodeTypes: WorkflowNodeType[] = [
-    'start',
-    'end',
+    'input',
+    'timer',
+    'webhook',
+    'event',
     'agent',
     'llm',
     'condition',
@@ -60,6 +67,7 @@ const NodePalette: React.FC<NodePaletteProps> = ({ isCollapsed, onToggleCollapse
     'classifier',
     'tool',
     'api',
+    'answer',
   ];
 
   const filteredNodeTypes = nodeTypes.filter((type) => {
@@ -192,4 +200,3 @@ const NodePalette: React.FC<NodePaletteProps> = ({ isCollapsed, onToggleCollapse
 };
 
 export default NodePalette;
-

@@ -7,21 +7,23 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Bot } from 'lucide-react';
 import type { AgentNodeData } from '@/types/workflow';
+import NodeExecutionOverlay from '../overlays/NodeExecutionOverlay';
 
-const AgentNode: React.FC<NodeProps<AgentNodeData>> = ({ data, selected }) => {
-  const hasAgent = Boolean(data.agentId);
+const AgentNode: React.FC<NodeProps<AgentNodeData>> = ({ id, data, selected }) => {
+  const hasAgent = Boolean(data.agent_id);
   
   return (
     <div
       className={`
         px-5 py-4 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border
-        flex flex-col gap-3 min-w-[220px] transition-all duration-200
+        flex flex-col gap-3 min-w-[220px] transition-all duration-200 relative
         ${selected 
           ? 'border-blue-500 ring-4 ring-blue-500/10' 
           : 'border-gray-100 dark:border-gray-700 hover:shadow-md'
         }
       `}
     >
+      <NodeExecutionOverlay nodeId={id} label={data.label || 'AI Agent'} />
       {/* Colored Side Bar */}
       <div className="absolute left-0 top-4 bottom-4 w-1 bg-blue-500 rounded-r-full" />
 
@@ -40,7 +42,7 @@ const AgentNode: React.FC<NodeProps<AgentNodeData>> = ({ data, selected }) => {
             {data.label || 'AI Agent'}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-            {hasAgent ? (data.agentName || data.agentId) : '未配置员工'}
+            {hasAgent ? (data.agent_name || data.agent_id) : '未配置员工'}
           </div>
         </div>
       </div>

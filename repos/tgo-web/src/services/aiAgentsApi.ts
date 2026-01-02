@@ -194,6 +194,7 @@ export class AIAgentsTransformUtils {
       team_id: null, // Optional - can be set later if needed
       tools: tools,
       collections: collections,
+      workflows: formData.workflows || [],
     };
   }
 
@@ -235,6 +236,7 @@ export class AIAgentsTransformUtils {
       knowledgeBases: knowledgeBases,
       collections: collections,
       tools: tools,
+      workflows: (apiAgent as any).workflows || [],
     };
   }
 
@@ -332,6 +334,7 @@ export class AIAgentsTransformUtils {
       },
       tools: tools,
       collections: collections,
+      workflows: agent.workflows || [],
     } as AgentUpdateRequest;
   }
 

@@ -17,12 +17,13 @@ class LLMNodeExecutor(BaseNodeExecutor):
         # ...
         
         response = await LLMProvider.chat_completion(
-            provider=provider,
+            provider_id=provider,
             model=model,
             user_prompt=user_prompt,
             system_prompt=system_prompt,
             temperature=self.config.get("temperature", 0.7),
-            max_tokens=self.config.get("max_tokens", 2000)
+            max_tokens=self.config.get("max_tokens", 2000),
+            project_id=context.project_id
         )
         
         return {"text": response}, None

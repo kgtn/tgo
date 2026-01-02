@@ -135,6 +135,20 @@ class Settings(BaseSettings):
         description="API key for AI service authentication (if required)"
     )
 
+    # Workflow Service settings
+    WORKFLOW_SERVICE_URL: str = Field(
+        default="http://localhost:8004",
+        description="URL of the Workflow service"
+    )
+    WORKFLOW_SERVICE_TIMEOUT: int = Field(
+        default=60,
+        description="Timeout for Workflow service requests in seconds"
+    )
+    WORKFLOW_SERVICE_API_KEY: Optional[str] = Field(
+        default=None,
+        description="API key for Workflow service authentication (if required)"
+    )
+
 
     # AI Provider sync settings
     AI_PROVIDER_SYNC_RETRY_COUNT: int = Field(

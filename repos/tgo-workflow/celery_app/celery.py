@@ -17,5 +17,9 @@ celery_app.conf.update(
     task_track_started=True,
     task_soft_time_limit=300,  # 5 minutes
     task_time_limit=360,       # 6 minutes
+    task_default_queue="workflow",
+    task_routes={
+        "celery_app.tasks.*": {"queue": "workflow"},
+    },
 )
 

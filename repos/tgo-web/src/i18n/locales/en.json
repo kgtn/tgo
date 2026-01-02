@@ -464,7 +464,7 @@
       "profession": "Profession",
       "llmModel": "LLM Model",
       "tools": "Tools",
-      "knowledgeBases": "Knowledge Bases",
+      "knowledge_bases": "Knowledge Bases",
       "avatar": "Avatar"
     },
     "status": {
@@ -599,11 +599,11 @@
       "basicInfo": "Basic Info",
       "performanceStats": "Performance Stats",
       "mcpTools": "Associated MCP Tools",
-      "knowledgeBases": "Associated Knowledge Bases",
+      "knowledge_bases": "Associated Knowledge Bases",
       "tags": "Tags",
       "fields": {
         "description": "Description",
-        "agentId": "Agent ID",
+        "agent_id": "Agent ID",
         "llmModel": "LLM Model",
         "endpoint": "Endpoint",
         "lastActive": "Last Active"
@@ -624,7 +624,7 @@
       "emptyTitle": "No tools added",
       "emptyDescription": "Click \"Add Tool\" to select MCP tools"
     },
-    "knowledgeBasesSection": {
+    "knowledge_basesSection": {
       "selectedTitle": "Selected Knowledge Bases",
       "selectedCount": "{{count}} Selected",
       "addButton": "Add Knowledge Base",
@@ -823,7 +823,30 @@
       "save": "Save",
       "undo": "Undo",
       "redo": "Redo",
-      "validate": "Validate"
+      "validate": "Validate",
+      "debug": "Debug"
+    },
+    "debug": {
+      "title": "Online Debug",
+      "input_variables": "Input Variables",
+      "execution_status": "Execution Status",
+      "final_output": "Final Output",
+      "run": "Run Workflow",
+      "stop": "Stop",
+      "clear": "Clear Result",
+      "reset": "Reset",
+      "running": "Running...",
+      "success": "Success",
+      "failed": "Failed",
+      "error": "Execution Error",
+      "pending": "Pending",
+      "waiting": "Waiting for execution...",
+      "timeline": "Timeline",
+      "duration": "Duration",
+      "input": "Input",
+      "output": "Output",
+      "copy_json": "Copy JSON",
+      "persistence_note": "Execution results in debug mode are for preview only and will not affect the online workflow version."
     },
     "fields": {
       "name": "Name",
@@ -833,20 +856,20 @@
       "tags": "Tags",
       "selectAgent": "Select AI Agent",
       "selectTool": "Select MCP Tool",
-      "outputVariable": "Output Variable",
-      "conditionType": "Condition Type",
+      "output_variable": "Output Variable",
+      "condition_type": "Condition Type",
       "expression": "Expression",
       "variable": "Variable Name",
       "operator": "Operator",
-      "compareValue": "Compare Value",
-      "llmPrompt": "LLM Prompt",
-      "systemPrompt": "System Prompt",
-      "userPrompt": "User Prompt",
+      "compare_value": "Compare Value",
+      "llm_prompt": "LLM Prompt",
+      "system_prompt": "System Prompt",
+      "user_prompt": "User Prompt",
       "branches": "Parallel Branches",
-      "waitForAll": "Wait for All Branches",
+      "wait_for_all": "Wait for All Branches",
       "timeout": "Timeout (seconds)"
     },
-    "conditionTypes": {
+    "condition_types": {
       "expression": "Expression",
       "variable": "Variable Comparison",
       "llm": "LLM Evaluation"
@@ -2255,9 +2278,9 @@
         "corpId": "Corp ID",
         "corpIdPlaceholder": "e.g., ww1234567890abcdef",
         "corpIdHint": "Can be found in 'My Enterprise' - 'Enterprise Information'.",
-        "agentId": "Agent ID",
-        "agentIdPlaceholder": "e.g., 1000002",
-        "agentIdHint": "Obtained from the application details page in WeCom admin console.",
+        "agent_id": "Agent ID",
+        "agent_idPlaceholder": "e.g., 1000002",
+        "agent_idHint": "Obtained from the application details page in WeCom admin console.",
         "appSecret": "App Secret",
         "appSecretPlaceholder": "Please enter App Secret",
         "appSecretHint": "Credential for calling WeCom API, please keep it safe.",

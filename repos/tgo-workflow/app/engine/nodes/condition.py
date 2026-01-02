@@ -50,9 +50,10 @@ class ConditionNodeExecutor(BaseNodeExecutor):
             # Resolve prompt with variables
             full_prompt = f"Given the context, determine if this condition is true: {prompt}. Return only 'true' or 'false'."
             response = await LLMProvider.chat_completion(
-                provider=provider,
+                provider_id=provider,
                 model=model,
-                user_prompt=context.resolve_template(full_prompt)
+                user_prompt=context.resolve_template(full_prompt),
+                project_id=context.project_id
             )
             result = "true" in response.lower()
             

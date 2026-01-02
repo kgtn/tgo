@@ -3,7 +3,7 @@
  * Defines all types related to AI Agent Workflows
  */
 
-import type { Node, Edge } from 'reactflow';
+import type { Node } from 'reactflow';
 
 // ============================================================================
 // Node Types
@@ -13,8 +13,11 @@ import type { Node, Edge } from 'reactflow';
  * Available workflow node types
  */
 export type WorkflowNodeType = 
-  | 'start' 
-  | 'end' 
+  | 'input'      // 用户输入触发
+  | 'timer'      // 定时触发
+  | 'webhook'    // Webhook 触发
+  | 'event'      // 事件触发
+  | 'answer'     // 回复/输出节点
   | 'agent' 
   | 'tool' 
   | 'condition' 
@@ -29,7 +32,7 @@ export type WorkflowNodeType =
 export interface BaseNodeData {
   label: string;
   description?: string;
-  referenceKey?: string; // Stable English key for variable references, e.g., "llm_1"
+  reference_key?: string; // Stable English key for variable references, e.g., "llm_1"
 }
 
 /**
@@ -41,32 +44,55 @@ export interface APINodeData extends BaseNodeData {
   url: string;
   headers?: { key: string; value: string }[];
   params?: { key: string; value: string }[];
-  bodyType: 'none' | 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw';
+  body_type: 'none' | 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw';
   body?: string; // For json and raw
-  formData?: { key: string; value: string; type: 'text' | 'file' }[];
-  formUrlEncoded?: { key: string; value: string }[];
-  rawType?: 'text' | 'html' | 'xml' | 'javascript';
+  form_data?: { key: string; value: string; type: 'text' | 'file' }[];
+  form_url_encoded?: { key: string; value: string }[];
+  raw_type?: 'text' | 'html' | 'xml' | 'javascript';
 }
 
 /**
- * Start node data - entry point of workflow
+ * Input node data - user input trigger
  */
-export interface StartNodeData extends BaseNodeData {
-  type: 'start';
-  triggerType: 'manual' | 'cron';
-  cronExpression?: string;
-  inputVariables?: { name: string; type: 'string' | 'number' | 'boolean'; description?: string }[];
+export interface InputNodeData extends BaseNodeData {
+  type: 'input';
+  input_variables?: { name: string; type: 'string' | 'number' | 'boolean'; description?: string }[];
 }
 
 /**
- * End node data - exit point of workflow
+ * Timer node data - scheduled trigger
  */
-export interface EndNodeData extends BaseNodeData {
-  type: 'end';
-  outputType: 'variable' | 'template' | 'structured';
-  outputVariable?: string; // For 'variable' type
-  outputTemplate?: string; // For 'template' type
-  outputStructure?: { key: string; value: string }[]; // For 'structured' type
+export interface TimerNodeData extends BaseNodeData {
+  type: 'timer';
+  cron_expression: string;
+}
+
+/**
+ * Webhook node data - HTTP callback trigger
+ */
+export interface WebhookNodeData extends BaseNodeData {
+  type: 'webhook';
+  path?: string; // Optional path suffix
+  method?: 'GET' | 'POST';
+}
+
+/**
+ * Event node data - internal system event trigger
+ */
+export interface EventNodeData extends BaseNodeData {
+  type: 'event';
+  event_type: string;
+}
+
+/**
+ * Answer node data - response point of workflow
+ */
+export interface AnswerNodeData extends BaseNodeData {
+  type: 'answer';
+  output_type: 'variable' | 'template' | 'structured';
+  output_variable?: string; // For 'variable' type
+  output_template?: string; // For 'template' type
+  output_structure?: { key: string; value: string }[]; // For 'structured' type
 }
 
 /**
@@ -74,9 +100,9 @@ export interface EndNodeData extends BaseNodeData {
  */
 export interface AgentNodeData extends BaseNodeData {
   type: 'agent';
-  agentId: string;
-  agentName?: string;
-  inputMapping?: Record<string, string>;
+  agent_id: string;
+  agent_name?: string;
+  input_mapping?: Record<string, string>;
 }
 
 /**
@@ -84,10 +110,10 @@ export interface AgentNodeData extends BaseNodeData {
  */
 export interface ToolNodeData extends BaseNodeData {
   type: 'tool';
-  toolId: string;
-  toolName?: string;
+  tool_id: string;
+  tool_name?: string;
   config?: Record<string, any>;
-  inputMapping?: Record<string, string>;
+  input_mapping?: Record<string, string>;
 }
 
 /**
@@ -95,15 +121,15 @@ export interface ToolNodeData extends BaseNodeData {
  */
 export interface ConditionNodeData extends BaseNodeData {
   type: 'condition';
-  conditionType: 'expression' | 'variable' | 'llm';
+  condition_type: 'expression' | 'variable' | 'llm';
   expression?: string;
   variable?: string;
   operator?: 'equals' | 'notEquals' | 'contains' | 'greaterThan' | 'lessThan' | 'isEmpty' | 'isNotEmpty';
-  compareValue?: string;
-  llmPrompt?: string;
-  providerId?: string;
-  modelId?: string;
-  modelName?: string;
+  compare_value?: string;
+  llm_prompt?: string;
+  provider_id?: string;
+  model_id?: string;
+  model_name?: string;
 }
 
 /**
@@ -111,15 +137,15 @@ export interface ConditionNodeData extends BaseNodeData {
  */
 export interface LLMNodeData extends BaseNodeData {
   type: 'llm';
-  providerId?: string;
-  modelId?: string;
-  modelName?: string;
-  systemPrompt?: string;
-  userPrompt: string;
+  provider_id?: string;
+  model_id?: string;
+  model_name?: string;
+  system_prompt?: string;
+  user_prompt: string;
   temperature?: number;
-  maxTokens?: number;
+  max_tokens?: number;
   tools?: string[]; // IDs of selected MCP tools
-  knowledgeBases?: string[]; // IDs of selected knowledge bases
+  knowledge_bases?: string[]; // IDs of selected knowledge bases
 }
 
 /**
@@ -128,7 +154,7 @@ export interface LLMNodeData extends BaseNodeData {
 export interface ParallelNodeData extends BaseNodeData {
   type: 'parallel';
   branches: number;
-  waitForAll: boolean;
+  wait_for_all: boolean;
   timeout?: number;
 }
 
@@ -137,10 +163,10 @@ export interface ParallelNodeData extends BaseNodeData {
  */
 export interface ClassifierNodeData extends BaseNodeData {
   type: 'classifier';
-  inputVariable: string;
-  providerId?: string;
-  modelId?: string;
-  modelName?: string;
+  input_variable: string;
+  provider_id?: string;
+  model_id?: string;
+  model_name?: string;
   categories: { id: string; name: string; description: string }[];
 }
 
@@ -148,8 +174,11 @@ export interface ClassifierNodeData extends BaseNodeData {
  * Union type for all node data
  */
 export type WorkflowNodeData = 
-  | StartNodeData 
-  | EndNodeData 
+  | InputNodeData
+  | TimerNodeData
+  | WebhookNodeData
+  | EventNodeData
+  | AnswerNodeData
   | AgentNodeData 
   | ToolNodeData 
   | ConditionNodeData 
@@ -173,18 +202,17 @@ export type WorkflowNode = Node<WorkflowNodeData, WorkflowNodeType>;
 export type EdgeLabel = 'true' | 'false' | 'default' | string;
 
 /**
- * Custom edge data
- */
-export interface WorkflowEdgeData {
-  label?: EdgeLabel;
-  condition?: string;
-  priority?: number;
-}
-
-/**
  * Workflow edge extending React Flow Edge
  */
-export type WorkflowEdge = Edge<WorkflowEdgeData>;
+export interface WorkflowEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+  type?: string;
+  data?: Record<string, any>;
+}
 
 // ============================================================================
 // Workflow Types
@@ -193,7 +221,7 @@ export type WorkflowEdge = Edge<WorkflowEdgeData>;
 /**
  * Workflow status
  */
-export type WorkflowStatus = 'draft' | 'active' | 'archived';
+export type WorkflowStatus = 'draft' | 'active' | 'inactive' | 'archived';
 
 /**
  * Workflow execution status
@@ -208,18 +236,25 @@ export type WorkflowExecutionStatus =
 /**
  * Workflow definition
  */
+export interface WorkflowDefinition {
+  nodes: WorkflowNode[];
+  edges: WorkflowEdge[];
+}
+
+/**
+ * Workflow record from DB
+ */
 export interface Workflow {
   id: string;
   name: string;
-  description: string;
-  nodes: WorkflowNode[];
-  edges: WorkflowEdge[];
+  description: string | null;
+  definition: WorkflowDefinition;
   status: WorkflowStatus;
   version: number;
   tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  createdBy?: string;
+  created_at: string;
+  updated_at: string;
+  created_by?: string | null;
 }
 
 /**
@@ -228,12 +263,11 @@ export interface Workflow {
 export interface WorkflowSummary {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   status: WorkflowStatus;
-  nodeCount: number;
+  version: number;
   tags: string[];
-  createdAt: string;
-  updatedAt: string;
+  updated_at: string;
 }
 
 /**
@@ -241,30 +275,32 @@ export interface WorkflowSummary {
  */
 export interface WorkflowExecution {
   id: string;
-  workflowId: string;
+  workflow_id: string;
   status: WorkflowExecutionStatus;
-  input?: Record<string, any>;
-  output?: Record<string, any>;
-  error?: string;
-  startedAt: string;
-  completedAt?: string;
-  duration?: number;
-  nodeExecutions: NodeExecution[];
+  input?: Record<string, any> | null;
+  output?: Record<string, any> | null;
+  error?: string | null;
+  started_at: string;
+  completed_at?: string | null;
+  duration?: number | null;
+  node_executions: NodeExecution[];
 }
 
 /**
  * Individual node execution record
  */
 export interface NodeExecution {
-  nodeId: string;
-  nodeType: WorkflowNodeType;
+  id: string;
+  execution_id: string;
+  node_id: string;
+  node_type: string;
   status: WorkflowExecutionStatus;
-  input?: Record<string, any>;
-  output?: Record<string, any>;
-  error?: string;
-  startedAt: string;
-  completedAt?: string;
-  duration?: number;
+  input?: Record<string, any> | null;
+  output?: Record<string, any> | null;
+  error?: string | null;
+  started_at: string;
+  completed_at?: string | null;
+  duration?: number | null;
 }
 
 // ============================================================================
@@ -276,7 +312,7 @@ export interface NodeExecution {
  */
 export interface WorkflowCreateRequest {
   name: string;
-  description?: string;
+  description?: string | null;
   nodes: WorkflowNode[];
   edges: WorkflowEdge[];
   tags?: string[];
@@ -286,12 +322,12 @@ export interface WorkflowCreateRequest {
  * Workflow update request
  */
 export interface WorkflowUpdateRequest {
-  name?: string;
-  description?: string;
-  nodes?: WorkflowNode[];
-  edges?: WorkflowEdge[];
-  status?: WorkflowStatus;
-  tags?: string[];
+  name?: string | null;
+  description?: string | null;
+  nodes?: WorkflowNode[] | null;
+  edges?: WorkflowEdge[] | null;
+  status?: WorkflowStatus | null;
+  tags?: string[] | null;
 }
 
 /**
@@ -303,8 +339,8 @@ export interface WorkflowListResponse {
     total: number;
     limit: number;
     offset: number;
-    hasNext: boolean;
-    hasPrev: boolean;
+    has_next: boolean;
+    has_prev: boolean;
   };
 }
 
@@ -332,7 +368,7 @@ export interface NodePaletteItem {
   description: string;
   icon: string;
   color: string;
-  category: 'basic' | 'ai' | 'logic' | 'external';
+  category: 'trigger' | 'ai' | 'logic' | 'external' | 'output';
 }
 
 // ============================================================================
@@ -380,21 +416,45 @@ export interface HistoryState {
  * Node type configurations
  */
 export const NODE_TYPE_CONFIG: Record<WorkflowNodeType, NodePaletteItem> = {
-  start: {
-    type: 'start',
-    label: '开始',
-    description: '工作流入口点',
+  input: {
+    type: 'input',
+    label: '用户输入',
+    description: '通过用户对话消息触发',
     icon: 'Play',
     color: 'green',
-    category: 'basic',
+    category: 'trigger',
   },
-  end: {
-    type: 'end',
-    label: '结束',
-    description: '工作流出口点',
-    icon: 'Square',
-    color: 'red',
-    category: 'basic',
+  timer: {
+    type: 'timer',
+    label: '定时触发',
+    description: '按设定的时间计划执行',
+    icon: 'Clock',
+    color: 'green',
+    category: 'trigger',
+  },
+  webhook: {
+    type: 'webhook',
+    label: 'Webhook',
+    description: '通过外部 HTTP 请求触发',
+    icon: 'Globe',
+    color: 'green',
+    category: 'trigger',
+  },
+  event: {
+    type: 'event',
+    label: '事件触发',
+    description: '通过系统内部事件触发',
+    icon: 'Zap',
+    color: 'green',
+    category: 'trigger',
+  },
+  answer: {
+    type: 'answer',
+    label: '回复',
+    description: '向用户或调用方返回结果',
+    icon: 'MessageSquare',
+    color: 'blue',
+    category: 'output',
   },
   agent: {
     type: 'agent',
@@ -458,48 +518,63 @@ export const NODE_TYPE_CONFIG: Record<WorkflowNodeType, NodePaletteItem> = {
  * Default node data by type
  */
 export const DEFAULT_NODE_DATA: Record<WorkflowNodeType, WorkflowNodeData> = {
-  start: {
-    type: 'start',
-    label: '开始',
-    triggerType: 'manual',
-    inputVariables: [],
+  input: {
+    type: 'input',
+    label: '用户输入',
+    input_variables: [{ name: 'query', type: 'string', description: '用户输入的消息内容' }],
   },
-  end: {
-    type: 'end',
-    label: '结束',
-    outputType: 'variable',
-    outputVariable: '',
+  timer: {
+    type: 'timer',
+    label: '定时触发',
+    cron_expression: '0 * * * *',
+  },
+  webhook: {
+    type: 'webhook',
+    label: 'Webhook',
+    path: '',
+    method: 'POST',
+  },
+  event: {
+    type: 'event',
+    label: '事件触发',
+    event_type: '',
+  },
+  answer: {
+    type: 'answer',
+    label: '回复',
+    output_type: 'template',
+    output_template: '',
   },
   agent: {
     type: 'agent',
     label: 'AI Agent',
-    agentId: '',
+    agent_id: '',
   },
   tool: {
     type: 'tool',
     label: 'MCP工具',
-    toolId: '',
+    tool_id: '',
   },
   condition: {
     type: 'condition',
     label: '条件判断',
-    conditionType: 'expression',
+    condition_type: 'expression',
     expression: '',
   },
   llm: {
     type: 'llm',
     label: 'LLM调用',
-    userPrompt: '',
+    user_prompt: '',
     tools: [],
-    knowledgeBases: [],
+    knowledge_bases: [],
     temperature: 0.7,
-    maxTokens: 2000,
+    max_tokens: 2000,
   },
   parallel: {
     type: 'parallel',
     label: '并行执行',
     branches: 2,
-    waitForAll: true,
+    wait_for_all: true,
   },
   api: {
     type: 'api',
@@ -508,16 +583,15 @@ export const DEFAULT_NODE_DATA: Record<WorkflowNodeType, WorkflowNodeData> = {
     url: '',
     headers: [],
     params: [],
-    bodyType: 'json',
+    body_type: 'json',
   },
   classifier: {
     type: 'classifier',
     label: '问题分类器',
-    inputVariable: '',
+    input_variable: '',
     categories: [
       { id: 'cat_1', name: '分类1', description: '描述该分类的触发条件' },
       { id: 'cat_2', name: '分类2', description: '描述该分类的触发条件' },
     ],
   },
 };
-

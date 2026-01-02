@@ -15,124 +15,126 @@ export const customerServiceWorkflow: Workflow = {
   status: 'active',
   version: 1,
   tags: ['客服', '自动化'],
-  createdAt: '2024-01-15T10:00:00Z',
-  updatedAt: '2024-01-20T14:30:00Z',
-  nodes: [
-    {
-      id: 'node-start',
-      type: 'start',
-      position: { x: 250, y: 50 },
-      data: {
-        type: 'start',
-        label: '开始',
-        description: '客户发起咨询',
-        triggerType: 'manual',
-        referenceKey: 'start_1',
+  created_at: '2024-01-15T10:00:00Z',
+  updated_at: '2024-01-20T14:30:00Z',
+  definition: {
+    nodes: [
+      {
+        id: 'node-input',
+        type: 'input',
+        position: { x: 250, y: 50 },
+        data: {
+          type: 'input',
+          label: '用户输入',
+          description: '客户发起咨询',
+          input_variables: [{ name: 'query', type: 'string', description: '客户输入的消息内容' }],
+          reference_key: 'input_1',
+        },
       },
-    },
-    {
-      id: 'node-classify',
-      type: 'llm',
-      position: { x: 250, y: 150 },
-      data: {
+      {
+        id: 'node-classify',
         type: 'llm',
-        label: '问题分类',
-        description: '使用LLM对客户问题进行分类',
-        userPrompt: '请分析以下客户问题并分类：{{start_1.user_input}}。分类包括：技术支持、销售咨询、投诉建议、其他。',
-        referenceKey: 'classify_1',
+        position: { x: 250, y: 150 },
+        data: {
+          type: 'llm',
+          label: '问题分类',
+          description: '使用LLM对客户问题进行分类',
+          user_prompt: '请分析以下客户问题并分类：{{input_1.query}}。分类包括：技术支持、销售咨询、投诉建议、其他。',
+          reference_key: 'classify_1',
+        },
       },
-    },
-    {
-      id: 'node-condition',
-      type: 'condition',
-      position: { x: 250, y: 280 },
-      data: {
+      {
+        id: 'node-condition',
         type: 'condition',
-        label: '判断问题类型',
-        conditionType: 'variable',
-        variable: 'classify_1.text',
-        operator: 'equals',
-        compareValue: '技术支持',
-        referenceKey: 'condition_1',
+        position: { x: 250, y: 280 },
+        data: {
+          type: 'condition',
+          label: '判断问题类型',
+          condition_type: 'variable',
+          variable: 'classify_1.text',
+          operator: 'equals',
+          compare_value: '技术支持',
+          reference_key: 'condition_1',
+        },
       },
-    },
-    {
-      id: 'node-tech-agent',
-      type: 'agent',
-      position: { x: 100, y: 400 },
-      data: {
+      {
+        id: 'node-tech-agent',
         type: 'agent',
-        label: '技术支持Agent',
-        agentId: 'agent-tech-001',
-        agentName: '技术支持专员',
-        referenceKey: 'tech_agent_1',
+        position: { x: 100, y: 400 },
+        data: {
+          type: 'agent',
+          label: '技术支持Agent',
+          agent_id: 'agent-tech-001',
+          agent_name: '技术支持专员',
+          reference_key: 'tech_agent_1',
+        },
       },
-    },
-    {
-      id: 'node-sales-agent',
-      type: 'agent',
-      position: { x: 400, y: 400 },
-      data: {
+      {
+        id: 'node-sales-agent',
         type: 'agent',
-        label: '销售咨询Agent',
-        agentId: 'agent-sales-001',
-        agentName: '销售顾问',
-        referenceKey: 'sales_agent_1',
+        position: { x: 400, y: 400 },
+        data: {
+          type: 'agent',
+          label: '销售咨询Agent',
+          agent_id: 'agent-sales-001',
+          agent_name: '销售顾问',
+          reference_key: 'sales_agent_1',
+        },
       },
-    },
-    {
-      id: 'node-end',
-      type: 'end',
-      position: { x: 250, y: 520 },
-      data: {
-        type: 'end',
-        label: '结束',
-        outputType: 'variable',
-        outputVariable: 'tech_agent_1.text',
-        referenceKey: 'end_1',
+      {
+        id: 'node-answer',
+        type: 'answer',
+        position: { x: 250, y: 520 },
+        data: {
+          type: 'answer',
+          label: '回复',
+          output_type: 'variable',
+          output_variable: 'tech_agent_1.text',
+          reference_key: 'answer_1',
+        },
       },
-    },
-  ],
-  edges: [
-    {
-      id: 'edge-1',
-      source: 'node-start',
-      target: 'node-classify',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-2',
-      source: 'node-classify',
-      target: 'node-condition',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-3',
-      source: 'node-condition',
-      target: 'node-tech-agent',
-      type: 'smoothstep',
-      data: { label: 'true' },
-    },
-    {
-      id: 'edge-4',
-      source: 'node-condition',
-      target: 'node-sales-agent',
-      type: 'smoothstep',
-      data: { label: 'false' },
-    },
-    {
-      id: 'edge-5',
-      source: 'node-tech-agent',
-      target: 'node-end',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-6',
-      source: 'node-sales-agent',
-      target: 'node-end',
-      type: 'smoothstep',
-    },
-  ],
+    ],
+    edges: [
+      {
+        id: 'edge-1',
+        source: 'node-input',
+        target: 'node-classify',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-2',
+        source: 'node-classify',
+        target: 'node-condition',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-3',
+        source: 'node-condition',
+        target: 'node-tech-agent',
+        type: 'smoothstep',
+        data: { label: 'true' },
+      },
+      {
+        id: 'edge-4',
+        source: 'node-condition',
+        target: 'node-sales-agent',
+        type: 'smoothstep',
+        data: { label: 'false' },
+      },
+      {
+        id: 'edge-5',
+        source: 'node-tech-agent',
+        target: 'node-answer',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-6',
+        source: 'node-sales-agent',
+        target: 'node-answer',
+        type: 'smoothstep',
+      },
+    ],
+  }
 };
 
 /**
@@ -145,142 +147,144 @@ export const dataProcessingWorkflow: Workflow = {
   status: 'active',
   version: 2,
   tags: ['数据分析', '报告'],
-  createdAt: '2024-01-10T09:00:00Z',
-  updatedAt: '2024-01-25T16:00:00Z',
-  nodes: [
-    {
-      id: 'node-start',
-      type: 'start',
-      position: { x: 250, y: 50 },
-      data: {
-        type: 'start',
-        label: '开始',
-        triggerType: 'manual',
-        referenceKey: 'start_1',
+  created_at: '2024-01-10T09:00:00Z',
+  updated_at: '2024-01-25T16:00:00Z',
+  definition: {
+    nodes: [
+      {
+        id: 'node-input',
+        type: 'input',
+        position: { x: 250, y: 50 },
+        data: {
+          type: 'input',
+          label: '用户输入',
+          input_variables: [{ name: 'query', type: 'string', description: '分析指令' }],
+          reference_key: 'input_1',
+        },
       },
-    },
-    {
-      id: 'node-parallel',
-      type: 'parallel',
-      position: { x: 250, y: 150 },
-      data: {
+      {
+        id: 'node-parallel',
         type: 'parallel',
-        label: '并行分析',
-        branches: 3,
-        waitForAll: true,
-        referenceKey: 'parallel_1',
+        position: { x: 250, y: 150 },
+        data: {
+          type: 'parallel',
+          label: '并行分析',
+          branches: 3,
+          wait_for_all: true,
+          reference_key: 'parallel_1',
+        },
       },
-    },
-    {
-      id: 'node-tool-1',
-      type: 'tool',
-      position: { x: 50, y: 280 },
-      data: {
+      {
+        id: 'node-tool-1',
         type: 'tool',
-        label: '数据查询',
-        toolId: 'tool-db-query',
-        toolName: 'Database Query',
-        referenceKey: 'db_query_1',
+        position: { x: 50, y: 280 },
+        data: {
+          type: 'tool',
+          label: '数据查询',
+          tool_id: 'tool-db-query',
+          tool_name: 'Database Query',
+          reference_key: 'db_query_1',
+        },
       },
-    },
-    {
-      id: 'node-tool-2',
-      type: 'tool',
-      position: { x: 250, y: 280 },
-      data: {
+      {
+        id: 'node-tool-2',
         type: 'tool',
-        label: 'API调用',
-        toolId: 'tool-api-call',
-        toolName: 'External API',
-        referenceKey: 'api_call_1',
+        position: { x: 250, y: 280 },
+        data: {
+          type: 'tool',
+          label: 'API调用',
+          tool_id: 'tool-api-call',
+          tool_name: 'External API',
+          reference_key: 'api_call_1',
+        },
       },
-    },
-    {
-      id: 'node-tool-3',
-      type: 'tool',
-      position: { x: 450, y: 280 },
-      data: {
+      {
+        id: 'node-tool-3',
         type: 'tool',
-        label: '文件处理',
-        toolId: 'tool-file-process',
-        toolName: 'File Processor',
-        referenceKey: 'file_process_1',
+        position: { x: 450, y: 280 },
+        data: {
+          type: 'tool',
+          label: '文件处理',
+          tool_id: 'tool-file-process',
+          tool_name: 'File Processor',
+          reference_key: 'file_process_1',
+        },
       },
-    },
-    {
-      id: 'node-llm-summary',
-      type: 'llm',
-      position: { x: 250, y: 400 },
-      data: {
+      {
+        id: 'node-llm-summary',
         type: 'llm',
-        label: '汇总分析',
-        userPrompt: '请根据以下数据生成分析报告：\n查询结果：{{db_query_1.result}}\nAPI结果：{{api_call_1.result}}\n文件结果：{{file_process_1.result}}',
-        referenceKey: 'summary_1',
+        position: { x: 250, y: 400 },
+        data: {
+          type: 'llm',
+          label: '汇总分析',
+          user_prompt: '请根据以下数据生成 analysis 报告：\n指令：{{input_1.query}}\n查询结果：{{db_query_1.result}}\nAPI结果：{{api_call_1.result}}\n文件结果：{{file_process_1.result}}',
+          reference_key: 'summary_1',
+        },
       },
-    },
-    {
-      id: 'node-end',
-      type: 'end',
-      position: { x: 250, y: 520 },
-      data: {
-        type: 'end',
-        label: '结束',
-        outputType: 'variable',
-        outputVariable: 'summary_1.text',
-        referenceKey: 'end_1',
+      {
+        id: 'node-answer',
+        type: 'answer',
+        position: { x: 250, y: 520 },
+        data: {
+          type: 'answer',
+          label: '回复',
+          output_type: 'variable',
+          output_variable: 'summary_1.text',
+          reference_key: 'answer_1',
+        },
       },
-    },
-  ],
-  edges: [
-    {
-      id: 'edge-1',
-      source: 'node-start',
-      target: 'node-parallel',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-2',
-      source: 'node-parallel',
-      target: 'node-tool-1',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-3',
-      source: 'node-parallel',
-      target: 'node-tool-2',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-4',
-      source: 'node-parallel',
-      target: 'node-tool-3',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-5',
-      source: 'node-tool-1',
-      target: 'node-llm-summary',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-6',
-      source: 'node-tool-2',
-      target: 'node-llm-summary',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-7',
-      source: 'node-tool-3',
-      target: 'node-llm-summary',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-8',
-      source: 'node-llm-summary',
-      target: 'node-end',
-      type: 'smoothstep',
-    },
-  ],
+    ],
+    edges: [
+      {
+        id: 'edge-1',
+        source: 'node-input',
+        target: 'node-parallel',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-2',
+        source: 'node-parallel',
+        target: 'node-tool-1',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-3',
+        source: 'node-parallel',
+        target: 'node-tool-2',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-4',
+        source: 'node-parallel',
+        target: 'node-tool-3',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-5',
+        source: 'node-tool-1',
+        target: 'node-llm-summary',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-6',
+        source: 'node-tool-2',
+        target: 'node-llm-summary',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-7',
+        source: 'node-tool-3',
+        target: 'node-llm-summary',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-8',
+        source: 'node-llm-summary',
+        target: 'node-answer',
+        type: 'smoothstep',
+      },
+    ],
+  }
 };
 
 /**
@@ -293,58 +297,60 @@ export const simpleGreetingWorkflow: Workflow = {
   status: 'draft',
   version: 1,
   tags: ['简单', '问候'],
-  createdAt: '2024-01-28T11:00:00Z',
-  updatedAt: '2024-01-28T11:00:00Z',
-  nodes: [
-    {
-      id: 'node-start',
-      type: 'start',
-      position: { x: 250, y: 50 },
-      data: {
-        type: 'start',
-        label: '开始',
-        triggerType: 'manual',
-        referenceKey: 'start_1',
+  created_at: '2024-01-28T11:00:00Z',
+  updated_at: '2024-01-28T11:00:00Z',
+  definition: {
+    nodes: [
+      {
+        id: 'node-input',
+        type: 'input',
+        position: { x: 250, y: 50 },
+        data: {
+          type: 'input',
+          label: '用户输入',
+          input_variables: [{ name: 'query', type: 'string', description: '用户输入的消息内容' }],
+          reference_key: 'input_1',
+        },
       },
-    },
-    {
-      id: 'node-llm',
-      type: 'llm',
-      position: { x: 250, y: 150 },
-      data: {
+      {
+        id: 'node-llm',
         type: 'llm',
-        label: '生成问候',
-        userPrompt: '请根据用户的问候语生成一个友好的回复：{{start_1.user_input}}',
-        referenceKey: 'llm_1',
+        position: { x: 250, y: 150 },
+        data: {
+          type: 'llm',
+          label: '生成问候',
+          user_prompt: '请根据用户的问候语生成一个友好的回复：{{input_1.query}}',
+          reference_key: 'llm_1',
+        },
       },
-    },
-    {
-      id: 'node-end',
-      type: 'end',
-      position: { x: 250, y: 280 },
-      data: {
-        type: 'end',
-        label: '结束',
-        outputType: 'variable',
-        outputVariable: 'llm_1.text',
-        referenceKey: 'end_1',
+      {
+        id: 'node-answer',
+        type: 'answer',
+        position: { x: 250, y: 280 },
+        data: {
+          type: 'answer',
+          label: '回复',
+          output_type: 'variable',
+          output_variable: 'llm_1.text',
+          reference_key: 'answer_1',
+        },
       },
-    },
-  ],
-  edges: [
-    {
-      id: 'edge-1',
-      source: 'node-start',
-      target: 'node-llm',
-      type: 'smoothstep',
-    },
-    {
-      id: 'edge-2',
-      source: 'node-llm',
-      target: 'node-end',
-      type: 'smoothstep',
-    },
-  ],
+    ],
+    edges: [
+      {
+        id: 'edge-1',
+        source: 'node-input',
+        target: 'node-llm',
+        type: 'smoothstep',
+      },
+      {
+        id: 'edge-2',
+        source: 'node-llm',
+        target: 'node-answer',
+        type: 'smoothstep',
+      },
+    ],
+  }
 };
 
 /**
@@ -365,10 +371,9 @@ export function getWorkflowSummaries(): WorkflowSummary[] {
     name: workflow.name,
     description: workflow.description,
     status: workflow.status,
-    nodeCount: workflow.nodes.length,
+    version: workflow.version,
     tags: workflow.tags,
-    createdAt: workflow.createdAt,
-    updatedAt: workflow.updatedAt,
+    updated_at: workflow.updated_at,
   }));
 }
 
@@ -398,40 +403,42 @@ export function createEmptyWorkflow(name: string = '新建工作流'): Workflow 
     status: 'draft',
     version: 1,
     tags: [],
-    createdAt: now,
-    updatedAt: now,
-    nodes: [
-      {
-        id: 'node-start',
-        type: 'start',
-        position: { x: 250, y: 50 },
-        data: {
-          type: 'start',
-          label: '开始',
-          triggerType: 'manual',
-          referenceKey: 'start_1',
+    created_at: now,
+    updated_at: now,
+    definition: {
+      nodes: [
+        {
+          id: 'node-input',
+          type: 'input',
+          position: { x: 250, y: 50 },
+          data: {
+            type: 'input',
+            label: '用户输入',
+            input_variables: [{ name: 'query', type: 'string', description: '用户输入的消息内容' }],
+            reference_key: 'input_1',
+          },
         },
-      },
-      {
-        id: 'node-end',
-        type: 'end',
-        position: { x: 250, y: 200 },
-        data: {
-          type: 'end',
-          label: '结束',
-          outputType: 'variable',
-          referenceKey: 'end_1',
+        {
+          id: 'node-answer',
+          type: 'answer',
+          position: { x: 250, y: 200 },
+          data: {
+            type: 'answer',
+            label: '回复',
+            output_type: 'template',
+            output_template: '',
+            reference_key: 'answer_1',
+          },
         },
-      },
-    ],
-    edges: [
-      {
-        id: 'edge-start-end',
-        source: 'node-start',
-        target: 'node-end',
-        type: 'smoothstep',
-      },
-    ],
+      ],
+      edges: [
+        {
+          id: 'edge-input-answer',
+          source: 'node-input',
+          target: 'node-answer',
+          type: 'smoothstep',
+        },
+      ],
+    }
   };
 }
-

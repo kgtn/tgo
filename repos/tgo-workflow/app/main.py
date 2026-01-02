@@ -30,11 +30,13 @@ app.add_middleware(
 app.include_router(workflows.router, prefix=f"{settings.API_V1_STR}/workflows", tags=["workflows"])
 app.include_router(executions.router, prefix=f"{settings.API_V1_STR}/workflows", tags=["executions"])
 
-@app.get("/")
-async def root():
-    return {"message": "TGO Workflow API is running"}
+from app.schemas.common import MessageResponse, HealthCheckResponse
 
-@app.get("/health")
+@app.get("/", response_model=MessageResponse)
+async def root():
+    return MessageResponse(message="TGO Workflow API is running")
+
+@app.get("/health", response_model=HealthCheckResponse)
 async def health_check():
-    return {"status": "healthy"}
+    return HealthCheckResponse(status="healthy")
 

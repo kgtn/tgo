@@ -49,7 +49,7 @@ from app.schemas.tools import (
     ToolUpdateRequest,
 )
 
-from app.schemas.email import (
+from app.schemas.email_schema import (
     EmailConnectionTestRequest,
     EmailConnectionTestResponse,
 )
@@ -68,7 +68,7 @@ from app.schemas.base import (
     SuccessResponse,
     TimestampMixin,
 )
-from app.schemas.platform import (
+from app.schemas.platform_schema import (
     PlatformAPIKeyResponse,
     PlatformCreate,
     PlatformInDB,

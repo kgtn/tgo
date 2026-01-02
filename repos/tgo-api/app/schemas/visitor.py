@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.models.platform import PlatformType
 from app.schemas.base import BaseSchema, PaginatedResponse, SoftDeleteMixin, TimestampMixin
 from app.schemas.tag import TagResponse
-from app.schemas.platform import PlatformAISettings
+from app.schemas.platform_schema import PlatformAISettings
 
 
 def _resolve_avatar_url(avatar_url: Optional[str]) -> Optional[str]:

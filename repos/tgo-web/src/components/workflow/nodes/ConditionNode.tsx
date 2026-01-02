@@ -7,20 +7,21 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { GitBranch } from 'lucide-react';
 import type { ConditionNodeData } from '@/types/workflow';
+import NodeExecutionOverlay from '../overlays/NodeExecutionOverlay';
 
-const ConditionNode: React.FC<NodeProps<ConditionNodeData>> = ({ data, selected }) => {
-  const hasCondition = Boolean(data.expression || data.variable || data.llmPrompt);
+const ConditionNode: React.FC<NodeProps<ConditionNodeData>> = ({ id, data, selected }) => {
+  const hasCondition = Boolean(data.expression || data.variable || data.llm_prompt);
   
   const getConditionSummary = () => {
-    if (data.conditionType === 'expression' && data.expression) {
+    if (data.condition_type === 'expression' && data.expression) {
       return data.expression.length > 30 
         ? `${data.expression.slice(0, 30)}...` 
         : data.expression;
     }
-    if (data.conditionType === 'variable' && data.variable) {
-      return `${data.variable} ${data.operator || '=='} ${data.compareValue || ''}`;
+    if (data.condition_type === 'variable' && data.variable) {
+      return `${data.variable} ${data.operator || '=='} ${data.compare_value || ''}`;
     }
-    if (data.conditionType === 'llm') {
+    if (data.condition_type === 'llm') {
       return 'LLM Evaluation';
     }
     return '未配置条件';
@@ -30,13 +31,14 @@ const ConditionNode: React.FC<NodeProps<ConditionNodeData>> = ({ data, selected 
     <div
       className={`
         px-5 py-4 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border
-        flex flex-col gap-3 min-w-[240px] transition-all duration-200
+        flex flex-col gap-3 min-w-[240px] transition-all duration-200 relative
         ${selected 
           ? 'border-purple-500 ring-4 ring-purple-500/10' 
           : 'border-gray-100 dark:border-gray-700 hover:shadow-md'
         }
       `}
     >
+      <NodeExecutionOverlay nodeId={id} label={data.label || '条件判断'} />
       {/* Colored Side Bar */}
       <div className="absolute left-0 top-4 bottom-4 w-1 bg-purple-500 rounded-r-full" />
 

@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, status
 
 from app.core.logging import get_logger
 from app.core.security import get_authenticated_project
-from app.schemas.email import EmailConnectionTestRequest, EmailConnectionTestResponse
+from app.schemas.email_schema import EmailConnectionTestRequest, EmailConnectionTestResponse
 
 logger = get_logger("endpoints.email")
 router = APIRouter()

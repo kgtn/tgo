@@ -10,7 +10,7 @@ export interface AvailableVariable {
   nodeLabel: string;
   nodeType: string;
   variableName: string;
-  variableType?: 'string' | 'number' | 'boolean';
+  variableType?: 'string' | 'number' | 'boolean' | 'object';
   fullPath: string; // e.g., "Start.user_input"
 }
 
@@ -62,30 +62,59 @@ export function getAvailableVariables(
     const variables: AvailableVariable[] = [];
     const data = node.data;
 
-    if (node.type === 'start') {
-      const startData = data as any;
-      const refKey = startData.referenceKey || 'start_1';
-      if (startData.inputVariables && Array.isArray(startData.inputVariables)) {
-        startData.inputVariables.forEach((v: any) => {
+    if (node.type === 'input') {
+      const inputData = data as any;
+      const refKey = inputData.reference_key || 'input_1';
+      if (inputData.input_variables && Array.isArray(inputData.input_variables)) {
+        inputData.input_variables.forEach((v: any) => {
           variables.push({
             nodeId: node.id,
-            nodeLabel: data.label || '开始',
-            nodeType: 'start',
+            nodeLabel: data.label || '用户输入',
+            nodeType: 'input',
             variableName: v.name,
             variableType: v.type,
             fullPath: `${refKey}.${v.name}`
           });
         });
       }
+    } else if (node.type === 'webhook') {
+      const webhookData = data as any;
+      const refKey = webhookData.reference_key || 'webhook_1';
+      
+      const subFields = [
+        { name: 'body', type: 'object' as const, desc: '请求体' },
+        { name: 'params', type: 'object' as const, desc: '查询参数' },
+        { name: 'headers', type: 'object' as const, desc: '请求头' }
+      ];
+
+      subFields.forEach(field => {
+        variables.push({
+          nodeId: node.id,
+          nodeLabel: data.label || 'Webhook',
+          nodeType: 'webhook',
+          variableName: field.name,
+          variableType: field.type,
+          fullPath: `${refKey}.${field.name}`
+        });
+      });
+    } else if (node.type === 'timer') {
+      const refKey = (data as any).reference_key || 'timer_1';
+      variables.push({
+        nodeId: node.id,
+        nodeLabel: data.label || '定时触发',
+        nodeType: 'timer',
+        variableName: 'timestamp',
+        variableType: 'number',
+        fullPath: `${refKey}.timestamp`
+      });
     } else if (node.type === 'api') {
       const nodeData = data as any;
-      const refKey = nodeData.referenceKey || `api_1`;
+      const refKey = nodeData.reference_key || `api_1`;
       
-      // API node defaults to these 3 sub-outputs directly under refKey
       const subFields = [
-        { name: 'body', type: 'string', desc: '响应正文' },
-        { name: 'status_code', type: 'number', desc: '状态码' },
-        { name: 'headers', type: 'object', desc: '响应头' }
+        { name: 'body', type: 'string' as const, desc: '响应正文' },
+        { name: 'status_code', type: 'number' as const, desc: '状态码' },
+        { name: 'headers', type: 'object' as const, desc: '响应头' }
       ];
 
       subFields.forEach(field => {
@@ -94,12 +123,12 @@ export function getAvailableVariables(
           nodeLabel: data.label || 'API调用',
           nodeType: 'api',
           variableName: field.name,
-          variableType: field.type as any,
+          variableType: field.type,
           fullPath: `${refKey}.${field.name}`
         });
       });
     } else if (node.type === 'agent') {
-      const refKey = (data as any).referenceKey || 'agent_1';
+      const refKey = (data as any).reference_key || 'agent_1';
       variables.push({
         nodeId: node.id,
         nodeLabel: data.label || 'AI Agent',
@@ -108,7 +137,7 @@ export function getAvailableVariables(
         fullPath: `${refKey}.text`
       });
     } else if (node.type === 'llm') {
-      const refKey = (data as any).referenceKey || 'llm_1';
+      const refKey = (data as any).reference_key || 'llm_1';
       variables.push({
         nodeId: node.id,
         nodeLabel: data.label || 'LLM调用',
@@ -117,7 +146,7 @@ export function getAvailableVariables(
         fullPath: `${refKey}.text`
       });
     } else if (node.type === 'tool') {
-      const refKey = (data as any).referenceKey || 'tool_1';
+      const refKey = (data as any).reference_key || 'tool_1';
       variables.push({
         nodeId: node.id,
         nodeLabel: data.label || 'MCP工具',
@@ -126,7 +155,7 @@ export function getAvailableVariables(
         fullPath: `${refKey}.result`
       });
     } else if (node.type === 'classifier') {
-      const refKey = (data as any).referenceKey || 'classifier_1';
+      const refKey = (data as any).reference_key || 'classifier_1';
       variables.push(
         {
           nodeId: node.id,
@@ -152,4 +181,3 @@ export function getAvailableVariables(
 
   return result;
 }
-

@@ -10,11 +10,6 @@ services:
     build:
       context: ./repos/tgo-rag
 
-  tgo-rag-flower:
-    image: tgo-rag:local
-    build:
-      context: ./repos/tgo-rag
-
   tgo-rag:
     image: tgo-rag:local
     build:
@@ -37,6 +32,17 @@ services:
     image: tgo-platform:local
     build:
       context: ./repos/tgo-platform
+
+  # Workflow service
+  tgo-workflow:
+    image: tgo-workflow:local
+    build:
+      context: ./repos/tgo-workflow
+
+  tgo-workflow-worker:
+    image: tgo-workflow:local
+    build:
+      context: ./repos/tgo-workflow
 
   # Customer-facing web app
   tgo-web:

@@ -3,8 +3,8 @@ from app.engine.nodes.base import BaseNodeExecutor
 from app.engine.context import ExecutionContext
 from app.engine.nodes.registry import register_node
 
-@register_node("end")
-class EndNodeExecutor(BaseNodeExecutor):
+@register_node("answer")
+class AnswerNodeExecutor(BaseNodeExecutor):
     async def execute(self, context: ExecutionContext) -> Tuple[Dict[str, Any], Optional[str]]:
         output_type = self.config.get("output_type", "variable")
         result = None

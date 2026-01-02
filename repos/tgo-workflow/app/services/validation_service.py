@@ -9,19 +9,18 @@ class ValidationService:
         nodes = definition.get("nodes", [])
         edges = definition.get("edges", [])
         
-        # 1. Start node check
-        start_nodes = [n for n in nodes if n.get("type") == "start"]
-        if len(start_nodes) == 0:
-            errors.append("Workflow must have a start node")
-        elif len(start_nodes) > 1:
-            errors.append("Workflow cannot have more than one start node")
+        # 1. Trigger node check (formerly Start node)
+        trigger_types = {"input", "timer", "webhook", "event"}
+        trigger_nodes = [n for n in nodes if n.get("type") in trigger_types]
+        if len(trigger_nodes) == 0:
+            errors.append("Workflow must have at least one trigger node (input, timer, webhook, or event)")
             
-        # 2. End node check
-        end_nodes = [n for n in nodes if n.get("type") == "end"]
-        if len(end_nodes) == 0:
-            errors.append("Workflow must have at least one end node")
+        # 2. Answer node check (formerly End node)
+        answer_nodes = [n for n in nodes if n.get("type") == "answer"]
+        if len(answer_nodes) == 0:
+            errors.append("Workflow must have at least one answer node")
             
-        if not start_nodes:
+        if not trigger_nodes:
             return errors
 
         # Build adjacency list
@@ -35,10 +34,9 @@ class ValidationService:
             else:
                 errors.append(f"Edge references non-existent node: {u} -> {v}")
 
-        # 3. Reachability from start
-        start_id = start_nodes[0]["id"]
+        # 3. Reachability from trigger nodes
         visited = set()
-        queue = deque([start_id])
+        queue = deque([n["id"] for n in trigger_nodes])
         while queue:
             curr = queue.popleft()
             if curr not in visited:
@@ -48,21 +46,21 @@ class ValidationService:
         
         for n in nodes:
             if n["id"] not in visited:
-                errors.append(f"Node '{n.get('data', {}).get('label', n['id'])}' is not reachable from start")
+                errors.append(f"Node '{n.get('data', {}).get('label', n['id'])}' is not reachable from any trigger node")
 
-        # 4. Reachability to end
-        visited_to_end = set()
-        queue = deque([n["id"] for n in end_nodes])
+        # 4. Reachability to answer nodes
+        visited_to_answer = set()
+        queue = deque([n["id"] for n in answer_nodes])
         while queue:
             curr = queue.popleft()
-            if curr not in visited_to_end:
-                visited_to_end.add(curr)
+            if curr not in visited_to_answer:
+                visited_to_answer.add(curr)
                 for neighbor in rev_adj.get(curr, []):
                     queue.append(neighbor)
                     
         for n in nodes:
-            if n["id"] not in visited_to_end:
-                errors.append(f"Node '{n.get('data', {}).get('label', n['id'])}' cannot reach any end node")
+            if n["id"] not in visited_to_answer:
+                errors.append(f"Node '{n.get('data', {}).get('label', n['id'])}' cannot reach any answer node")
 
         # 5. Circular dependency check (using Kahn's algorithm for DAG)
         in_degree = {n["id"]: 0 for n in nodes}

@@ -7,10 +7,11 @@ from app.database import Base
 import uuid
 
 class WorkflowExecution(Base):
-    __tablename__ = "workflow_executions"
+    __tablename__ = "wf_workflow_executions"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    workflow_id: Mapped[str] = mapped_column(String, ForeignKey("workflows.id"))
+    project_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    workflow_id: Mapped[str] = mapped_column(String, ForeignKey("wf_workflows.id"))
     status: Mapped[str] = mapped_column(String, default="pending")
     input: Mapped[Optional[dict]] = mapped_column(JSON)
     output: Mapped[Optional[dict]] = mapped_column(JSON)
@@ -23,10 +24,11 @@ class WorkflowExecution(Base):
     node_executions: Mapped[List["NodeExecution"]] = relationship(back_populates="workflow_execution")
 
 class NodeExecution(Base):
-    __tablename__ = "node_executions"
+    __tablename__ = "wf_node_executions"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    execution_id: Mapped[str] = mapped_column(String, ForeignKey("workflow_executions.id"))
+    project_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    execution_id: Mapped[str] = mapped_column(String, ForeignKey("wf_workflow_executions.id"))
     node_id: Mapped[str] = mapped_column(String, nullable=False)
     node_type: Mapped[str] = mapped_column(String, nullable=False)
     status: Mapped[str] = mapped_column(String, default="pending")

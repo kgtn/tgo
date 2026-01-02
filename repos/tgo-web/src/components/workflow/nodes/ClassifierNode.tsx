@@ -7,22 +7,24 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { LayoutGrid } from 'lucide-react';
 import type { ClassifierNodeData } from '@/types/workflow';
+import NodeExecutionOverlay from '../overlays/NodeExecutionOverlay';
 
-const ClassifierNode: React.FC<NodeProps<ClassifierNodeData>> = ({ data, selected }) => {
-  const hasInput = Boolean(data.inputVariable);
+const ClassifierNode: React.FC<NodeProps<ClassifierNodeData>> = ({ id, data, selected }) => {
+  const hasInput = Boolean(data.input_variable);
   const categories = data.categories || [];
   
   return (
     <div
       className={`
         px-5 py-4 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border
-        flex flex-col gap-3 min-w-[260px] transition-all duration-200
+        flex flex-col gap-3 min-w-[260px] transition-all duration-200 relative
         ${selected 
           ? 'border-orange-500 ring-4 ring-orange-500/10' 
           : 'border-gray-100 dark:border-gray-700 hover:shadow-md'
         }
       `}
     >
+      <NodeExecutionOverlay nodeId={id} label={data.label || '问题分类器'} />
       {/* Colored Side Bar */}
       <div className="absolute left-0 top-4 bottom-4 w-1 bg-orange-500 rounded-r-full" />
 
@@ -72,7 +74,7 @@ const ClassifierNode: React.FC<NodeProps<ClassifierNodeData>> = ({ data, selecte
       
       <div className="pt-2 border-t border-gray-50 dark:border-gray-700/50 flex items-center justify-between">
         <span className="text-[10px] text-gray-400 uppercase font-medium tracking-wider">
-          {hasInput ? `In: ${data.inputVariable}` : 'Input Required'}
+          {hasInput ? `In: ${data.input_variable}` : 'Input Required'}
         </span>
         {!hasInput && (
           <span className="text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 px-1.5 py-0.5 rounded-md font-bold">

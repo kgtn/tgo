@@ -11,6 +11,7 @@ import {
   Redo2,
   CheckCircle,
   Loader2,
+  Bug,
 } from 'lucide-react';
 import { useWorkflowStore } from '@/stores/workflowStore';
 import { useToast } from '@/hooks/useToast';
@@ -33,6 +34,9 @@ const WorkflowToolbar: React.FC = () => {
     undo,
     redo,
     validate,
+    isDebugPanelOpen,
+    setDebugPanelOpen,
+    isExecuting,
   } = useWorkflowStore();
 
   const canUndo = historyIndex > 0;
@@ -92,6 +96,23 @@ const WorkflowToolbar: React.FC = () => {
           <Redo2 className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Debug */}
+      <button
+        onClick={() => setDebugPanelOpen(!isDebugPanelOpen)}
+        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all shadow-sm border ${
+          isDebugPanelOpen 
+            ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800' 
+            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400'
+        }`}
+      >
+        {isExecuting ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
+        ) : (
+          <Bug className="w-3.5 h-3.5" />
+        )}
+        <span>{t('workflow.actions.debug', '调试')}</span>
+      </button>
 
       {/* Validate */}
       <button

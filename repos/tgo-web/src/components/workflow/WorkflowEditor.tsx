@@ -19,7 +19,6 @@ import 'reactflow/dist/style.css';
 import { useWorkflowStore } from '@/stores/workflowStore';
 import { nodeTypes as importedNodeTypes } from './nodes';
 import { edgeTypes as importedEdgeTypes } from './edges';
-import NodeConfigPanel from './panels/NodeConfigPanel';
 import type { WorkflowNodeType } from '@/types/workflow';
 
 // Define stable objects outside the component to prevent unnecessary re-renders
@@ -57,10 +56,37 @@ const WorkflowEditorInner: React.FC<WorkflowEditorProps> = ({ readOnly = false }
     undo,
     redo,
     pushHistory,
+    nodeExecutionMap,
+    isDebugPanelOpen,
+    isExecuting,
+    startExecution,
+    cancelExecution,
+    debugInput,
   } = useWorkflowStore();
 
-  const nodes = currentWorkflow?.nodes || [];
-  const edges = currentWorkflow?.edges || [];
+  const nodes = currentWorkflow?.definition?.nodes || [];
+  const rawEdges = currentWorkflow?.definition?.edges || [];
+
+  // Compute edges with execution highlighting
+  const edges = useMemo(() => {
+    return rawEdges.map(edge => {
+      const targetExecution = nodeExecutionMap[edge.target];
+      const sourceExecution = nodeExecutionMap[edge.source];
+      
+      // An edge is active if its target is running/completed
+      // and its source is also completed (to show the path)
+      const isActive = targetExecution && (targetExecution.status === 'completed' || targetExecution.status === 'running');
+      
+      return {
+        ...edge,
+        animated: sourceExecution?.status === 'completed' && (targetExecution?.status === 'running' || !targetExecution),
+        data: {
+          ...edge.data,
+          isActive,
+        }
+      };
+    });
+  }, [rawEdges, nodeExecutionMap]);
 
   // Handle node drag stop (push to history)
   const handleNodeDragStop = useCallback(() => {
@@ -111,6 +137,7 @@ const WorkflowEditorInner: React.FC<WorkflowEditorProps> = ({ readOnly = false }
       if (cmdKey && event.key === 'd') {
         event.preventDefault();
         if (selectedNodeId) {
+          event.preventDefault();
           duplicateNode(selectedNodeId);
         }
       }
@@ -123,6 +150,22 @@ const WorkflowEditorInner: React.FC<WorkflowEditorProps> = ({ readOnly = false }
         } else if (selectedEdgeId) {
           event.preventDefault();
           deleteEdge(selectedEdgeId);
+        }
+      }
+
+      // Run Workflow: Cmd+Enter (Mac) or Ctrl+Enter (Windows)
+      if (cmdKey && event.key === 'Enter') {
+        event.preventDefault();
+        if (isDebugPanelOpen && !isExecuting) {
+          startExecution(debugInput);
+        }
+      }
+
+      // Cancel Execution: Escape
+      if (event.key === 'Escape') {
+        if (isExecuting) {
+          event.preventDefault();
+          cancelExecution();
         }
       }
     };
@@ -179,8 +222,11 @@ const WorkflowEditorInner: React.FC<WorkflowEditorProps> = ({ readOnly = false }
   // MiniMap node color
   const nodeColor = useCallback((node: any) => {
     const colors: Record<string, string> = {
-      start: '#22c55e',
-      end: '#ef4444',
+      input: '#22c55e',
+      timer: '#22c55e',
+      webhook: '#22c55e',
+      event: '#22c55e',
+      answer: '#3b82f6',
       agent: '#3b82f6',
       tool: '#f97316',
       condition: '#a855f7',
@@ -189,12 +235,6 @@ const WorkflowEditorInner: React.FC<WorkflowEditorProps> = ({ readOnly = false }
     };
     return colors[node.type] || '#64748b';
   }, []);
-
-  // Find selected node
-  const selectedNode = useMemo(() => {
-    if (!selectedNodeId) return null;
-    return nodes.find(n => n.id === selectedNodeId) || null;
-  }, [nodes, selectedNodeId]);
 
   if (!currentWorkflow) {
     return (
@@ -212,7 +252,7 @@ const WorkflowEditorInner: React.FC<WorkflowEditorProps> = ({ readOnly = false }
         <div ref={reactFlowWrapper} className="flex-1 w-full h-full relative">
           <ReactFlow
             nodes={nodes}
-            edges={edges}
+            edges={edges as any}
             onNodesChange={readOnly ? undefined : onNodesChange}
             onEdgesChange={readOnly ? undefined : onEdgesChange}
             onConnect={readOnly ? undefined : handleConnect}
@@ -262,11 +302,6 @@ const WorkflowEditorInner: React.FC<WorkflowEditorProps> = ({ readOnly = false }
           </ReactFlow>
         </div>
       </div>
-
-      {/* Right Side Panel - Node Configuration */}
-      {!readOnly && selectedNode && (
-        <NodeConfigPanel node={selectedNode} />
-      )}
     </div>
   );
 };
@@ -314,4 +349,3 @@ const WorkflowEditor: React.FC<WorkflowEditorProps> = (props) => {
 };
 
 export default WorkflowEditor;
-

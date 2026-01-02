@@ -145,6 +145,24 @@ else
         proxy_redirect off;
     }
 
+    # API service (by /v1 path)
+    # Swagger UI (and other clients) may request /v1/openapi.json directly.
+    # In non-SSL (HTTP) mode, without this rule /v1 would fall through to frontend upstream and return HTML.
+    location ~ ^/v1(/|$) {
+        proxy_pass http://tgo-api:8000;
+        # Upload settings (configured via .env)
+        client_max_body_size CLIENT_MAX_BODY_SIZE;
+        proxy_request_buffering off;
+        proxy_read_timeout NGINX_PROXY_READ_TIMEOUT;
+        proxy_send_timeout NGINX_PROXY_SEND_TIMEOUT;
+        proxy_connect_timeout NGINX_PROXY_CONNECT_TIMEOUT;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect off;
+    }
+
     # Widget service (by domain or /widget path)
     # Match /widget, /widget/, /widget/xxx (query strings are handled automatically by nginx)
     location ~ ^/widget(/.*)?$ {
@@ -339,6 +357,24 @@ server {
     # Strip /api prefix when forwarding to backend
     location ~ ^/api(/|$) {
         rewrite ^/api(/.*)$ $1 break;
+        proxy_pass http://tgo-api:8000;
+        # Upload settings (configured via .env)
+        client_max_body_size CLIENT_MAX_BODY_SIZE;
+        proxy_request_buffering off;
+        proxy_read_timeout NGINX_PROXY_READ_TIMEOUT;
+        proxy_send_timeout NGINX_PROXY_SEND_TIMEOUT;
+        proxy_connect_timeout NGINX_PROXY_CONNECT_TIMEOUT;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_redirect off;
+    }
+
+    # API service (by /v1 path)
+    # Swagger UI served from /api/v1/docs references /v1/openapi.json by default.
+    # In localhost unified mode, /v1 would otherwise go to tgo-web, causing Swagger to load HTML instead of OpenAPI JSON.
+    location ~ ^/v1(/|$) {
         proxy_pass http://tgo-api:8000;
         # Upload settings (configured via .env)
         client_max_body_size CLIENT_MAX_BODY_SIZE;

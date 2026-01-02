@@ -7,19 +7,21 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Globe } from 'lucide-react';
 import type { APINodeData } from '@/types/workflow';
+import NodeExecutionOverlay from '../overlays/NodeExecutionOverlay';
 
-const APINode: React.FC<NodeProps<APINodeData>> = ({ data, selected }) => {
+const APINode: React.FC<NodeProps<APINodeData>> = ({ id, data, selected }) => {
   return (
     <div
       className={`
         px-5 py-4 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border
-        flex items-center gap-4 min-w-[200px] transition-all duration-200
+        flex items-center gap-4 min-w-[200px] transition-all duration-200 relative
         ${selected 
           ? 'border-blue-500 ring-4 ring-blue-500/10' 
           : 'border-gray-100 dark:border-gray-700 hover:shadow-md'
         }
       `}
     >
+      <NodeExecutionOverlay nodeId={id} label={data.label || 'API调用'} />
       {/* Colored Side Bar */}
       <div className="absolute left-0 top-4 bottom-4 w-1 bg-blue-500 rounded-r-full" />
 

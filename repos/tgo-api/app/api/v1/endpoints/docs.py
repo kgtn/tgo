@@ -40,6 +40,11 @@ SERVICES = {
         "url": settings.PLATFORM_SERVICE_URL,
         "openapi_path": "/openapi.json",
     },
+    "workflow": {
+        "name": "Workflow Service",
+        "url": settings.WORKFLOW_SERVICE_URL,
+        "openapi_path": "/v1/openapi.json",
+    },
 }
 
 

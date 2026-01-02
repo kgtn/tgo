@@ -7,21 +7,23 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { GitMerge } from 'lucide-react';
 import type { ParallelNodeData } from '@/types/workflow';
+import NodeExecutionOverlay from '../overlays/NodeExecutionOverlay';
 
-const ParallelNode: React.FC<NodeProps<ParallelNodeData>> = ({ data, selected }) => {
+const ParallelNode: React.FC<NodeProps<ParallelNodeData>> = ({ id, data, selected }) => {
   const branches = data.branches || 2;
   
   return (
     <div
       className={`
         px-5 py-4 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border
-        flex flex-col gap-3 min-w-[240px] transition-all duration-200
+        flex flex-col gap-3 min-w-[240px] transition-all duration-200 relative
         ${selected 
           ? 'border-indigo-500 ring-4 ring-indigo-500/10' 
           : 'border-gray-100 dark:border-gray-700 hover:shadow-md'
         }
       `}
     >
+      <NodeExecutionOverlay nodeId={id} label={data.label || '并行执行'} />
       {/* Colored Side Bar */}
       <div className="absolute left-0 top-4 bottom-4 w-1 bg-indigo-500 rounded-r-full" />
 
@@ -43,7 +45,7 @@ const ParallelNode: React.FC<NodeProps<ParallelNodeData>> = ({ data, selected })
             <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-1.5 py-0.5 rounded font-bold uppercase">
               {branches} Branches
             </span>
-            {data.waitForAll && (
+            {data.wait_for_all && (
               <span className="text-[10px] text-gray-400 font-medium italic">Wait for all</span>
             )}
           </div>

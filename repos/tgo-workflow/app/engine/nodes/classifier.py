@@ -26,9 +26,10 @@ Return the category ID in JSON format: {{"category_id": "..."}}
 """
         
         response = await LLMProvider.chat_completion(
-            provider=self.config.get("provider_id", "openai"),
+            provider_id=self.config.get("provider_id", "openai"),
             model=self.config.get("model_id", "gpt-4o"),
-            user_prompt=prompt
+            user_prompt=prompt,
+            project_id=context.project_id
         )
         
         # Simple extraction logic

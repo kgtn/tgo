@@ -7,28 +7,30 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { MessageSquare } from 'lucide-react';
 import type { LLMNodeData } from '@/types/workflow';
+import NodeExecutionOverlay from '../overlays/NodeExecutionOverlay';
 
-const LLMNode: React.FC<NodeProps<LLMNodeData>> = ({ data, selected }) => {
-  const hasPrompt = Boolean(data.userPrompt);
+const LLMNode: React.FC<NodeProps<LLMNodeData>> = ({ id, data, selected }) => {
+  const hasPrompt = Boolean(data.user_prompt);
   
   const getPromptPreview = () => {
-    if (!data.userPrompt) return '未配置提示词';
-    return data.userPrompt.length > 40 
-      ? `${data.userPrompt.slice(0, 40)}...` 
-      : data.userPrompt;
+    if (!data.user_prompt) return '未配置提示词';
+    return data.user_prompt.length > 40 
+      ? `${data.user_prompt.slice(0, 40)}...` 
+      : data.user_prompt;
   };
   
   return (
     <div
       className={`
         px-5 py-4 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border
-        flex flex-col gap-3 min-w-[260px] transition-all duration-200
+        flex flex-col gap-3 min-w-[260px] transition-all duration-200 relative
         ${selected 
           ? 'border-cyan-500 ring-4 ring-cyan-500/10' 
           : 'border-gray-100 dark:border-gray-700 hover:shadow-md'
         }
       `}
     >
+      <NodeExecutionOverlay nodeId={id} label={data.label || 'LLM调用'} />
       {/* Colored Side Bar */}
       <div className="absolute left-0 top-4 bottom-4 w-1 bg-cyan-500 rounded-r-full" />
 
@@ -46,9 +48,9 @@ const LLMNode: React.FC<NodeProps<LLMNodeData>> = ({ data, selected }) => {
           <div className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
             {data.label || 'LLM调用'}
           </div>
-          {data.modelName && (
+          {data.model_name && (
             <div className="text-[10px] text-cyan-600 font-bold uppercase tracking-tighter mt-0.5">
-              {data.modelName}
+              {data.model_name}
             </div>
           )}
         </div>

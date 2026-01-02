@@ -75,7 +75,7 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
             <div className="flex items-center gap-2 mt-0.5">
               {getStatusBadge(workflow.status)}
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                {workflow.nodeCount} {t('workflow.nodes', '节点')}
+                v{workflow.version}
               </span>
             </div>
           </div>
@@ -148,7 +148,7 @@ const WorkflowCard: React.FC<WorkflowCardProps> = ({
       {/* Footer */}
       <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
         <span className="text-xs text-gray-500 dark:text-gray-400">
-          {t('workflow.lastUpdated', '更新于')} {new Date(workflow.updatedAt).toLocaleDateString()}
+          {t('workflow.lastUpdated', '更新于')} {new Date(workflow.updated_at).toLocaleDateString()}
         </span>
         <button
           onClick={() => onEdit(workflow.id)}
@@ -175,6 +175,7 @@ const WorkflowManagement: React.FC = () => {
     isLoadingWorkflows,
     workflowsError,
     loadWorkflows,
+    createWorkflow,
     deleteWorkflow,
     duplicateWorkflow,
   } = useWorkflowStore();
@@ -192,6 +193,8 @@ const WorkflowManagement: React.FC = () => {
     loadWorkflows();
   }, []);
 
+  const [isCreating, setIsCreating] = useState(false);
+
   // Filter workflows
   const filteredWorkflows = React.useMemo(() => {
     let filtered = workflows;
@@ -206,7 +209,7 @@ const WorkflowManagement: React.FC = () => {
       const query = debouncedSearch.toLowerCase();
       filtered = filtered.filter(wf =>
         wf.name.toLowerCase().includes(query) ||
-        wf.description.toLowerCase().includes(query)
+        (wf.description && wf.description.toLowerCase().includes(query))
       );
     }
 
@@ -214,8 +217,18 @@ const WorkflowManagement: React.FC = () => {
   }, [workflows, statusFilter, debouncedSearch]);
 
   // Handlers
-  const handleCreate = () => {
-    navigate('/ai/workflows/new');
+  const handleCreate = async () => {
+    if (isCreating) return;
+    setIsCreating(true);
+    try {
+      const newWorkflow = await createWorkflow();
+      navigate(`/ai/workflows/${newWorkflow.id}/edit`);
+    } catch (error) {
+      console.error('Failed to create workflow:', error);
+      showToast('error', t('workflow.messages.createFailed', '创建失败'), '');
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleEdit = (id: string) => {
@@ -270,9 +283,14 @@ const WorkflowManagement: React.FC = () => {
           </button>
           <button
             onClick={handleCreate}
-            className="flex items-center px-3 py-1.5 bg-purple-600 dark:bg-purple-700 text-white text-sm rounded-md hover:bg-purple-700 dark:hover:bg-purple-800 transition-colors"
+            disabled={isCreating}
+            className="flex items-center px-3 py-1.5 bg-purple-600 dark:bg-purple-700 text-white text-sm rounded-md hover:bg-purple-700 dark:hover:bg-purple-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Plus className="w-4 h-4 mr-1" />
+            {isCreating ? (
+              <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4 mr-1" />
+            )}
             <span>{t('workflow.actions.create', '创建工作流')}</span>
           </button>
         </div>
@@ -352,9 +370,14 @@ const WorkflowManagement: React.FC = () => {
             {!searchQuery && statusFilter === 'all' && (
               <button
                 onClick={handleCreate}
-                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                disabled={isCreating}
+                className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Plus className="w-4 h-4 mr-2" />
+                {isCreating ? (
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4 mr-2" />
+                )}
                 {t('workflow.actions.create', '创建工作流')}
               </button>
             )}

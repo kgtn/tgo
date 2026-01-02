@@ -3,7 +3,7 @@
  * Standalone page for editing workflows via route - Minimal Clean Redesign
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
@@ -17,6 +17,8 @@ import { useWorkflowStore } from '@/stores/workflowStore';
 import { useToast } from '@/hooks/useToast';
 import { WorkflowEditor, WorkflowToolbar } from '@/components/workflow';
 import NodePalette from '@/components/workflow/NodePalette';
+import NodeConfigPanel from '@/components/workflow/panels/NodeConfigPanel';
+import DebugPanel from '@/components/workflow/panels/DebugPanel';
 
 const WorkflowEditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,14 +36,31 @@ const WorkflowEditorPage: React.FC = () => {
     createWorkflow,
     updateWorkflowMeta,
     resetEditor,
+    selectedNodeId,
+    setSelectedNode,
+    isDebugPanelOpen,
+    setDebugPanelOpen,
   } = useWorkflowStore();
+
+  const selectedNode = useMemo(() => {
+    if (!selectedNodeId) return null;
+    return currentWorkflow?.definition.nodes.find(n => n.id === selectedNodeId) || null;
+  }, [currentWorkflow, selectedNodeId]);
+
+  const creatingRef = React.useRef(false);
 
   // Load or create workflow based on ID
   useEffect(() => {
     if (id && id !== 'new') {
       loadWorkflow(id);
-    } else {
-      createWorkflow().catch(error => {
+    } else if (id === 'new' && !creatingRef.current) {
+      creatingRef.current = true;
+      createWorkflow().then(newWorkflow => {
+        // Once created, navigate to the edit route with the real ID
+        // to prevent re-creation on refresh/remount
+        navigate(`/ai/workflows/${newWorkflow.id}/edit`, { replace: true });
+      }).catch(error => {
+        creatingRef.current = false;
         console.error('Failed to create workflow:', error);
         showToast('error', t('workflow.messages.createFailed', '创建失败'), '');
       });
@@ -49,8 +68,9 @@ const WorkflowEditorPage: React.FC = () => {
     
     return () => {
       resetEditor();
+      creatingRef.current = false;
     };
-  }, [id]);
+  }, [id, navigate, loadWorkflow, createWorkflow, resetEditor, showToast, t]);
 
   const handleBack = () => {
     if (isDirty) {
@@ -120,7 +140,13 @@ const WorkflowEditorPage: React.FC = () => {
 
           {/* Settings Toggle */}
           <button
-            onClick={() => setShowSettings(!showSettings)}
+            onClick={() => {
+              if (!showSettings) {
+                setDebugPanelOpen(false);
+                setSelectedNode(null);
+              }
+              setShowSettings(!showSettings);
+            }}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border ${
               showSettings
                 ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700'
@@ -158,8 +184,12 @@ const WorkflowEditorPage: React.FC = () => {
           )}
         </div>
 
-        {/* Right Side: Settings Panel (Overlay or Fixed) */}
-        {showSettings && currentWorkflow && (
+        {/* Right Side: Panels (Overlay or Fixed) */}
+        {isDebugPanelOpen ? (
+          <DebugPanel />
+        ) : selectedNode ? (
+          <NodeConfigPanel node={selectedNode} />
+        ) : showSettings && currentWorkflow ? (
           <div className="w-80 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 flex flex-col shadow-2xl z-30 transition-all animate-in slide-in-from-right duration-300">
             <div className="p-6 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -198,7 +228,7 @@ const WorkflowEditorPage: React.FC = () => {
                   {t('workflow.fields.description', '描述')}
                 </label>
                 <textarea
-                  value={currentWorkflow.description}
+                  value={currentWorkflow.description || ''}
                   onChange={(e) => updateWorkflowMeta({ description: e.target.value })}
                   rows={4}
                   className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm dark:text-gray-100 resize-none leading-relaxed"
@@ -259,17 +289,17 @@ const WorkflowEditorPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] text-gray-400 font-medium uppercase">Total Nodes</span>
-                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">{currentWorkflow.nodes.length}</span>
+                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">{currentWorkflow.definition.nodes.length}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] text-gray-400 font-medium uppercase">Created</span>
-                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">{new Date(currentWorkflow.createdAt).toLocaleDateString()}</span>
+                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-300">{new Date(currentWorkflow.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

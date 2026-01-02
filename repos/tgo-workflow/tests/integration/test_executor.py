@@ -7,18 +7,18 @@ async def test_workflow_executor_run():
     definition = {
         "nodes": [
             {
-                "id": "start_1", 
-                "type": "start", 
-                "data": {"reference_key": "start", "label": "Start", "input_variables": [{"name": "text", "type": "string"}]}
+                "id": "input_1", 
+                "type": "input", 
+                "data": {"reference_key": "input", "label": "Input", "input_variables": [{"name": "text", "type": "string"}]}
             },
             {
-                "id": "end_1", 
-                "type": "end", 
-                "data": {"reference_key": "end", "label": "End", "output_type": "template", "output_template": "Processed: {{start.text}}"}
+                "id": "answer_1", 
+                "type": "answer", 
+                "data": {"reference_key": "answer", "label": "Answer", "output_type": "template", "output_template": "Processed: {{input.text}}"}
             }
         ],
         "edges": [
-            {"source": "start_1", "target": "end_1"}
+            {"source": "input_1", "target": "answer_1"}
         ]
     }
     
@@ -33,9 +33,9 @@ async def test_workflow_executor_with_condition():
     definition = {
         "nodes": [
             {
-                "id": "start_1", 
-                "type": "start", 
-                "data": {"reference_key": "start", "label": "Start", "input_variables": [{"name": "val", "type": "number"}]}
+                "id": "input_1", 
+                "type": "input", 
+                "data": {"reference_key": "input", "label": "Input", "input_variables": [{"name": "val", "type": "number"}]}
             },
             {
                 "id": "cond_1",
@@ -44,24 +44,24 @@ async def test_workflow_executor_with_condition():
                     "reference_key": "cond", 
                     "label": "Is Positive?",
                     "condition_type": "expression",
-                    "expression": "start['val'] > 0"
+                    "expression": "input['val'] > 0"
                 }
             },
             {
-                "id": "end_true", 
-                "type": "end", 
-                "data": {"reference_key": "end_t", "label": "Positive", "output_type": "template", "output_template": "Positive"}
+                "id": "answer_true", 
+                "type": "answer", 
+                "data": {"reference_key": "answer_t", "label": "Positive", "output_type": "template", "output_template": "Positive"}
             },
             {
-                "id": "end_false", 
-                "type": "end", 
-                "data": {"reference_key": "end_f", "label": "Negative", "output_type": "template", "output_template": "Negative"}
+                "id": "answer_false", 
+                "type": "answer", 
+                "data": {"reference_key": "answer_f", "label": "Negative", "output_type": "template", "output_template": "Negative"}
             }
         ],
         "edges": [
-            {"source": "start_1", "target": "cond_1"},
-            {"source": "cond_1", "target": "end_true", "sourceHandle": "true"},
-            {"source": "cond_1", "target": "end_false", "sourceHandle": "false"}
+            {"source": "input_1", "target": "cond_1"},
+            {"source": "cond_1", "target": "answer_true", "sourceHandle": "true"},
+            {"source": "cond_1", "target": "answer_false", "sourceHandle": "false"}
         ]
     }
     

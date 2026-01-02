@@ -4,17 +4,19 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { applyNodeChanges, applyEdgeChanges, type NodeChange, type EdgeChange } from 'reactflow';
 import type {
   Workflow,
   WorkflowSummary,
   WorkflowNode,
   WorkflowEdge,
-  WorkflowStatus,
   WorkflowNodeType,
   WorkflowNodeData,
   ValidationError,
+  WorkflowQueryParams,
+  WorkflowExecution,
+  NodeExecution,
 } from '@/types/workflow';
 import { DEFAULT_NODE_DATA } from '@/types/workflow';
 import { WorkflowApiService } from '@/services/workflowApi';
@@ -45,8 +47,16 @@ interface WorkflowState {
   showWorkflowEditor: boolean;
   showWorkflowSelection: boolean;
   
+  // Execution/Debug state
+  currentExecution: WorkflowExecution | null;
+  isExecuting: boolean;
+  executionError: string | null;
+  nodeExecutionMap: Record<string, NodeExecution>;
+  isDebugPanelOpen: boolean;
+  debugInput: Record<string, any>;
+  
   // Actions - List
-  loadWorkflows: (params?: { status?: WorkflowStatus; search?: string }) => Promise<void>;
+  loadWorkflows: (params?: WorkflowQueryParams) => Promise<void>;
   refreshWorkflows: () => Promise<void>;
   
   // Actions - CRUD
@@ -97,40 +107,57 @@ interface WorkflowState {
   openWorkflowSelection: () => void;
   closeWorkflowSelection: () => void;
   
+  // Actions - Execution/Debug
+  startExecution: (input: Record<string, any>) => Promise<void>;
+  cancelExecution: () => Promise<void>;
+  pollExecutionStatus: (executionId: string) => Promise<void>;
+  setDebugPanelOpen: (open: boolean) => void;
+  setDebugInput: (input: Record<string, any>) => void;
+  clearExecution: () => void;
+  
   // Actions - Reset
   resetEditor: () => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>()(
   devtools(
-    (set, get) => ({
-      // Initial state
-      workflows: [],
-      isLoadingWorkflows: false,
-      workflowsError: null,
-      
-      currentWorkflow: null,
-      isLoadingCurrentWorkflow: false,
-      currentWorkflowError: null,
-      
-      selectedNodeId: null,
-      selectedEdgeId: null,
-      isDirty: false,
-      validationErrors: [],
-      clipboard: null,
-      
-      history: [],
-      historyIndex: -1,
-      
-      showWorkflowEditor: false,
-      showWorkflowSelection: false,
+    persist(
+      (set, get) => ({
+        // Initial state
+        workflows: [],
+        isLoadingWorkflows: false,
+        workflowsError: null,
+        
+        currentWorkflow: null,
+        isLoadingCurrentWorkflow: false,
+        currentWorkflowError: null,
+        
+        selectedNodeId: null,
+        selectedEdgeId: null,
+        isDirty: false,
+        validationErrors: [],
+        clipboard: null,
+        
+        history: [],
+        historyIndex: -1,
+        
+        showWorkflowEditor: false,
+        showWorkflowSelection: false,
+
+        // Execution/Debug state initial values
+        currentExecution: null,
+        isExecuting: false,
+        executionError: null,
+        nodeExecutionMap: {},
+        isDebugPanelOpen: false,
+        debugInput: {},
 
       // Load workflows list
       loadWorkflows: async (params) => {
         set({ isLoadingWorkflows: true, workflowsError: null }, false, 'loadWorkflows:start');
         
         try {
-          const response = await WorkflowApiService.getWorkflows(params);
+          const response = await WorkflowApiService.listWorkflows(params);
           set({
             workflows: response.data,
             isLoadingWorkflows: false,
@@ -157,7 +184,7 @@ export const useWorkflowStore = create<WorkflowState>()(
             currentWorkflow: workflow,
             isLoadingCurrentWorkflow: false,
             isDirty: false,
-            history: [{ nodes: workflow.nodes, edges: workflow.edges }],
+            history: [{ nodes: workflow.definition.nodes, edges: workflow.definition.edges }],
             historyIndex: 0,
           }, false, 'loadWorkflow:success');
         } catch (error) {
@@ -169,12 +196,16 @@ export const useWorkflowStore = create<WorkflowState>()(
       },
 
       // Create new workflow
-      createWorkflow: async (name) => {
-        const workflow = await WorkflowApiService.createEmptyWorkflow(name);
+      createWorkflow: async (name = '新建工作流') => {
+        const workflow = await WorkflowApiService.createWorkflow({
+          name,
+          nodes: [],
+          edges: [],
+        });
         set({
           currentWorkflow: workflow,
           isDirty: false,
-          history: [{ nodes: workflow.nodes, edges: workflow.edges }],
+          history: [{ nodes: workflow.definition.nodes, edges: workflow.definition.edges }],
           historyIndex: 0,
         }, false, 'createWorkflow');
         await get().refreshWorkflows();
@@ -190,8 +221,8 @@ export const useWorkflowStore = create<WorkflowState>()(
           const updated = await WorkflowApiService.updateWorkflow(currentWorkflow.id, {
             name: currentWorkflow.name,
             description: currentWorkflow.description,
-            nodes: currentWorkflow.nodes,
-            edges: currentWorkflow.edges,
+            nodes: currentWorkflow.definition.nodes,
+            edges: currentWorkflow.definition.edges,
             status: currentWorkflow.status,
             tags: currentWorkflow.tags,
           });
@@ -235,7 +266,7 @@ export const useWorkflowStore = create<WorkflowState>()(
           selectedNodeId: null,
           selectedEdgeId: null,
           validationErrors: [],
-          history: workflow ? [{ nodes: workflow.nodes, edges: workflow.edges }] : [],
+          history: workflow ? [{ nodes: workflow.definition.nodes, edges: workflow.definition.edges }] : [],
           historyIndex: workflow ? 0 : -1,
         }, false, 'setCurrentWorkflow');
       },
@@ -259,12 +290,12 @@ export const useWorkflowStore = create<WorkflowState>()(
         const nodeId = `node-${Date.now()}`;
         
         // Generate a stable reference key (slug)
-        const existingKeys = currentWorkflow.nodes.map(n => n.data.referenceKey).filter(Boolean);
+        const existingKeys = currentWorkflow.definition.nodes.map(n => n.data.reference_key).filter(Boolean);
         let index = 1;
-        let referenceKey = `${type}_${index}`;
-        while (existingKeys.includes(referenceKey)) {
+        let reference_key = `${type}_${index}`;
+        while (existingKeys.includes(reference_key)) {
           index++;
-          referenceKey = `${type}_${index}`;
+          reference_key = `${type}_${index}`;
         }
 
         const newNode: WorkflowNode = {
@@ -273,7 +304,7 @@ export const useWorkflowStore = create<WorkflowState>()(
           position,
           data: { 
             ...DEFAULT_NODE_DATA[type],
-            referenceKey 
+            reference_key 
           },
         };
         
@@ -282,7 +313,10 @@ export const useWorkflowStore = create<WorkflowState>()(
         set({
           currentWorkflow: {
             ...currentWorkflow,
-            nodes: [...currentWorkflow.nodes, newNode],
+            definition: {
+              ...currentWorkflow.definition,
+              nodes: [...currentWorkflow.definition.nodes, newNode],
+            }
           },
           selectedNodeId: nodeId,
           isDirty: true,
@@ -294,14 +328,20 @@ export const useWorkflowStore = create<WorkflowState>()(
         const { currentWorkflow } = get();
         if (!currentWorkflow) return;
         
-        const updatedNodes = currentWorkflow.nodes.map(node =>
+        const updatedNodes = currentWorkflow.definition.nodes.map(node =>
           node.id === nodeId
             ? { ...node, data: { ...node.data, ...data } as WorkflowNodeData }
             : node
         );
         
         set({
-          currentWorkflow: { ...currentWorkflow, nodes: updatedNodes },
+          currentWorkflow: {
+            ...currentWorkflow,
+            definition: {
+              ...currentWorkflow.definition,
+              nodes: updatedNodes,
+            }
+          },
           isDirty: true,
         }, false, 'updateNode');
       },
@@ -311,7 +351,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         const { currentWorkflow } = get();
         if (!currentWorkflow) return;
 
-        const node = currentWorkflow.nodes.find(n => n.id === nodeId);
+        const node = currentWorkflow.definition.nodes.find(n => n.id === nodeId);
         if (node) {
           // Store a deep copy in clipboard
           set({ clipboard: JSON.parse(JSON.stringify(node)) }, false, 'copyNode');
@@ -329,12 +369,12 @@ export const useWorkflowStore = create<WorkflowState>()(
         const type = clipboard.type as WorkflowNodeType;
         
         // Generate a stable reference key (slug)
-        const existingKeys = currentWorkflow.nodes.map(n => n.data.referenceKey).filter(Boolean);
+        const existingKeys = currentWorkflow.definition.nodes.map(n => n.data.reference_key).filter(Boolean);
         let index = 1;
-        let referenceKey = `${type}_${index}`;
-        while (existingKeys.includes(referenceKey)) {
+        let reference_key = `${type}_${index}`;
+        while (existingKeys.includes(reference_key)) {
           index++;
-          referenceKey = `${type}_${index}`;
+          reference_key = `${type}_${index}`;
         }
 
         const newNode: WorkflowNode = {
@@ -346,7 +386,7 @@ export const useWorkflowStore = create<WorkflowState>()(
           },
           data: {
             ...JSON.parse(JSON.stringify(clipboard.data)),
-            referenceKey,
+            reference_key,
           },
           selected: true,
         };
@@ -354,7 +394,10 @@ export const useWorkflowStore = create<WorkflowState>()(
         set({
           currentWorkflow: {
             ...currentWorkflow,
-            nodes: [...currentWorkflow.nodes.map(n => ({ ...n, selected: false })), newNode],
+            definition: {
+              ...currentWorkflow.definition,
+              nodes: [...currentWorkflow.definition.nodes.map(n => ({ ...n, selected: false })), newNode],
+            }
           },
           selectedNodeId: newNodeId,
           isDirty: true,
@@ -366,7 +409,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         const { currentWorkflow } = get();
         if (!currentWorkflow) return;
 
-        const nodeToDuplicate = currentWorkflow.nodes.find(n => n.id === nodeId);
+        const nodeToDuplicate = currentWorkflow.definition.nodes.find(n => n.id === nodeId);
         if (!nodeToDuplicate) return;
 
         get().pushHistory();
@@ -375,12 +418,12 @@ export const useWorkflowStore = create<WorkflowState>()(
         const type = nodeToDuplicate.type as WorkflowNodeType;
         
         // Generate a stable reference key (slug)
-        const existingKeys = currentWorkflow.nodes.map(n => n.data.referenceKey).filter(Boolean);
+        const existingKeys = currentWorkflow.definition.nodes.map(n => n.data.reference_key).filter(Boolean);
         let index = 1;
-        let referenceKey = `${type}_${index}`;
-        while (existingKeys.includes(referenceKey)) {
+        let reference_key = `${type}_${index}`;
+        while (existingKeys.includes(reference_key)) {
           index++;
-          referenceKey = `${type}_${index}`;
+          reference_key = `${type}_${index}`;
         }
 
         const newNode: WorkflowNode = {
@@ -392,7 +435,7 @@ export const useWorkflowStore = create<WorkflowState>()(
           },
           data: {
             ...JSON.parse(JSON.stringify(nodeToDuplicate.data)),
-            referenceKey,
+            reference_key,
           },
           selected: true,
         };
@@ -400,7 +443,10 @@ export const useWorkflowStore = create<WorkflowState>()(
         set({
           currentWorkflow: {
             ...currentWorkflow,
-            nodes: [...currentWorkflow.nodes.map(n => ({ ...n, selected: false })), newNode],
+            definition: {
+              ...currentWorkflow.definition,
+              nodes: [...currentWorkflow.definition.nodes.map(n => ({ ...n, selected: false })), newNode],
+            }
           },
           selectedNodeId: newNodeId,
           isDirty: true,
@@ -414,16 +460,19 @@ export const useWorkflowStore = create<WorkflowState>()(
         
         get().pushHistory();
         
-        const updatedNodes = currentWorkflow.nodes.filter(n => n.id !== nodeId);
-        const updatedEdges = currentWorkflow.edges.filter(
+        const updatedNodes = currentWorkflow.definition.nodes.filter(n => n.id !== nodeId);
+        const updatedEdges = currentWorkflow.definition.edges.filter(
           e => e.source !== nodeId && e.target !== nodeId
         );
         
         set({
           currentWorkflow: {
             ...currentWorkflow,
-            nodes: updatedNodes,
-            edges: updatedEdges,
+            definition: {
+              ...currentWorkflow.definition,
+              nodes: updatedNodes,
+              edges: updatedEdges,
+            }
           },
           selectedNodeId: null,
           isDirty: true,
@@ -441,7 +490,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         if (!currentWorkflow) return;
         
         // Check if edge already exists
-        const exists = currentWorkflow.edges.some(
+        const exists = currentWorkflow.definition.edges.some(
           e => e.source === edge.source && e.target === edge.target
         );
         if (exists) return;
@@ -451,7 +500,10 @@ export const useWorkflowStore = create<WorkflowState>()(
         set({
           currentWorkflow: {
             ...currentWorkflow,
-            edges: [...currentWorkflow.edges, edge],
+            definition: {
+              ...currentWorkflow.definition,
+              edges: [...currentWorkflow.definition.edges, edge],
+            }
           },
           isDirty: true,
         }, false, 'addEdge');
@@ -462,12 +514,18 @@ export const useWorkflowStore = create<WorkflowState>()(
         const { currentWorkflow } = get();
         if (!currentWorkflow) return;
         
-        const updatedEdges = currentWorkflow.edges.map(edge =>
+        const updatedEdges = currentWorkflow.definition.edges.map(edge =>
           edge.id === edgeId ? { ...edge, ...data } : edge
         );
         
         set({
-          currentWorkflow: { ...currentWorkflow, edges: updatedEdges },
+          currentWorkflow: {
+            ...currentWorkflow,
+            definition: {
+              ...currentWorkflow.definition,
+              edges: updatedEdges,
+            }
+          },
           isDirty: true,
         }, false, 'updateEdge');
       },
@@ -482,7 +540,10 @@ export const useWorkflowStore = create<WorkflowState>()(
         set({
           currentWorkflow: {
             ...currentWorkflow,
-            edges: currentWorkflow.edges.filter(e => e.id !== edgeId),
+            definition: {
+              ...currentWorkflow.definition,
+              edges: currentWorkflow.definition.edges.filter(e => e.id !== edgeId),
+            }
           },
           selectedEdgeId: null,
           isDirty: true,
@@ -500,7 +561,13 @@ export const useWorkflowStore = create<WorkflowState>()(
         if (!currentWorkflow) return;
         
         set({
-          currentWorkflow: { ...currentWorkflow, nodes },
+          currentWorkflow: {
+            ...currentWorkflow,
+            definition: {
+              ...currentWorkflow.definition,
+              nodes,
+            }
+          },
           isDirty: true,
         }, false, 'setNodes');
       },
@@ -511,7 +578,13 @@ export const useWorkflowStore = create<WorkflowState>()(
         if (!currentWorkflow) return;
         
         set({
-          currentWorkflow: { ...currentWorkflow, edges },
+          currentWorkflow: {
+            ...currentWorkflow,
+            definition: {
+              ...currentWorkflow.definition,
+              edges,
+            }
+          },
           isDirty: true,
         }, false, 'setEdges');
       },
@@ -521,7 +594,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         const { currentWorkflow } = get();
         if (!currentWorkflow) return;
         
-        const nodes = applyNodeChanges(changes, currentWorkflow.nodes) as WorkflowNode[];
+        const nodes = applyNodeChanges(changes, currentWorkflow.definition.nodes) as WorkflowNode[];
         
         // Handle selection separately for the store
         changes.forEach((change) => {
@@ -531,7 +604,13 @@ export const useWorkflowStore = create<WorkflowState>()(
         });
         
         set({
-          currentWorkflow: { ...currentWorkflow, nodes },
+          currentWorkflow: {
+            ...currentWorkflow,
+            definition: {
+              ...currentWorkflow.definition,
+              nodes,
+            }
+          },
           isDirty: true,
         }, false, 'onNodesChange');
       },
@@ -541,7 +620,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         const { currentWorkflow } = get();
         if (!currentWorkflow) return;
         
-        const edges = applyEdgeChanges(changes, currentWorkflow.edges) as WorkflowEdge[];
+        const edges = applyEdgeChanges(changes, currentWorkflow.definition.edges) as any[];
         
         // Handle selection separately for the store
         changes.forEach((change) => {
@@ -551,7 +630,13 @@ export const useWorkflowStore = create<WorkflowState>()(
         });
         
         set({
-          currentWorkflow: { ...currentWorkflow, edges },
+          currentWorkflow: {
+            ...currentWorkflow,
+            definition: {
+              ...currentWorkflow.definition,
+              edges,
+            }
+          },
           isDirty: true,
         }, false, 'onEdgesChange');
       },
@@ -581,8 +666,8 @@ export const useWorkflowStore = create<WorkflowState>()(
         // Remove any future history if we're not at the end
         const newHistory = history.slice(0, historyIndex + 1);
         newHistory.push({
-          nodes: JSON.parse(JSON.stringify(currentWorkflow.nodes)),
-          edges: JSON.parse(JSON.stringify(currentWorkflow.edges)),
+          nodes: JSON.parse(JSON.stringify(currentWorkflow.definition.nodes)),
+          edges: JSON.parse(JSON.stringify(currentWorkflow.definition.edges)),
         });
         
         // Limit history size
@@ -605,8 +690,11 @@ export const useWorkflowStore = create<WorkflowState>()(
         set({
           currentWorkflow: {
             ...currentWorkflow,
-            nodes: prevState.nodes,
-            edges: prevState.edges,
+            definition: {
+              ...currentWorkflow.definition,
+              nodes: prevState.nodes,
+              edges: prevState.edges,
+            }
           },
           historyIndex: historyIndex - 1,
           isDirty: true,
@@ -622,8 +710,11 @@ export const useWorkflowStore = create<WorkflowState>()(
         set({
           currentWorkflow: {
             ...currentWorkflow,
-            nodes: nextState.nodes,
-            edges: nextState.edges,
+            definition: {
+              ...currentWorkflow.definition,
+              nodes: nextState.nodes,
+              edges: nextState.edges,
+            }
           },
           historyIndex: historyIndex + 1,
           isDirty: true,
@@ -635,7 +726,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         const { currentWorkflow } = get();
         if (!currentWorkflow) return false;
         
-        const result = await WorkflowApiService.validateWorkflow(currentWorkflow);
+        const result = await WorkflowApiService.validateWorkflow(currentWorkflow.id);
         
         const errors: ValidationError[] = result.errors.map(msg => ({
           message: msg,
@@ -681,6 +772,98 @@ export const useWorkflowStore = create<WorkflowState>()(
         set({ showWorkflowSelection: false }, false, 'closeWorkflowSelection');
       },
 
+      // Actions - Execution/Debug implementation
+      startExecution: async (input) => {
+        const { currentWorkflow } = get();
+        if (!currentWorkflow) return;
+
+        set({ 
+          isExecuting: true, 
+          executionError: null,
+          nodeExecutionMap: {},
+          currentExecution: null
+        }, false, 'startExecution:start');
+
+        try {
+          const execution = await WorkflowApiService.executeWorkflow(currentWorkflow.id, input);
+          set({ currentExecution: execution }, false, 'startExecution:success');
+          
+          // Start polling for status
+          await get().pollExecutionStatus(execution.id);
+        } catch (error) {
+          set({ 
+            isExecuting: false, 
+            executionError: error instanceof Error ? error.message : 'Failed to start execution' 
+          }, false, 'startExecution:error');
+        }
+      },
+
+      cancelExecution: async () => {
+        const { currentExecution } = get();
+        if (!currentExecution) return;
+
+        try {
+          await WorkflowApiService.cancelExecution(currentExecution.id);
+          set({ isExecuting: false }, false, 'cancelExecution:success');
+        } catch (error) {
+          console.error('Failed to cancel execution:', error);
+        }
+      },
+
+      pollExecutionStatus: async (executionId) => {
+        const poll = async () => {
+          // Check if we are still interested in this execution
+          const state = get();
+          if (state.currentExecution && state.currentExecution.id !== executionId) return;
+
+          try {
+            const execution = await WorkflowApiService.getExecution(executionId);
+            
+            // Map node executions for quick lookup
+            const nodeExecutionMap: Record<string, NodeExecution> = {};
+            if (execution.node_executions) {
+              execution.node_executions.forEach(ne => {
+                nodeExecutionMap[ne.node_id] = ne;
+              });
+            }
+
+            set({ 
+              currentExecution: execution,
+              nodeExecutionMap,
+              isExecuting: execution.status === 'running' || execution.status === 'pending'
+            }, false, 'pollExecutionStatus:update');
+
+            if (execution.status === 'running' || execution.status === 'pending') {
+              setTimeout(poll, 1000); // Poll every second
+            }
+          } catch (error) {
+            set({ 
+              isExecuting: false, 
+              executionError: error instanceof Error ? error.message : 'Failed to poll status' 
+            }, false, 'pollExecutionStatus:error');
+          }
+        };
+
+        await poll();
+      },
+
+      setDebugPanelOpen: (open) => {
+        set({ isDebugPanelOpen: open }, false, 'setDebugPanelOpen');
+      },
+
+      setDebugInput: (input) => {
+        set({ debugInput: input }, false, 'setDebugInput');
+      },
+
+      clearExecution: () => {
+        set({
+          currentExecution: null,
+          isExecuting: false,
+          executionError: null,
+          nodeExecutionMap: {},
+        }, false, 'clearExecution');
+      },
+
       // Reset editor state
       resetEditor: () => {
         set({
@@ -691,12 +874,24 @@ export const useWorkflowStore = create<WorkflowState>()(
           validationErrors: [],
           history: [],
           historyIndex: -1,
+          currentExecution: null,
+          isExecuting: false,
+          executionError: null,
+          nodeExecutionMap: {},
+          isDebugPanelOpen: false,
+          debugInput: {},
         }, false, 'resetEditor');
       },
     }),
-    { name: 'workflow-store' }
-  )
+    { 
+      name: 'workflow-store',
+      partialize: (state) => ({
+        debugInput: state.debugInput,
+      }),
+    }
+  ),
+  { name: 'workflow-store' }
+ )
 );
 
 export default useWorkflowStore;
-

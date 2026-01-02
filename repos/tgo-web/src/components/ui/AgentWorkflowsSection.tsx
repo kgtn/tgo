@@ -65,8 +65,7 @@ const AgentWorkflowsSection: React.FC<AgentWorkflowsSectionProps> = ({
                     {getStatusBadge(workflow.status)}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-                    {workflow.nodeCount} 个节点
-                    {workflow.description && ` · ${workflow.description}`}
+                    {workflow.description}
                   </div>
                 </div>
               </div>

@@ -7,9 +7,10 @@ from app.database import Base
 import uuid
 
 class Workflow(Base):
-    __tablename__ = "workflows"
+    __tablename__ = "wf_workflows"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    project_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     definition: Mapped[dict] = mapped_column(JSON, nullable=False)  # Contains nodes and edges

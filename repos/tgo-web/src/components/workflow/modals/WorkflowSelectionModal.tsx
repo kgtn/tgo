@@ -72,7 +72,7 @@ const WorkflowSelectionModal: React.FC<WorkflowSelectionModalProps> = ({
       const query = debouncedSearch.toLowerCase();
       filtered = filtered.filter(wf =>
         wf.name.toLowerCase().includes(query) ||
-        wf.description.toLowerCase().includes(query)
+        (wf.description && wf.description.toLowerCase().includes(query))
       );
     }
     
@@ -249,7 +249,7 @@ const WorkflowSelectionModal: React.FC<WorkflowSelectionModalProps> = ({
                               {workflow.description || t('workflow.noDescription', '暂无描述')}
                             </p>
                             <div className="flex items-center gap-3 mt-2 text-xs text-gray-400 dark:text-gray-500">
-                              <span>{workflow.nodeCount} 个节点</span>
+                              <span>v{workflow.version}</span>
                               {workflow.tags.length > 0 && (
                                 <span>{workflow.tags.slice(0, 2).join(', ')}</span>
                               )}

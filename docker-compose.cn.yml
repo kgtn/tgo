@@ -27,8 +27,8 @@ services:
   tgo-rag-beat:
     image: registry.cn-shanghai.aliyuncs.com/tgoai/tgo-rag:latest
 
-  tgo-rag-flower:
-    image: registry.cn-shanghai.aliyuncs.com/tgoai/tgo-rag:latest
+  tgo-celery-flower:
+    image: registry.cn-shanghai.aliyuncs.com/tgoai/flower:2.0
 
   tgo-rag:
     image: registry.cn-shanghai.aliyuncs.com/tgoai/tgo-rag:latest
@@ -41,6 +41,12 @@ services:
 
   tgo-platform:
     image: registry.cn-shanghai.aliyuncs.com/tgoai/tgo-platform:latest
+
+  tgo-workflow:
+    image: registry.cn-shanghai.aliyuncs.com/tgoai/tgo-workflow:latest
+
+  tgo-workflow-worker:
+    image: registry.cn-shanghai.aliyuncs.com/tgoai/tgo-workflow:latest
 
   tgo-web:
     image: registry.cn-shanghai.aliyuncs.com/tgoai/tgo-web:latest

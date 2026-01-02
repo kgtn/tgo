@@ -3,8 +3,8 @@ from app.engine.graph import WorkflowGraph
 
 def test_workflow_graph_init():
     nodes = [
-        {"id": "node1", "type": "start", "data": {}},
-        {"id": "node2", "type": "end", "data": {}}
+        {"id": "node1", "type": "input", "data": {}},
+        {"id": "node2", "type": "answer", "data": {}}
     ]
     edges = [
         {"source": "node1", "target": "node2"}
@@ -17,9 +17,9 @@ def test_workflow_graph_init():
 
 def test_topo_sort():
     nodes = [
-        {"id": "node1", "type": "start", "data": {}},
+        {"id": "node1", "type": "input", "data": {}},
         {"id": "node2", "type": "llm", "data": {}},
-        {"id": "node3", "type": "end", "data": {}}
+        {"id": "node3", "type": "answer", "data": {}}
     ]
     edges = [
         {"source": "node1", "target": "node2"},

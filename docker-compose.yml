@@ -61,6 +61,22 @@ services:
       retries: 3
     restart: always
 
+  # Shared Celery Flower (Monitoring for all services)
+  tgo-celery-flower:
+    image: mher/flower:2.0
+    container_name: tgo-celery-flower
+    env_file:
+      - ./.env
+      - ./envs/tgo-celery.env
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:5555/healthcheck || exit 1"]
+    restart: unless-stopped
+
   # RAG Celery worker
   tgo-rag-worker:
     image: ghcr.io/tgoai/tgo/tgo-rag:latest
@@ -79,7 +95,7 @@ services:
       tgo-rag:
         condition: service_started
     command: >
-      sh -c "celery -A src.rag_service.tasks.celery_app worker --loglevel=info --hostname=worker@tgo-rag-worker"
+      sh -c "celery -A src.rag_service.tasks.celery_app worker --loglevel=info --hostname=worker@tgo-rag-worker -Q document_processing,embedding,website_crawling,qa_processing,celery"
     healthcheck:
       test: ["CMD-SHELL", "celery -A src.rag_service.tasks.celery_app inspect ping -d worker@tgo-rag-worker --timeout=10 || exit 1"]
       interval: 30s
@@ -106,30 +122,6 @@ services:
       sh -c "celery -A src.rag_service.tasks.celery_app beat --loglevel=info"
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'celery.*beat' || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    restart: unless-stopped
-
-  # RAG Flower (Celery monitoring UI)
-  tgo-rag-flower:
-    image: ghcr.io/tgoai/tgo/tgo-rag:latest
-    container_name: tgo-rag-flower
-    env_file:
-      - ./.env
-      - ./envs/tgo-rag.env
-    # ports:
-      # - "5555:5555"  
-    depends_on:
-      redis:
-        condition: service_healthy
-      tgo-rag:
-        condition: service_started
-    command: >
-      sh -c "celery -A src.rag_service.tasks.celery_app flower --port=5555"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://127.0.0.1:5555/healthcheck || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -189,6 +181,7 @@ services:
       - ./.env
     depends_on:
       - tgo-ai
+      - tgo-workflow
       - postgres
       - redis
     environment:
@@ -218,6 +211,50 @@ services:
       - wukongim
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:8003/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # Workflow service
+  tgo-workflow:
+    image: ghcr.io/tgoai/tgo/tgo-workflow:latest
+    container_name: tgo-workflow
+    env_file:
+      - ./.env
+      - ./envs/tgo-workflow.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # Workflow Celery worker
+  tgo-workflow-worker:
+    image: ghcr.io/tgoai/tgo/tgo-workflow:latest
+    container_name: tgo-workflow-worker
+    env_file:
+      - ./.env
+      - ./envs/tgo-workflow.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      tgo-workflow:
+        condition: service_started
+    command: >
+      sh -c "celery -A celery_app.celery worker --loglevel=info -Q workflow"
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery.*worker' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

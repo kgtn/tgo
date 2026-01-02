@@ -9,12 +9,13 @@ import app.engine.nodes # Import to trigger registration
 from app.core.logging import logger
 
 class WorkflowExecutor:
-    def __init__(self, workflow_definition: Dict[str, Any]):
+    def __init__(self, workflow_definition: Dict[str, Any], project_id: Optional[str] = None):
         self.graph = WorkflowGraph(
             nodes=workflow_definition.get("nodes", []),
             edges=workflow_definition.get("edges", [])
         )
         self.execution_results = {} # node_id -> output
+        self.project_id = project_id
 
     async def run(self, inputs: Dict[str, Any], on_node_complete=None) -> Dict[str, Any]:
         """
@@ -22,27 +23,37 @@ class WorkflowExecutor:
         on_node_complete: callback(node_id, status, input, output, error, duration)
         """
         # 1. Initialize context
-        # We need to map inputs to start node's reference key
-        start_node = next((n for n in self.graph.nodes.values() if n["type"] == "start"), None)
-        if not start_node:
-            raise ValueError("Start node not found")
+        # Find trigger nodes
+        trigger_types = {"input", "timer", "webhook", "event"}
+        trigger_node = next((n for n in self.graph.nodes.values() if n["type"] in trigger_types), None)
+        
+        if not trigger_node:
+            # Fallback to any node with 0 in-degree if no explicit trigger node found
+            in_degree = {n_id: len(parents) for n_id, parents in self.graph.rev_adj.items()}
+            start_node_id = next((node_id for node_id, degree in in_degree.items() if degree == 0), None)
+            if start_node_id:
+                trigger_node = self.graph.get_node(start_node_id)
+        
+        if not trigger_node:
+            raise ValueError("No entry point (trigger node) found in workflow")
             
-        ref_key = start_node["data"].get("reference_key", "start")
+        ref_key = trigger_node["data"].get("reference_key", trigger_node["type"])
         mapped_inputs = {f"{ref_key}.{k}": v for k, v in inputs.items()}
-        context = ExecutionContext(mapped_inputs)
+        
+        # Use provided project_id or extract from inputs
+        project_id = self.project_id or inputs.get("project_id")
+        context = ExecutionContext(mapped_inputs, project_id=project_id)
         
         # 2. Get execution order
         topo_order = self.graph.get_topo_sort()
-        
+        if not topo_order:
+            return None
+            
         # 3. Execute nodes in order
         executed_nodes = set()
-        pending_nodes = [topo_order[0]] # Start with the first node in topo order (should be start)
-        
-        # Note: In a real implementation with branching, topo sort is not enough.
-        # We need to follow the edges.
         
         # Simple execution loop following edges
-        curr_node_ids = [topo_order[0]]
+        curr_node_ids = [n["id"] for n in self.graph.nodes.values() if n["id"] == trigger_node["id"]]
         
         final_output = None
         
@@ -71,7 +82,7 @@ class WorkflowExecutor:
                     outputs, next_handle = await executor.execute_with_timeout(context)
                     context.set_node_outputs(executor.reference_key, outputs)
                     
-                    if node["type"] == "end":
+                    if node["type"] == "answer":
                         final_output = outputs.get("result")
                         
                 except Exception as e:

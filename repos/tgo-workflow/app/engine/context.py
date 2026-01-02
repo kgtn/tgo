@@ -2,8 +2,9 @@ import re
 from typing import Any, Dict, Optional
 
 class ExecutionContext:
-    def __init__(self, initial_inputs: Optional[Dict[str, Any]] = None):
+    def __init__(self, initial_inputs: Optional[Dict[str, Any]] = None, project_id: Optional[str] = None):
         self.data: Dict[str, Any] = initial_inputs or {}
+        self.project_id = project_id
 
     def get_variable(self, path: str) -> Any:
         """

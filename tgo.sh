@@ -58,6 +58,9 @@ run_all_migrations() {
   
   echo "[INFO] Running Alembic migrations for tgo-platform..."
   docker compose --env-file "$ENV_FILE" $compose_file_args run --rm -T -e PYTHONPATH=. tgo-platform alembic upgrade head
+
+  echo "[INFO] Running Alembic migrations for tgo-workflow..."
+  docker compose --env-file "$ENV_FILE" $compose_file_args run --rm -T tgo-workflow alembic upgrade head
 }
 
 # Start core infrastructure services
@@ -459,7 +462,7 @@ Commands:
   service <start|stop|remove> [--source] [--cn]
                                       Start/stop/remove core services
   tools <start|stop>                  Start/stop debug tools (adminer, redis-insight)
-  build <service>                     Rebuild specific service from source (api|rag|ai|platform|web|widget|all)
+  build <service>                     Rebuild specific service from source (api|rag|ai|workflow|platform|web|widget|all)
   config <subcommand> [args]          Configure domains and SSL certificates
 
 Config Subcommands:
@@ -1204,6 +1207,7 @@ cmd_install() {
     "./data/wukongim"
     "./data/tgo-rag/uploads"
     "./data/tgo-api/uploads"
+    "./data/tgo-workflow/uploads"
     "./data/nginx"
   )
 
@@ -1568,15 +1572,17 @@ cmd_build() {
 
   case "$target" in
     api) services=(tgo-api) ;;
-    rag) services=(tgo-rag tgo-rag-worker tgo-rag-beat tgo-rag-flower) ;;
+    rag) services=(tgo-rag tgo-rag-worker tgo-rag-beat) ;;
+    workflow) services=(tgo-workflow tgo-workflow-worker) ;;
     ai) services=(tgo-ai) ;;
     platform) services=(tgo-platform) ;;
+    celery) services=(tgo-celery-flower) ;;
     web) services=(tgo-web) ;;
     widget) services=(tgo-widget-app) ;;
     all) services=() ;;
     *)
       echo "[ERROR] Unknown service: $target" >&2
-      echo "Supported: api, rag, ai, platform, web, widget, all" >&2
+      echo "Supported: api, rag, ai, workflow, platform, web, widget, all" >&2
       exit 1
       ;;
   esac
@@ -1631,6 +1637,11 @@ run_service_migrations() {
       echo "[INFO] Running Alembic migrations for tgo-ai..."
       wait_for_postgres "$compose_file_args"
       docker compose --env-file "$ENV_FILE" $compose_file_args run --rm -T tgo-ai alembic upgrade head
+      ;;
+    workflow)
+      echo "[INFO] Running Alembic migrations for tgo-workflow..."
+      wait_for_postgres "$compose_file_args"
+      docker compose --env-file "$ENV_FILE" $compose_file_args run --rm -T tgo-workflow alembic upgrade head
       ;;
     platform)
       echo "[INFO] Running Alembic migrations for tgo-platform..."
@@ -2003,8 +2014,10 @@ cmd_doctor() {
     "tgo-rag:RAG Service"
     "tgo-rag-worker:RAG Worker"
     "tgo-rag-beat:RAG Beat"
-    "tgo-rag-flower:RAG Flower"
+    "tgo-celery-flower:Celery Flower"
     "tgo-ai:AI Service"
+    "tgo-workflow:Workflow Service"
+    "tgo-workflow-worker:Workflow Worker"
     "tgo-api:API Service"
     "tgo-platform:Platform Service"
     "tgo-web:Web Frontend"

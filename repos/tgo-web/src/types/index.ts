@@ -253,6 +253,7 @@ export interface AgentCreateRequest {
   ai_provider_id?: string | null; // AI provider UUID (credentials)
   tools?: AgentToolCreateRequest[] | null;
   collections?: string[] | null; // Collection IDs (UUID strings)
+  workflows?: string[] | null; // Workflow IDs
 }
 
 // Agent Update Request Type (based on API spec - all fields optional)
@@ -266,6 +267,7 @@ export interface AgentUpdateRequest {
   ai_provider_id?: string | null; // AI provider UUID (credentials)
   tools?: AgentToolCreateRequest[] | null;
   collections?: string[] | null; // Collection IDs (UUID strings)
+  workflows?: string[] | null; // Workflow IDs
 }
 
 // Agent List Response Type (now returns detailed agents with tools and collections)

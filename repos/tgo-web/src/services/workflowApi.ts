@@ -1,286 +1,143 @@
 /**
  * Workflow API Service
- * Handles workflow CRUD operations
- * Currently uses mock data, will be replaced with real API calls
+ * Handles all communication with the backend for AI Agent Workflows
+ * Strictly follows the OpenAPI specification in docs/api.json
  */
 
-import type {
-  Workflow,
-  WorkflowSummary,
+import apiClient from './api';
+import type { 
+  Workflow, 
+  WorkflowListResponse,
   WorkflowCreateRequest,
   WorkflowUpdateRequest,
-  WorkflowListResponse,
-  WorkflowQueryParams,
+  WorkflowExecution,
+  WorkflowQueryParams
 } from '@/types/workflow';
-import {
-  mockWorkflows,
-  createEmptyWorkflow,
-  generateWorkflowId,
-} from '@/data/mockWorkflows';
 
-// Simulated delay for mock API calls
-const MOCK_DELAY = 300;
-
-// In-memory storage for mock data (allows CRUD operations)
-let workflowsStorage: Workflow[] = [...mockWorkflows];
-
-/**
- * Simulate API delay
- */
-const delay = (ms: number = MOCK_DELAY): Promise<void> => 
-  new Promise(resolve => setTimeout(resolve, ms));
-
-/**
- * Workflow API Service Class
- */
 export class WorkflowApiService {
+  private static BASE_PATH = '/v1/ai/workflows';
+
   /**
-   * Get paginated list of workflows
+   * List all workflows with pagination and filtering
    */
-  static async getWorkflows(params?: WorkflowQueryParams): Promise<WorkflowListResponse> {
-    await delay();
-    
-    let filtered = [...workflowsStorage];
-    
-    // Filter by status
-    if (params?.status) {
-      filtered = filtered.filter(wf => wf.status === params.status);
+  static async listWorkflows(params: WorkflowQueryParams = {}): Promise<WorkflowListResponse> {
+    const query = new URLSearchParams();
+    if (params.status) query.append('status', params.status);
+    if (params.search) query.append('search', params.search);
+    if (params.limit) query.append('limit', params.limit.toString());
+    if (params.offset) query.append('offset', params.offset.toString());
+    if (params.tags && params.tags.length > 0) {
+      params.tags.forEach(tag => query.append('tags', tag));
     }
+
+    const queryString = query.toString();
+    const endpoint = queryString ? `${this.BASE_PATH}?${queryString}` : this.BASE_PATH;
     
-    // Filter by search query
-    if (params?.search) {
-      const query = params.search.toLowerCase();
-      filtered = filtered.filter(wf => 
-        wf.name.toLowerCase().includes(query) ||
-        wf.description.toLowerCase().includes(query)
-      );
-    }
-    
-    // Filter by tags
-    if (params?.tags && params.tags.length > 0) {
-      filtered = filtered.filter(wf => 
-        params.tags!.some(tag => wf.tags.includes(tag))
-      );
-    }
-    
-    // Pagination
-    const limit = params?.limit || 20;
-    const offset = params?.offset || 0;
-    const total = filtered.length;
-    const paginatedData = filtered.slice(offset, offset + limit);
-    
-    // Convert to summaries
-    const summaries: WorkflowSummary[] = paginatedData.map(wf => ({
-      id: wf.id,
-      name: wf.name,
-      description: wf.description,
-      status: wf.status,
-      nodeCount: wf.nodes.length,
-      tags: wf.tags,
-      createdAt: wf.createdAt,
-      updatedAt: wf.updatedAt,
-    }));
-    
-    return {
-      data: summaries,
-      pagination: {
-        total,
-        limit,
-        offset,
-        hasNext: offset + limit < total,
-        hasPrev: offset > 0,
-      },
-    };
+    return apiClient.get<WorkflowListResponse>(endpoint);
   }
 
   /**
-   * Get a specific workflow by ID
+   * Get a single workflow by ID
    */
   static async getWorkflow(id: string): Promise<Workflow> {
-    await delay();
-    
-    const workflow = workflowsStorage.find(wf => wf.id === id);
-    if (!workflow) {
-      throw new Error(`Workflow not found: ${id}`);
-    }
-    
-    return { ...workflow };
+    return apiClient.get<Workflow>(`${this.BASE_PATH}/${id}`);
   }
 
   /**
    * Create a new workflow
    */
   static async createWorkflow(request: WorkflowCreateRequest): Promise<Workflow> {
-    await delay();
-    
-    const now = new Date().toISOString();
-    const newWorkflow: Workflow = {
-      id: generateWorkflowId(),
-      name: request.name,
-      description: request.description || '',
-      nodes: request.nodes,
-      edges: request.edges,
-      status: 'draft',
-      version: 1,
-      tags: request.tags || [],
-      createdAt: now,
-      updatedAt: now,
-    };
-    
-    workflowsStorage.unshift(newWorkflow);
-    return { ...newWorkflow };
+    return apiClient.post<Workflow>(this.BASE_PATH, request);
   }
 
   /**
    * Update an existing workflow
    */
   static async updateWorkflow(id: string, request: WorkflowUpdateRequest): Promise<Workflow> {
-    await delay();
-    
-    const index = workflowsStorage.findIndex(wf => wf.id === id);
-    if (index === -1) {
-      throw new Error(`Workflow not found: ${id}`);
-    }
-    
-    const existing = workflowsStorage[index];
-    const updated: Workflow = {
-      ...existing,
-      name: request.name ?? existing.name,
-      description: request.description ?? existing.description,
-      nodes: request.nodes ?? existing.nodes,
-      edges: request.edges ?? existing.edges,
-      status: request.status ?? existing.status,
-      tags: request.tags ?? existing.tags,
-      version: existing.version + 1,
-      updatedAt: new Date().toISOString(),
-    };
-    
-    workflowsStorage[index] = updated;
-    return { ...updated };
+    return apiClient.put<Workflow>(`${this.BASE_PATH}/${id}`, request);
   }
 
   /**
    * Delete a workflow
    */
   static async deleteWorkflow(id: string): Promise<void> {
-    await delay();
-    
-    const index = workflowsStorage.findIndex(wf => wf.id === id);
-    if (index === -1) {
-      throw new Error(`Workflow not found: ${id}`);
+    return apiClient.delete(`${this.BASE_PATH}/${id}`);
+  }
+
+  /**
+   * Duplicate an existing workflow
+   */
+  static async duplicateWorkflow(id: string, name?: string): Promise<Workflow> {
+    return apiClient.post<Workflow>(`${this.BASE_PATH}/${id}/duplicate`, { name });
+  }
+
+  /**
+   * Validate a workflow's structure and data
+   */
+  static async validateWorkflow(id: string): Promise<{ valid: boolean; errors: string[] }> {
+    return apiClient.post<{ valid: boolean; errors: string[] }>(`${this.BASE_PATH}/${id}/validate`);
+  }
+
+  /**
+   * Publish a workflow to make it active
+   */
+  static async publishWorkflow(id: string): Promise<Workflow> {
+    return apiClient.post<Workflow>(`${this.BASE_PATH}/${id}/publish`);
+  }
+
+  /**
+   * Execute a workflow
+   */
+  static async executeWorkflow(id: string, input?: Record<string, any>): Promise<WorkflowExecution> {
+    return apiClient.post<WorkflowExecution>(`${this.BASE_PATH}/${id}/execute`, { input });
+  }
+
+  /**
+   * Get an execution's status and results
+   */
+  static async getExecution(executionId: string): Promise<WorkflowExecution> {
+    return apiClient.get<WorkflowExecution>(`${this.BASE_PATH}/executions/${executionId}`);
+  }
+
+  /**
+   * Cancel a running execution
+   */
+  static async cancelExecution(executionId: string): Promise<void> {
+    await apiClient.post(`${this.BASE_PATH}/executions/${executionId}/cancel`);
+  }
+
+  /**
+   * List executions for a specific workflow
+   */
+  static async listExecutions(workflowId: string): Promise<WorkflowExecution[]> {
+    return apiClient.get<WorkflowExecution[]>(`${this.BASE_PATH}/${workflowId}/executions`);
+  }
+
+  /**
+   * Get available variables for a node in a workflow
+   */
+  static async getAvailableVariables(workflowId: string): Promise<any> {
+    return apiClient.get(`${this.BASE_PATH}/${workflowId}/variables`);
+  }
+
+  /**
+   * Execute and poll until completion
+   */
+  static async executeAndPoll(
+    id: string,
+    input: Record<string, any>,
+    onUpdate: (execution: WorkflowExecution) => void,
+    pollInterval: number = 1000
+  ): Promise<WorkflowExecution> {
+    let execution = await this.executeWorkflow(id, input);
+    onUpdate(execution);
+
+    while (execution.status === 'running' || execution.status === 'pending') {
+      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      execution = await this.getExecution(execution.id);
+      onUpdate(execution);
     }
-    
-    workflowsStorage.splice(index, 1);
-  }
 
-  /**
-   * Duplicate a workflow
-   */
-  static async duplicateWorkflow(id: string, newName?: string): Promise<Workflow> {
-    await delay();
-    
-    const original = await this.getWorkflow(id);
-    const now = new Date().toISOString();
-    
-    const duplicate: Workflow = {
-      ...original,
-      id: generateWorkflowId(),
-      name: newName || `${original.name} (副本)`,
-      status: 'draft',
-      version: 1,
-      createdAt: now,
-      updatedAt: now,
-    };
-    
-    workflowsStorage.unshift(duplicate);
-    return { ...duplicate };
-  }
-
-  /**
-   * Create an empty workflow with default nodes
-   */
-  static async createEmptyWorkflow(name?: string): Promise<Workflow> {
-    await delay();
-    
-    const empty = createEmptyWorkflow(name);
-    workflowsStorage.unshift(empty);
-    return { ...empty };
-  }
-
-  /**
-   * Validate a workflow
-   */
-  static async validateWorkflow(workflow: Workflow): Promise<{ valid: boolean; errors: string[] }> {
-    await delay(100);
-    
-    const errors: string[] = [];
-    
-    // Check for start node
-    const startNodes = workflow.nodes.filter(n => n.type === 'start');
-    if (startNodes.length === 0) {
-      errors.push('工作流必须有一个开始节点');
-    } else if (startNodes.length > 1) {
-      errors.push('工作流只能有一个开始节点');
-    }
-    
-    // Check for end node
-    const endNodes = workflow.nodes.filter(n => n.type === 'end');
-    if (endNodes.length === 0) {
-      errors.push('工作流必须有一个结束节点');
-    }
-    
-    // Check for disconnected nodes
-    const connectedNodeIds = new Set<string>();
-    workflow.edges.forEach(edge => {
-      connectedNodeIds.add(edge.source);
-      connectedNodeIds.add(edge.target);
-    });
-    
-    const disconnectedNodes = workflow.nodes.filter(
-      n => !connectedNodeIds.has(n.id) && workflow.nodes.length > 1
-    );
-    if (disconnectedNodes.length > 0) {
-      errors.push(`存在未连接的节点: ${disconnectedNodes.map(n => n.data.label).join(', ')}`);
-    }
-    
-    // Check agent nodes have agent selected
-    const agentNodes = workflow.nodes.filter(n => n.type === 'agent');
-    agentNodes.forEach(node => {
-      if (!node.data || !(node.data as any).agentId) {
-        errors.push(`Agent节点 "${node.data?.label || node.id}" 未选择AI员工`);
-      }
-    });
-    
-    // Check tool nodes have tool selected
-    const toolNodes = workflow.nodes.filter(n => n.type === 'tool');
-    toolNodes.forEach(node => {
-      if (!node.data || !(node.data as any).toolId) {
-        errors.push(`工具节点 "${node.data?.label || node.id}" 未选择MCP工具`);
-      }
-    });
-    
-    return {
-      valid: errors.length === 0,
-      errors,
-    };
-  }
-
-  /**
-   * Get workflows by IDs
-   */
-  static async getWorkflowsByIds(ids: string[]): Promise<Workflow[]> {
-    await delay();
-    
-    return workflowsStorage.filter(wf => ids.includes(wf.id));
-  }
-
-  /**
-   * Reset mock data (for testing)
-   */
-  static resetMockData(): void {
-    workflowsStorage = [...mockWorkflows];
+    return execution;
   }
 }
-
-export default WorkflowApiService;
-

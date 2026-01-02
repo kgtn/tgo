@@ -4,7 +4,7 @@ from typing import Optional, List
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "TGO Workflow Engine"
-    API_V1_STR: str = "/api/v1"
+    API_V1_STR: str = "/v1"
     
     # CORS
     ALLOWED_ORIGINS: List[str] = ["*"]
@@ -24,12 +24,8 @@ class Settings(BaseSettings):
         return self.REDIS_URL
     
     # Integrations
-    MAIN_SYSTEM_URL: str = "http://localhost:3000"
-    MAIN_SYSTEM_API_KEY: Optional[str] = None
+    AI_SERVICE_URL: str = "http://localhost:8000"
     
-    # LLM Keys
-    OPENAI_API_KEY: Optional[str] = None
-    ANTHROPIC_API_KEY: Optional[str] = None
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 

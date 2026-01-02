@@ -7,21 +7,23 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Wrench } from 'lucide-react';
 import type { ToolNodeData } from '@/types/workflow';
+import NodeExecutionOverlay from '../overlays/NodeExecutionOverlay';
 
-const ToolNode: React.FC<NodeProps<ToolNodeData>> = ({ data, selected }) => {
-  const hasTool = Boolean(data.toolId);
+const ToolNode: React.FC<NodeProps<ToolNodeData>> = ({ id, data, selected }) => {
+  const hasTool = Boolean(data.tool_id);
   
   return (
     <div
       className={`
         px-5 py-4 rounded-2xl bg-white dark:bg-gray-800 shadow-sm border
-        flex flex-col gap-3 min-w-[220px] transition-all duration-200
+        flex flex-col gap-3 min-w-[220px] transition-all duration-200 relative
         ${selected 
           ? 'border-orange-500 ring-4 ring-orange-500/10' 
           : 'border-gray-100 dark:border-gray-700 hover:shadow-md'
         }
       `}
     >
+      <NodeExecutionOverlay nodeId={id} label={data.label || 'MCP工具'} />
       {/* Colored Side Bar */}
       <div className="absolute left-0 top-4 bottom-4 w-1 bg-orange-500 rounded-r-full" />
 
@@ -40,7 +42,7 @@ const ToolNode: React.FC<NodeProps<ToolNodeData>> = ({ data, selected }) => {
             {data.label || 'MCP工具'}
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
-            {hasTool ? (data.toolName || data.toolId) : '未配置工具'}
+            {hasTool ? (data.tool_name || data.tool_id) : '未配置工具'}
           </div>
         </div>
       </div>

@@ -210,7 +210,7 @@ const WorkflowEditorModal: React.FC<WorkflowEditorModalProps> = ({
                   {t('workflow.fields.description', '描述')}
                 </label>
                 <textarea
-                  value={currentWorkflow.description}
+                  value={currentWorkflow.description || ''}
                   onChange={(e) => updateWorkflowMeta({ description: e.target.value })}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 resize-none"
@@ -252,9 +252,9 @@ const WorkflowEditorModal: React.FC<WorkflowEditorModalProps> = ({
               {/* Info */}
               <div className="pt-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 space-y-1">
                 <p>版本: {currentWorkflow.version}</p>
-                <p>节点数: {currentWorkflow.nodes.length}</p>
-                <p>创建时间: {new Date(currentWorkflow.createdAt).toLocaleString()}</p>
-                <p>更新时间: {new Date(currentWorkflow.updatedAt).toLocaleString()}</p>
+                <p>节点数: {currentWorkflow.definition.nodes.length}</p>
+                <p>创建时间: {new Date(currentWorkflow.created_at).toLocaleString()}</p>
+                <p>更新时间: {new Date(currentWorkflow.updated_at).toLocaleString()}</p>
               </div>
             </div>
           </div>
