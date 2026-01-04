@@ -117,7 +117,13 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'docsSidebar',
           position: 'left',
-          label: '文档',
+          label: '指南',
+        },
+        {
+          type: 'docSidebar',
+          sidebarId: 'pluginSidebar',
+          position: 'left',
+          label: '插件开发',
         },
         // {
         //   type: 'docSidebar',

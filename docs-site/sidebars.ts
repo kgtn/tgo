@@ -80,6 +80,9 @@ const sidebars: SidebarsConfig = {
         },
       ],
     },
+  ],
+
+  pluginSidebar: [
     {
       type: 'category',
       label: '插件开发',
