@@ -1,7 +1,7 @@
 """RAG Service client for external collection data retrieval."""
 
 import uuid
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 from pydantic import BaseModel, Field
@@ -162,6 +162,47 @@ class RAGServiceClient:
         if batch_response.collections:
             return batch_response.collections[0]
         return None
+
+    async def search_documents(
+        self,
+        collection_id: str,
+        project_id: str,
+        query: str,
+        limit: int = 10
+    ) -> Dict[str, Any]:
+        """
+        Search documents in a collection.
+
+        Args:
+            collection_id: Collection ID string
+            project_id: Project ID string or UUID
+            query: Search query
+            limit: Maximum number of results
+
+        Returns:
+            Search results dictionary
+        """
+        async with httpx.AsyncClient(timeout=self.timeout) as client:
+            try:
+                response = await client.post(
+                    f"{self.base_url}/v1/collections/{collection_id}/documents/search",
+                    params={"project_id": str(project_id)},
+                    json={"query": query, "limit": limit},
+                    headers={"Content-Type": "application/json"},
+                )
+                response.raise_for_status()
+                return response.json()
+            except httpx.HTTPStatusError as e:
+                raise ValidationError(
+                    f"RAG search error: {e.response.status_code}",
+                    "collections",
+                    {"status_code": e.response.status_code, "detail": e.response.text}
+                )
+            except httpx.RequestError as e:
+                raise NotFoundError(
+                    "RAG Service",
+                    f"Unable to connect to RAG service for search: {str(e)}"
+                )
 
 
     async def batch_sync_embedding_configs(

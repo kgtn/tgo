@@ -21,16 +21,17 @@ from pydantic import BaseModel, Field
 class FunctionCall(BaseModel):
     """Function call in a message."""
 
-    name: str = Field(..., description="The name of the function to call")
-    arguments: str = Field(..., description="JSON string of function arguments")
+    name: Optional[str] = Field(default=None, description="The name of the function to call")
+    arguments: Optional[str] = Field(default=None, description="JSON string of function arguments")
 
 
 class ToolCall(BaseModel):
     """Tool call in a message."""
 
-    id: str = Field(..., description="The ID of the tool call")
-    type: Literal["function"] = Field(default="function", description="The type of tool call")
-    function: FunctionCall = Field(..., description="The function call details")
+    index: Optional[int] = Field(default=None, description="The index of the tool call")
+    id: Optional[str] = Field(default=None, description="The ID of the tool call")
+    type: Optional[Literal["function"]] = Field(default="function", description="The type of tool call")
+    function: Optional[FunctionCall] = Field(default=None, description="The function call details")
 
 
 class ChatMessage(BaseModel):
@@ -169,6 +170,22 @@ class ChatCompletionRequest(BaseModel):
     seed: Optional[int] = Field(
         default=None,
         description="Random seed for deterministic outputs",
+    )
+
+    # TGO-AI Extension: Dynamic Tool Loading
+    tool_ids: Optional[List[uuid.UUID]] = Field(
+        default=None,
+        description="Tool IDs to load from database (will be converted to function definitions)",
+    )
+    collection_ids: Optional[List[str]] = Field(
+        default=None,
+        description="Collection IDs to create RAG search tools for",
+    )
+    max_tool_rounds: Optional[int] = Field(
+        default=5,
+        ge=1,
+        le=20,
+        description="Maximum number of tool call rounds (default: 5)",
     )
 
 

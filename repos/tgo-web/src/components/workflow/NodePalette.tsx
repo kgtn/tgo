@@ -70,7 +70,7 @@ const NodePalette: React.FC<NodePaletteProps> = ({ isCollapsed, onToggleCollapse
     'answer',
   ];
 
-  const disabledNodeTypes: WorkflowNodeType[] = ['timer', 'webhook', 'event'];
+  const disabledNodeTypes: WorkflowNodeType[] = ['timer', 'webhook', 'event', 'tool'];
 
   const filteredNodeTypes = nodeTypes.filter((type) => {
     const config = NODE_TYPE_CONFIG[type];

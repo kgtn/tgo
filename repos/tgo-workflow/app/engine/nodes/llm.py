@@ -13,8 +13,9 @@ class LLMNodeExecutor(BaseNodeExecutor):
         provider = self.config.get("provider_id", "openai")
         model = self.config.get("model_id", "gpt-4o")
         
-        # Knowledge base and tool integration would go here
-        # ...
+        tool_ids = self.config.get("tool_ids", [])
+        collection_ids = self.config.get("collection_ids", [])
+        max_tool_rounds = self.config.get("max_tool_rounds", 5)
         
         response = await LLMProvider.chat_completion(
             provider_id=provider,
@@ -23,7 +24,10 @@ class LLMNodeExecutor(BaseNodeExecutor):
             system_prompt=system_prompt,
             temperature=self.config.get("temperature", 0.7),
             max_tokens=self.config.get("max_tokens", 2000),
-            project_id=context.project_id
+            project_id=context.project_id,
+            tool_ids=tool_ids,
+            collection_ids=collection_ids,
+            max_tool_rounds=max_tool_rounds
         )
         
         return {"text": response}, None

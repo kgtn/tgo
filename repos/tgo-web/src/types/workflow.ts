@@ -144,8 +144,8 @@ export interface LLMNodeData extends BaseNodeData {
   user_prompt: string;
   temperature?: number;
   max_tokens?: number;
-  tools?: string[]; // IDs of selected MCP tools
-  knowledge_bases?: string[]; // IDs of selected knowledge bases
+  tool_ids?: string[]; // IDs of selected MCP tools
+  collection_ids?: string[]; // IDs of selected knowledge bases
 }
 
 /**
@@ -574,8 +574,8 @@ export const DEFAULT_NODE_DATA: Record<WorkflowNodeType, WorkflowNodeData> = {
     type: 'llm',
     label: 'workflow.node_types.llm.label',
     user_prompt: '',
-    tools: [],
-    knowledge_bases: [],
+    tool_ids: [],
+    collection_ids: [],
     temperature: 0.7,
     max_tokens: 2000,
   },

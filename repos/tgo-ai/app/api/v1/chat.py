@@ -32,13 +32,11 @@ def get_chat_service(db: AsyncSession = Depends(get_db)) -> ChatService:
 
 _STREAMING_EXAMPLE = (
     'data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,'
-    '"model":"gpt-4","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}\n\n'
+    '"model":"gpt-4o","choices":[{"index":0,"delta":{"role":"assistant"},"finish_reason":null}]}\n\n'
+    'data: {"type": "tool_call", "tool_call": {"id": "call_123", "type": "function", "function": {"name": "rag_search_abc123", "arguments": "{\\"query\\":\\"hello\\"}"}}}\n\n'
+    'data: {"type": "tool_result", "tool_call_id": "call_123", "result": "<documents>...</documents>"}\n\n'
     'data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,'
-    '"model":"gpt-4","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}\n\n'
-    'data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,'
-    '"model":"gpt-4","choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}]}\n\n'
-    'data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1234567890,'
-    '"model":"gpt-4","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}\n\n'
+    '"model":"gpt-4o","choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}]}\n\n'
     "data: [DONE]\n\n"
 )
 
@@ -76,11 +74,11 @@ _completions_success_responses = {
             "text/event-stream": {
                 "schema": {
                     "type": "string",
-                    "description": "Server-Sent Events (SSE) stream in OpenAI format.",
+                    "description": "Server-Sent Events (SSE) stream in OpenAI format with TGO-AI tool extensions.",
                 },
                 "examples": {
                     "streaming_response": {
-                        "summary": "Streaming response example",
+                        "summary": "Streaming response example with tool calls",
                         "value": _STREAMING_EXAMPLE,
                     },
                 },
@@ -98,38 +96,61 @@ _completions_success_responses = {
         **build_error_responses(
             [400, 404, 500],
             {
-                400: "Invalid request parameters",
-                404: "LLM provider not found",
-                500: "LLM API call failed",
+                400: "请求参数错误或模型不支持该操作",
+                404: "未找到指定的 LLM 供应商 (LLM Provider)",
+                500: "后端 LLM 供应商调用失败或系统内部错误",
             },
         ),
     },
-    summary="Create chat completion",
+    summary="创建聊天补全 (Chat Completion)",
     description="""
-Create a chat completion using the specified LLM provider.
+创建一个聊天补全请求。该接口完全兼容 OpenAI 的 Chat Completions API 格式，并扩展了对多供应商、动态工具加载和自动 RAG 搜索的支持。
 
-This endpoint is fully compatible with OpenAI's Chat Completions API format,
-with the addition of `provider_id` for selecting LLM provider credentials.
+### 1. 核心请求参数 (Request Parameters)
 
-**Request Parameters:**
-- `provider_id` (UUID): The ID of the LLM provider to use (from ai_llm_providers table)
-- `model` (string): The model identifier (e.g., "gpt-4", "claude-3-opus", "gemini-pro")
-- `messages`: Array of conversation messages
-- `stream`: Whether to stream the response (default: false)
-- Other OpenAI-compatible parameters: temperature, max_tokens, etc.
+| 参数名 | 类型 | 是否必填 | 描述 |
+| :--- | :--- | :--- | :--- |
+| `provider_id` | UUID | 是 | 对应 `ai_llm_providers` 表中的供应商 ID。决定了使用哪组 API 密钥和厂商。 |
+| `model` | String | 是 | 模型标识符 (如 "gpt-4o", "claude-3-5-sonnet", "gemini-1.5-pro")。 |
+| `messages` | Array | 是 | 会话消息列表。支持 role 为 `system`, `user`, `assistant`, `tool`。 |
+| `stream` | Boolean | 否 | 是否开启流式输出。默认 `false`。 |
+| `temperature` | Float | 否 | 采样温度 (0-2)。 |
+| `max_tokens` | Integer | 否 | 最大生成 Token 数。 |
 
-**Provider Support:**
-- `openai` / `openai_compatible`: Uses OpenAI SDK (supports custom base_url for compatible providers)
-- `anthropic`: Uses Anthropic SDK
-- `google`: Uses Google Generative AI SDK
+### 2. TGO-AI 扩展参数 (TGO-AI Extensions)
 
-**Streaming Response:**
-When `stream=true`, returns Server-Sent Events in OpenAI format:
-```
-data: {"id":"...","object":"chat.completion.chunk",...}
+| 参数名 | 类型 | 描述 |
+| :--- | :--- | :--- |
+| `tool_ids` | Array[UUID] | 动态加载工具 ID 列表。后端会自动从数据库读取 MCP 工具定义并转换成 OpenAI function 格式发送给模型。 |
+| `collection_ids` | Array[String] | RAG 知识库 ID 列表。后端会为每个集合自动生成一个 RAG 搜索工具 (如 `rag_search_xxx`)。 |
+| `max_tool_rounds` | Integer | 自动工具调用的最大轮数 (Agentic Loop)。默认 `5`，最大 `20`。 |
 
-data: [DONE]
-```
+### 3. 返回值 (Return Value)
+
+#### 非流式模式 (stream=false)
+返回一个标准的 OpenAI 兼容 JSON 对象 (`ChatCompletionResponse`)。
+*   如果触发了工具调用且 `max_tool_rounds > 0`，后端会**自动执行工具**并在获取结果后再次请求 LLM，直到输出最终回复。
+*   `usage` 字段将包含整个 agentic loop 累积的 Token 消耗。
+
+#### 流式模式 (stream=true)
+返回 `text/event-stream`。除了标准的 OpenAI chunk 外，还会包含 TGO-AI 自定义的工具执行事件：
+
+| 事件类型 (SSE Data) | 描述 |
+| :--- | :--- |
+| `{"id":"...","object":"chat.completion.chunk",...}` | 标准的文本增量或模型原始输出。 |
+| `{"type": "tool_call", "tool_call": {...}}` | **TGO-AI 自定义事件**：通知前端后端正在自动执行某个工具调用。 |
+| `{"type": "tool_result", "tool_call_id": "...", "result": "..."}` | **TGO-AI 自定义事件**：工具执行完成，返回执行结果。 |
+| `data: [DONE]` | 流结束。 |
+
+### 4. 供应商支持情况 (Provider Support)
+*   **OpenAI / OpenAI Compatible**: 支持完整的工具调用和流式输出。
+*   **Anthropic (Claude)**: 支持工具调用。
+*   **Google (Gemini)**: 支持工具调用。
+
+### 5. 错误处理 (Error Handling)
+*   `404`: `provider_id` 不存在或不属于当前项目。
+*   `400`: `messages` 格式错误或 `max_tool_rounds` 超出范围。
+*   `500`: 远程供应商服务不可用或超时。
 """,
 )
 async def create_chat_completion(

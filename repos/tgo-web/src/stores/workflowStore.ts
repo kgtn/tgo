@@ -20,6 +20,7 @@ import type {
 } from '@/types/workflow';
 import { DEFAULT_NODE_DATA } from '@/types/workflow';
 import { WorkflowApiService } from '@/services/workflowApi';
+import { migrateNodes, migrateNodeData } from '@/utils/workflowTransforms';
 import i18n from '@/i18n';
 
 interface WorkflowState {
@@ -183,6 +184,10 @@ export const useWorkflowStore = create<WorkflowState>()(
         
         try {
           const workflow = await WorkflowApiService.getWorkflow(id);
+          // Migrate node data if needed
+          const migratedNodes = migrateNodes(workflow.definition.nodes);
+          workflow.definition.nodes = migratedNodes;
+
           set({
             currentWorkflow: workflow,
             isLoadingCurrentWorkflow: false,
@@ -353,7 +358,7 @@ export const useWorkflowStore = create<WorkflowState>()(
         
         const updatedNodes = currentWorkflow.definition.nodes.map(node =>
           node.id === nodeId
-            ? { ...node, data: { ...node.data, ...data } as WorkflowNodeData }
+            ? { ...node, data: migrateNodeData({ ...node.data, ...data }) }
             : node
         );
         

@@ -6,6 +6,7 @@ based on the provider_kind from the LLMProvider table.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 import uuid
@@ -14,11 +15,13 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 import google.generativeai as genai
 from anthropic import AsyncAnthropic
 from openai import AsyncOpenAI
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logging import get_logger
 from app.exceptions import TGOAIServiceException
 from app.models.llm_provider import LLMProvider
+from app.models.tool import Tool
 from app.schemas.chat import (
     ChatCompletionChunk,
     ChatCompletionRequest,
@@ -27,11 +30,17 @@ from app.schemas.chat import (
     Choice,
     ChoiceMessage,
     DeltaMessage,
+    FunctionCall,
+    FunctionDefinition,
     StreamChoice,
+    ToolCall,
+    ToolDefinition,
     Usage,
     create_completion_id,
 )
 from app.services.llm_provider_service import LLMProviderService
+from app.services.rag_service import rag_service_client
+from app.services.tool_executor import ToolExecutor
 
 logger = get_logger(__name__)
 
@@ -112,53 +121,381 @@ class ChatService:
         request: ChatCompletionRequest,
         project_id: uuid.UUID,
     ) -> ChatCompletionResponse:
-        """Create a non-streaming chat completion."""
+        """Create a non-streaming chat completion with agentic loop."""
         provider = await self._get_provider(request.provider_id, project_id)
         provider_kind = (provider.provider_kind or "").lower()
+
+        # Merge tools from all sources
+        merged_tools = await self._merge_tools(request, project_id)
+        request.tools = merged_tools
+
+        # Create tool executor and register tools
+        executor = ToolExecutor(self.db, project_id)
+        await executor.register_tools(request.tool_ids, request.collection_ids)
 
         self._logger.info(
             "Creating chat completion",
             provider_id=str(request.provider_id),
             provider_kind=provider_kind,
             model=request.model,
+            tools_count=len(merged_tools) if merged_tools else 0,
         )
 
+        max_rounds = request.max_tool_rounds if request.max_tool_rounds is not None else 5
+        total_usage = Usage(prompt_tokens=0, completion_tokens=0, total_tokens=0)
+        
+        for round_idx in range(max_rounds):
+            self._logger.debug(f"Starting tool round {round_idx + 1}/{max_rounds}")
+            
+            if provider_kind in self.OPENAI_PROVIDERS:
+                response = await self._openai_completion(request, provider)
+            elif provider_kind == self.ANTHROPIC_PROVIDER:
+                response = await self._anthropic_completion(request, provider)
+            elif provider_kind == self.GOOGLE_PROVIDER:
+                response = await self._google_completion(request, provider)
+            else:
+                raise UnsupportedProviderError(provider_kind)
+
+            # Update usage
+            if response.usage:
+                total_usage.prompt_tokens += response.usage.prompt_tokens
+                total_usage.completion_tokens += response.usage.completion_tokens
+                total_usage.total_tokens += response.usage.total_tokens
+
+            # Check if there are tool calls in the first choice
+            if not response.choices or not response.choices[0].message.tool_calls:
+                response.usage = total_usage
+                return response
+
+            # We have tool calls. Execute them and add to messages.
+            assistant_msg_content = response.choices[0].message.content
+            tool_calls = response.choices[0].message.tool_calls
+            
+            # Add assistant message with tool calls to history
+            request.messages.append(ChatMessage(
+                role="assistant",
+                content=assistant_msg_content,
+                tool_calls=tool_calls
+            ))
+
+            # Execute tool calls in parallel
+            execution_tasks = []
+            for tc in tool_calls:
+                execution_tasks.append(executor.execute(tc.function.name, tc.function.arguments))
+            
+            results = await asyncio.gather(*execution_tasks)
+
+            # Add tool result messages to history
+            for tc, result in zip(tool_calls, results):
+                request.messages.append(ChatMessage(
+                    role="tool",
+                    name=tc.function.name,
+                    content=result,
+                    tool_call_id=tc.id
+                ))
+            
+            # Continue to next round
+
+        # If max rounds reached, do one final call without tools
+        self._logger.warning(f"Reached max tool rounds ({max_rounds}), finishing without tools")
+        request.tools = None
         if provider_kind in self.OPENAI_PROVIDERS:
-            return await self._openai_completion(request, provider)
+            response = await self._openai_completion(request, provider)
         elif provider_kind == self.ANTHROPIC_PROVIDER:
-            return await self._anthropic_completion(request, provider)
+            response = await self._anthropic_completion(request, provider)
         elif provider_kind == self.GOOGLE_PROVIDER:
-            return await self._google_completion(request, provider)
+            response = await self._google_completion(request, provider)
         else:
             raise UnsupportedProviderError(provider_kind)
+            
+        if response.usage:
+            total_usage.prompt_tokens += response.usage.prompt_tokens
+            total_usage.completion_tokens += response.usage.completion_tokens
+            total_usage.total_tokens += response.usage.total_tokens
+        response.usage = total_usage
+        
+        return response
 
     async def create_completion_stream(
         self,
         request: ChatCompletionRequest,
         project_id: uuid.UUID,
     ) -> AsyncIterator[str]:
-        """Create a streaming chat completion."""
+        """Create a streaming chat completion with agentic loop."""
         provider = await self._get_provider(request.provider_id, project_id)
         provider_kind = (provider.provider_kind or "").lower()
+
+        # Merge tools from all sources
+        merged_tools = await self._merge_tools(request, project_id)
+        request.tools = merged_tools
+
+        # Create tool executor
+        executor = ToolExecutor(self.db, project_id)
+        await executor.register_tools(request.tool_ids, request.collection_ids)
 
         self._logger.info(
             "Creating streaming chat completion",
             provider_id=str(request.provider_id),
             provider_kind=provider_kind,
             model=request.model,
+            tools_count=len(merged_tools) if merged_tools else 0,
         )
 
-        if provider_kind in self.OPENAI_PROVIDERS:
-            async for chunk in self._openai_stream(request, provider):
-                yield chunk
-        elif provider_kind == self.ANTHROPIC_PROVIDER:
-            async for chunk in self._anthropic_stream(request, provider):
-                yield chunk
-        elif provider_kind == self.GOOGLE_PROVIDER:
-            async for chunk in self._google_stream(request, provider):
-                yield chunk
+        max_rounds = request.max_tool_rounds if request.max_tool_rounds is not None else 5
+        
+        for round_idx in range(max_rounds):
+            self._logger.debug(f"Starting streaming tool round {round_idx + 1}/{max_rounds}")
+            
+            current_tool_calls: Dict[int, Dict[str, Any]] = {}
+            current_content = ""
+            
+            if provider_kind in self.OPENAI_PROVIDERS:
+                stream_gen = self._openai_stream(request, provider)
+            elif provider_kind == self.ANTHROPIC_PROVIDER:
+                stream_gen = self._anthropic_stream(request, provider)
+            elif provider_kind == self.GOOGLE_PROVIDER:
+                stream_gen = self._google_stream(request, provider)
+            else:
+                raise UnsupportedProviderError(provider_kind)
+
+            async for raw_chunk in stream_gen:
+                if raw_chunk == "data: [DONE]\n\n":
+                    continue
+
+                yield raw_chunk
+                
+                # Extract tool calls for next round
+                if raw_chunk.startswith("data: "):
+                    data_str = raw_chunk[6:].strip()
+                    if data_str == "[DONE]":
+                        continue
+                    try:
+                        chunk_data = json.loads(data_str)
+                        if chunk_data.get("object") == "chat.completion.chunk":
+                            choices = chunk_data.get("choices", [])
+                            if choices:
+                                delta = choices[0].get("delta", {})
+                                if delta.get("content"):
+                                    current_content += delta["content"]
+                                if delta.get("tool_calls"):
+                                    for tc_delta in delta["tool_calls"]:
+                                        idx = tc_delta.get("index", 0)
+                                        if idx not in current_tool_calls:
+                                            current_tool_calls[idx] = {"id": "", "type": "function", "function": {"name": "", "arguments": ""}}
+                                        if tc_delta.get("id"):
+                                            current_tool_calls[idx]["id"] += tc_delta["id"]
+                                        if tc_delta.get("function"):
+                                            f_delta = tc_delta["function"]
+                                            if f_delta.get("name"):
+                                                current_tool_calls[idx]["function"]["name"] += f_delta["name"]
+                                            if f_delta.get("arguments"):
+                                                current_tool_calls[idx]["function"]["arguments"] += f_delta["arguments"]
+                    except Exception:
+                        pass
+
+            if not current_tool_calls:
+                yield "data: [DONE]\n\n"
+                return
+
+            # Prepare for next round
+            final_tool_calls = []
+            for idx in sorted(current_tool_calls.keys()):
+                tc_info = current_tool_calls[idx]
+                final_tool_calls.append(ToolCall(
+                    id=tc_info["id"],
+                    type="function",
+                    function=FunctionCall(
+                        name=tc_info["function"]["name"],
+                        arguments=tc_info["function"]["arguments"]
+                    )
+                ))
+
+            request.messages.append(ChatMessage(
+                role="assistant",
+                content=current_content,
+                tool_calls=final_tool_calls
+            ))
+
+            for tc in final_tool_calls:
+                yield f"data: {json.dumps({'type': 'tool_call', 'tool_call': tc.model_dump()}, ensure_ascii=False)}\n\n"
+
+            execution_tasks = [executor.execute(tc.function.name, tc.function.arguments) for tc in final_tool_calls]
+            results = await asyncio.gather(*execution_tasks)
+            
+            for tc, result in zip(final_tool_calls, results):
+                yield f"data: {json.dumps({'type': 'tool_result', 'tool_call_id': tc.id, 'result': result}, ensure_ascii=False)}\n\n"
+                request.messages.append(ChatMessage(
+                    role="tool",
+                    name=tc.function.name,
+                    content=result,
+                    tool_call_id=tc.id
+                ))
+            
+            if round_idx == max_rounds - 1:
+                self._logger.warning(f"Reached max tool rounds ({max_rounds}), finishing")
+                break
+
+        # Final call without tools if we broke out of the loop with tool calls
+        if current_tool_calls and round_idx == max_rounds - 1:
+            request.tools = None
+            if provider_kind in self.OPENAI_PROVIDERS:
+                stream_gen = self._openai_stream(request, provider)
+            elif provider_kind == self.ANTHROPIC_PROVIDER:
+                stream_gen = self._anthropic_stream(request, provider)
+            elif provider_kind == self.GOOGLE_PROVIDER:
+                stream_gen = self._google_stream(request, provider)
+            else:
+                raise UnsupportedProviderError(provider_kind)
+            
+            async for raw_chunk in stream_gen:
+                yield raw_chunk
         else:
-            raise UnsupportedProviderError(provider_kind)
+            yield "data: [DONE]\n\n"
+
+    # -------------------------------------------------------------------------
+    # Tool Merging Logic
+    # -------------------------------------------------------------------------
+
+    async def _merge_tools(
+        self,
+        request: ChatCompletionRequest,
+        project_id: uuid.UUID,
+    ) -> Optional[List[ToolDefinition]]:
+        """Merge tools from request.tools, tool_ids, and collection_ids."""
+        import asyncio
+        
+        db_tools_task = None
+        if request.tool_ids:
+            db_tools_task = asyncio.create_task(self._load_tools_from_db(request.tool_ids, project_id))
+
+        rag_tools_task = None
+        if request.collection_ids:
+            rag_tools_task = asyncio.create_task(self._create_rag_tool_definitions(request.collection_ids, project_id))
+
+        db_tools = await db_tools_task if db_tools_task else []
+        rag_tools = await rag_tools_task if rag_tools_task else []
+
+        # Merge all tools
+        merged_tools: List[ToolDefinition] = []
+        if request.tools:
+            merged_tools.extend(request.tools)
+        
+        merged_tools.extend(db_tools)
+        merged_tools.extend(rag_tools)
+
+        return merged_tools if merged_tools else None
+
+    async def _load_tools_from_db(
+        self,
+        tool_ids: List[uuid.UUID],
+        project_id: uuid.UUID,
+    ) -> List[ToolDefinition]:
+        """Load MCP tools from database and convert to ToolDefinition."""
+        if not tool_ids:
+            return []
+
+        stmt = select(Tool).where(
+            and_(
+                Tool.id.in_(tool_ids),
+                Tool.project_id == project_id,
+                Tool.deleted_at.is_(None),
+            )
+        )
+        result = await self.db.execute(stmt)
+        tools = result.scalars().all()
+
+        tool_defs = []
+        for tool in tools:
+            # We expect tool.config to contain 'inputSchema' for MCP tools
+            parameters = tool.config.get("inputSchema", {}) if tool.config else {}
+            
+            tool_defs.append(
+                ToolDefinition(
+                    type="function",
+                    function=FunctionDefinition(
+                        name=tool.name,
+                        description=tool.description,
+                        parameters=parameters,
+                    ),
+                )
+            )
+        
+        return tool_defs
+
+    async def _create_rag_tool_definitions(
+        self,
+        collection_ids: List[str],
+        project_id: uuid.UUID,
+    ) -> List[ToolDefinition]:
+        """Fetch collection info from RAG service and create RAG tool definitions."""
+        if not collection_ids:
+            return []
+
+        tool_defs = []
+        try:
+            # We use the batch client to fetch info for all collections
+            batch_resp = await rag_service_client.get_collections_batch(
+                collection_ids, str(project_id)
+            )
+            
+            # Map of found collections
+            found_collections = {str(c.id): c for c in batch_resp.collections}
+
+            for cid in collection_ids:
+                if cid in found_collections:
+                    col = found_collections[cid]
+                    display_name = col.display_name
+                    description = col.description or f"Search in {display_name}"
+                else:
+                    display_name = f"collection_{cid[:8]}"
+                    description = f"Search in collection {cid}"
+
+                tool_name = f"rag_search_{cid.replace('-', '')[:8]}"
+                tool_defs.append(
+                    ToolDefinition(
+                        type="function",
+                        function=FunctionDefinition(
+                            name=tool_name,
+                            description=f"{description} (Semantically similar search)",
+                            parameters={
+                                "type": "object",
+                                "properties": {
+                                    "query": {
+                                        "type": "string",
+                                        "description": "Natural language search query",
+                                    }
+                                },
+                                "required": ["query"],
+                            },
+                        ),
+                    )
+                )
+        except Exception as e:
+            self._logger.warning("Failed to create RAG tool definitions", error=str(e))
+            # Fallback to generic definitions if RAG service call fails
+            for cid in collection_ids:
+                tool_name = f"rag_search_{cid.replace('-', '')[:8]}"
+                tool_defs.append(
+                    ToolDefinition(
+                        type="function",
+                        function=FunctionDefinition(
+                            name=tool_name,
+                            description=f"Search in collection {cid} (Semantically similar search)",
+                            parameters={
+                                "type": "object",
+                                "properties": {
+                                    "query": {
+                                        "type": "string",
+                                        "description": "Natural language search query",
+                                    }
+                                },
+                                "required": ["query"],
+                            },
+                        ),
+                    )
+                )
+
+        return tool_defs
 
     # -------------------------------------------------------------------------
     # Provider Validation
@@ -214,7 +551,7 @@ class ChatService:
                         message=ChoiceMessage(
                             role="assistant",
                             content=choice.message.content,
-                            tool_calls=choice.message.tool_calls,
+                            tool_calls=self._convert_openai_tool_calls(choice.message.tool_calls),
                         ),
                         finish_reason=choice.finish_reason,
                     )
@@ -258,7 +595,7 @@ class ChatService:
                             delta=DeltaMessage(
                                 role=getattr(choice.delta, "role", None),
                                 content=getattr(choice.delta, "content", None),
-                                tool_calls=getattr(choice.delta, "tool_calls", None),
+                                tool_calls=self._convert_openai_tool_calls(getattr(choice.delta, "tool_calls", None)),
                             ),
                             finish_reason=choice.finish_reason,
                         )
@@ -272,6 +609,39 @@ class ChatService:
         except Exception as e:
             self._logger.error("OpenAI streaming failed", error=str(e))
             yield f"data: {json.dumps({'error': {'message': str(e), 'type': 'api_error'}})}\n\n"
+
+    def _convert_openai_tool_calls(self, openai_tool_calls: Optional[List[Any]]) -> Optional[List[ToolCall]]:
+        """Convert OpenAI SDK tool calls to internal ToolCall schema."""
+        if not openai_tool_calls:
+            return None
+        
+        result = []
+        for tc in openai_tool_calls:
+            if isinstance(tc, dict):
+                tc_index = tc.get("index")
+                tc_id = tc.get("id")
+                tc_type = tc.get("type", "function")
+                func_data = tc.get("function")
+                f_name = func_data.get("name") if func_data else None
+                f_args = func_data.get("arguments") if func_data else None
+            else:
+                tc_index = getattr(tc, "index", None)
+                tc_id = getattr(tc, "id", None)
+                tc_type = getattr(tc, "type", "function")
+                func_obj = getattr(tc, "function", None)
+                f_name = getattr(func_obj, "name", None) if func_obj else None
+                f_args = getattr(func_obj, "arguments", None) if func_obj else None
+            
+            result.append(ToolCall(
+                index=tc_index,
+                id=tc_id,
+                type=tc_type,
+                function=FunctionCall(
+                    name=f_name,
+                    arguments=f_args
+                )
+            ))
+        return result if result else None
 
     def _build_openai_params(self, request: ChatCompletionRequest) -> Dict[str, Any]:
         """Build OpenAI API parameters from request."""
@@ -427,6 +797,19 @@ class ChatService:
         if request.stop:
             params["stop_sequences"] = request.stop if isinstance(request.stop, list) else [request.stop]
 
+        # Handle tools for Anthropic
+        if request.tools:
+            anthropic_tools = []
+            for tool in request.tools:
+                if tool.type == "function":
+                    anthropic_tools.append({
+                        "name": tool.function.name,
+                        "description": tool.function.description or "",
+                        "input_schema": tool.function.parameters or {"type": "object", "properties": {}},
+                    })
+            if anthropic_tools:
+                params["tools"] = anthropic_tools
+
         return params
 
     @staticmethod
@@ -462,7 +845,22 @@ class ChatService:
         """Handle Google Gemini chat completion."""
         try:
             self._configure_gemini(provider.api_key)
-            model = genai.GenerativeModel(request.model)
+            
+            # Build tools for Gemini
+            tools = None
+            if request.tools:
+                gemini_functions = []
+                for tool in request.tools:
+                    if tool.type == "function":
+                        gemini_functions.append({
+                            "name": tool.function.name,
+                            "description": tool.function.description or "",
+                            "parameters": tool.function.parameters or {"type": "object", "properties": {}},
+                        })
+                if gemini_functions:
+                    tools = [{"function_declarations": gemini_functions}]
+
+            model = genai.GenerativeModel(request.model, tools=tools)
             history, last_message = self._convert_to_gemini_messages(request.messages)
             generation_config = self._build_gemini_config(request)
 
@@ -509,7 +907,22 @@ class ChatService:
         """Handle Google Gemini streaming chat completion."""
         try:
             self._configure_gemini(provider.api_key)
-            model = genai.GenerativeModel(request.model)
+            
+            # Build tools for Gemini
+            tools = None
+            if request.tools:
+                gemini_functions = []
+                for tool in request.tools:
+                    if tool.type == "function":
+                        gemini_functions.append({
+                            "name": tool.function.name,
+                            "description": tool.function.description or "",
+                            "parameters": tool.function.parameters or {"type": "object", "properties": {}},
+                        })
+                if gemini_functions:
+                    tools = [{"function_declarations": gemini_functions}]
+
+            model = genai.GenerativeModel(request.model, tools=tools)
             history, last_message = self._convert_to_gemini_messages(request.messages)
             generation_config = self._build_gemini_config(request)
 

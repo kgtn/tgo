@@ -128,8 +128,8 @@ class LLMNodeData(BaseSchema):
     )
     temperature: float = Field(0.7, description="Sampling temperature")
     max_tokens: int = Field(2000, description="Maximum generation tokens")
-    tools: list[str] = Field(default_factory=list, description="List of tool IDs")
-    knowledge_bases: list[str] = Field(default_factory=list, description="Knowledge base IDs")
+    tool_ids: list[str] = Field(default_factory=list, description="List of tool IDs")
+    collection_ids: list[str] = Field(default_factory=list, description="Knowledge base IDs")
 
 
 class AgentNodeData(BaseSchema):

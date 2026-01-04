@@ -251,7 +251,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node }) => {
             <ToolNodeConfig 
               data={localData as any} 
               onUpdate={handleUpdate} 
-              tools={aiTools} 
+              availableTools={aiTools} 
             />
           )}
 
@@ -278,8 +278,8 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node }) => {
               llmOptions={llmOptions}
               llmLoading={llmLoading}
               llmError={llmError}
-              tools={aiTools}
-              knowledgeBases={knowledgeBases}
+              availableTools={aiTools}
+              availableKnowledgeBases={knowledgeBases}
             />
           )}
 
@@ -791,8 +791,8 @@ const AgentNodeConfig: React.FC<{
 const ToolNodeConfig: React.FC<{
   data: any;
   onUpdate: (updates: any) => void;
-  tools: any[];
-}> = ({ data, onUpdate, tools }) => {
+  availableTools: any[];
+}> = ({ data, onUpdate, availableTools }) => {
   const { t } = useTranslation();
 
   return (
@@ -805,7 +805,7 @@ const ToolNodeConfig: React.FC<{
           <select
             value={data.tool_id || ''}
             onChange={(e) => {
-              const tool = tools.find(t => t.id === e.target.value);
+              const tool = availableTools.find(t => t.id === e.target.value);
               onUpdate({
                 tool_id: e.target.value,
                 tool_name: tool?.name || '',
@@ -814,7 +814,7 @@ const ToolNodeConfig: React.FC<{
             className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm dark:text-gray-100 appearance-none cursor-pointer pr-10"
           >
             <option value="">{t('workflow.placeholders.selectTool', '请选择MCP工具')}</option>
-            {tools.map(tool => (
+            {availableTools.map(tool => (
               <option key={tool.id} value={tool.id}>
                 {tool.name}
               </option>
@@ -985,13 +985,13 @@ const LLMNodeConfig: React.FC<{
   llmOptions: Array<{ value: string; label: string }>;
   llmLoading: boolean;
   llmError: string | null;
-  tools: any[];
-  knowledgeBases: any[];
-}> = ({ data, onUpdate, nodeId, nodes, edges, llmOptions, llmLoading, llmError, tools, knowledgeBases }) => {
+  availableTools: any[];
+  availableKnowledgeBases: any[];
+}> = ({ data, onUpdate, nodeId, nodes, edges, llmOptions, llmLoading, llmError, availableTools, availableKnowledgeBases }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'prompt' | 'model' | 'capabilities'>('prompt');
 
-  const toggleItem = (field: 'tools' | 'knowledge_bases', id: string) => {
+  const toggleItem = (field: 'tool_ids' | 'collection_ids', id: string) => {
     const list = [...(data[field] || [])];
     const index = list.indexOf(id);
     if (index > -1) {
@@ -1028,8 +1028,8 @@ const LLMNodeConfig: React.FC<{
         ))}
       </div>
 
-      {activeTab === 'prompt' && (
-        <div className="space-y-5 animate-in fade-in slide-in-from-top-1 duration-200">
+      <div className="relative">
+        <div className={`space-y-5 ${activeTab === 'prompt' ? '' : 'hidden'}`}>
           <div className="space-y-2">
             <label className="text-[11px] uppercase font-bold text-gray-400 tracking-wider">{t('workflow.fields.system_prompt', '系统提示词')} (Optional)</label>
             <VariableInput
@@ -1060,10 +1060,8 @@ const LLMNodeConfig: React.FC<{
             />
           </div>
         </div>
-      )}
 
-      {activeTab === 'model' && (
-        <div className="space-y-5 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className={`space-y-5 ${activeTab === 'model' ? '' : 'hidden'}`}>
           <LLMModelSelector 
             providerId={data.provider_id}
             modelId={data.model_id}
@@ -1097,30 +1095,28 @@ const LLMNodeConfig: React.FC<{
             </div>
           </div>
         </div>
-      )}
 
-      {activeTab === 'capabilities' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className={`space-y-6 ${activeTab === 'capabilities' ? '' : 'hidden'}`}>
           {/* Tools */}
           <div className="space-y-3">
             <label className="text-[11px] uppercase font-bold text-gray-400 tracking-wider flex items-center gap-2">
               <Wrench className="w-3 h-3" /> {t('agents.create.sections.mcpTools', 'MCP工具')}
             </label>
             <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-              {tools.map(tool => (
+              {availableTools.map(tool => (
                 <button
                   key={tool.id}
-                  onClick={() => toggleItem('tools', tool.id)}
+                  onClick={() => toggleItem('tool_ids', tool.id)}
                   className={`
                     w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all text-left
-                    ${(data.tools || []).includes(tool.id)
+                    ${(data.tool_ids || []).includes(tool.id)
                       ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400'
                       : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-500 hover:border-gray-200'
                     }
                   `}
                 >
                   <span className="text-xs font-medium truncate">{tool.name}</span>
-                  {(data.tools || []).includes(tool.id) && <Check className="w-3 h-3 shrink-0" />}
+                  {(data.tool_ids || []).includes(tool.id) && <Check className="w-3 h-3 shrink-0" />}
                 </button>
               ))}
             </div>
@@ -1132,26 +1128,26 @@ const LLMNodeConfig: React.FC<{
               <Database className="w-3 h-3" /> {t('agents.form.knowledge_bases', '知识库')} (RAG)
             </label>
             <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
-              {knowledgeBases.map(kb => (
+              {availableKnowledgeBases.map(kb => (
                 <button
                   key={kb.id}
-                  onClick={() => toggleItem('knowledge_bases', kb.id)}
+                  onClick={() => toggleItem('collection_ids', kb.id)}
                   className={`
                     w-full flex items-center justify-between px-3 py-2 rounded-xl border transition-all text-left
-                    ${(data.knowledge_bases || []).includes(kb.id)
+                    ${(data.collection_ids || []).includes(kb.id)
                       ? 'bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 text-cyan-600 dark:text-cyan-400'
                       : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700 text-gray-500 hover:border-gray-200'
                     }
                   `}
                 >
-                  <span className="text-xs font-medium truncate">{kb.name}</span>
-                  {(data.knowledge_bases || []).includes(kb.id) && <Check className="w-3 h-3 shrink-0" />}
+                  <span className="text-xs font-medium truncate">{kb.title || kb.name || 'Untitled'}</span>
+                  {(data.collection_ids || []).includes(kb.id) && <Check className="w-3 h-3 shrink-0" />}
                 </button>
               ))}
             </div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -1274,8 +1270,8 @@ const ClassifierNodeConfig: React.FC<{
         ))}
       </div>
 
-      {activeTab === 'config' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-top-1 duration-200">
+      <div className="relative">
+        <div className={`space-y-6 ${activeTab === 'config' ? '' : 'hidden'}`}>
           <div className="space-y-2">
             <label className="text-[11px] uppercase font-bold text-gray-400 tracking-wider">{t('workflow.fields.text_to_classify', '待分类文本')}</label>
             <VariableInput
@@ -1323,10 +1319,8 @@ const ClassifierNodeConfig: React.FC<{
             </div>
           </div>
         </div>
-      )}
 
-      {activeTab === 'model' && (
-        <div className="space-y-5 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className={`space-y-5 ${activeTab === 'model' ? '' : 'hidden'}`}>
           <LLMModelSelector 
             providerId={data.provider_id}
             modelId={data.model_id}
@@ -1336,7 +1330,7 @@ const ClassifierNodeConfig: React.FC<{
             llmError={llmError}
           />
         </div>
-      )}
+      </div>
     </div>
   );
 };

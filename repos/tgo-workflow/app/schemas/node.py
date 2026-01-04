@@ -47,8 +47,8 @@ class LLMNodeData(BaseNodeData):
     user_prompt: str = Field(..., description="User prompt, supports {{node_key.var}} variable references")
     temperature: float = Field(0.7, description="Sampling temperature")
     max_tokens: int = Field(2000, description="Maximum generation tokens")
-    tools: List[str] = Field([], description="List of tool IDs that can be called by this node")
-    knowledge_bases: List[str] = Field([], description="List of associated knowledge base IDs")
+    tool_ids: List[str] = Field([], description="List of tool IDs that can be called by this node")
+    collection_ids: List[str] = Field([], description="List of associated knowledge base (collection) IDs")
 
 class AgentNodeData(BaseNodeData):
     type: Literal["agent"] = Field("agent", description="Node type: agent")

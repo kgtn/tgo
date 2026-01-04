@@ -12,7 +12,10 @@ class LLMProvider:
         system_prompt: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: int = 2000,
-        project_id: Optional[str] = None
+        project_id: Optional[str] = None,
+        tool_ids: Optional[List[str]] = None,
+        collection_ids: Optional[List[str]] = None,
+        max_tool_rounds: int = 5
     ) -> str:
         logger.info(f"LLM Chat Completion via AI Service: provider_id={provider_id} model={model}")
         
@@ -30,8 +33,14 @@ class LLMProvider:
             "messages": messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
-            "stream": False
+            "stream": False,
+            "max_tool_rounds": max_tool_rounds
         }
+
+        if tool_ids:
+            payload["tool_ids"] = tool_ids
+        if collection_ids:
+            payload["collection_ids"] = collection_ids
         
         try:
             data = await AIClient.chat_completions(active_project_id, payload)
