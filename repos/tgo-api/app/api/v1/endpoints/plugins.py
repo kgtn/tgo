@@ -1,12 +1,16 @@
 """Plugin API endpoints."""
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
+from sqlalchemy.orm import Session
 
+from app.core.database import get_db
 from app.core.logging import get_logger
 from app.services.plugin_manager import plugin_manager
+from app.models.visitor import Visitor # Import Visitor model
 from app.schemas.plugin import (
+    VisitorInfo,
     PluginListResponse,
     PluginInfo,
     PluginRenderRequest,
@@ -20,6 +24,27 @@ from app.schemas.plugin import (
 
 logger = get_logger("api.plugins")
 router = APIRouter()
+
+
+def _get_visitor_info(db_visitor: Visitor, language: Optional[str] = None) -> VisitorInfo:
+    """Helper to create VisitorInfo with prioritized name logic."""
+    name = db_visitor.name
+    if not name:
+        is_zh = language and language.lower().startswith("zh")
+        if is_zh and db_visitor.nickname_zh:
+            name = db_visitor.nickname_zh
+        else:
+            name = db_visitor.nickname or f"Visitor {str(db_visitor.id)[:4]}"
+
+    return VisitorInfo(
+        id=str(db_visitor.id),
+        platform_open_id=db_visitor.platform_open_id,
+        name=name,
+        email=db_visitor.email,
+        phone=db_visitor.phone_number,
+        avatar=db_visitor.avatar_url,
+        metadata=db_visitor.custom_attributes or {}
+    )
 
 
 @router.get("", response_model=PluginListResponse)
@@ -45,16 +70,30 @@ async def get_chat_toolbar_buttons() -> ChatToolbarResponse:
 
 
 @router.post("/visitor-panel/render", response_model=VisitorPanelRenderResponse)
-async def render_visitor_panels(request: VisitorPanelRenderRequest) -> VisitorPanelRenderResponse:
+async def render_visitor_panels(
+    request: VisitorPanelRenderRequest,
+    db: Session = Depends(get_db)
+) -> VisitorPanelRenderResponse:
     """
     Render all visitor panel plugins for a specific visitor.
     
     Returns a list of rendered panels from all plugins that support visitor_panel.
     """
+    visitor_info = request.visitor
+    
+    # If visitor info not provided, fetch from database
+    if not visitor_info and request.visitor_id:
+        try:
+            db_visitor = db.query(Visitor).filter(Visitor.id == request.visitor_id).first()
+            if db_visitor:
+                visitor_info = _get_visitor_info(db_visitor, request.language)
+        except Exception as e:
+            logger.warning(f"Failed to fetch visitor info for plugin render: {e}")
+
     panels = await plugin_manager.render_visitor_panels(
         visitor_id=request.visitor_id,
         session_id=request.session_id,
-        visitor=request.visitor,
+        visitor=visitor_info,
         context=request.context,
         language=request.language,
     )
@@ -64,7 +103,8 @@ async def render_visitor_panels(request: VisitorPanelRenderRequest) -> VisitorPa
 @router.post("/chat-toolbar/{plugin_id}/render", response_model=PluginRenderResponse)
 async def render_chat_toolbar_plugin(
     plugin_id: str,
-    request: PluginRenderRequest
+    request: PluginRenderRequest,
+    db: Session = Depends(get_db)
 ) -> PluginRenderResponse:
     """
     Render a chat toolbar plugin's content.
@@ -78,11 +118,22 @@ async def render_chat_toolbar_plugin(
             detail=f"Plugin not found: {plugin_id}"
         )
     
+    visitor_info = request.visitor
+    # If visitor info not provided, fetch from database
+    if not visitor_info and request.visitor_id:
+        try:
+            db_visitor = db.query(Visitor).filter(Visitor.id == request.visitor_id).first()
+            if db_visitor:
+                visitor_info = _get_visitor_info(db_visitor, request.language)
+        except Exception as e:
+            logger.warning(f"Failed to fetch visitor info for plugin render: {e}")
+
+    print("visitor_info--->",visitor_info)
     params = {
         "action_id": request.action_id,
         "visitor_id": request.visitor_id,
         "session_id": request.session_id,
-        "visitor": request.visitor.model_dump(exclude_none=True) if request.visitor else None,
+        "visitor": visitor_info.model_dump(exclude_none=True) if visitor_info else None,
         "agent_id": request.agent_id,
         "context": request.context,
         "language": request.language,
@@ -151,7 +202,11 @@ async def get_plugin(plugin_id: str) -> PluginInfo:
 
 
 @router.post("/{plugin_id}/render", response_model=PluginRenderResponse)
-async def render_plugin(plugin_id: str, request: PluginRenderRequest) -> PluginRenderResponse:
+async def render_plugin(
+    plugin_id: str, 
+    request: PluginRenderRequest,
+    db: Session = Depends(get_db)
+) -> PluginRenderResponse:
     """
     Trigger a plugin to render its UI.
     
@@ -164,6 +219,16 @@ async def render_plugin(plugin_id: str, request: PluginRenderRequest) -> PluginR
             detail=f"Plugin not found: {plugin_id}"
         )
     
+    visitor_info = request.visitor
+    # If visitor info not provided, fetch from database
+    if not visitor_info and request.visitor_id:
+        try:
+            db_visitor = db.query(Visitor).filter(Visitor.id == request.visitor_id).first()
+            if db_visitor:
+                visitor_info = _get_visitor_info(db_visitor, request.language)
+        except Exception as e:
+            logger.warning(f"Failed to fetch visitor info for plugin render: {e}")
+
     # Determine the render method based on plugin capabilities
     method = "visitor_panel/render"
     for cap in plugin.capabilities:
@@ -174,7 +239,7 @@ async def render_plugin(plugin_id: str, request: PluginRenderRequest) -> PluginR
     params = {
         "visitor_id": request.visitor_id,
         "session_id": request.session_id,
-        "visitor": request.visitor.model_dump(exclude_none=True) if request.visitor else None,
+        "visitor": visitor_info.model_dump(exclude_none=True) if visitor_info else None,
         "agent_id": request.agent_id,
         "action_id": request.action_id,
         "context": request.context,

@@ -20,6 +20,7 @@ class PluginCapability(BaseModel):
 class VisitorInfo(BaseModel):
     """Basic visitor information provided to plugins."""
     id: str
+    platform_open_id: Optional[str] = Field(None, description="Visitor unique identifier on the platform")
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
