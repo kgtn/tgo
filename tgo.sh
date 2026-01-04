@@ -567,6 +567,41 @@ load_install_mode() {
 # Note: docker-compose.cn.yml is now a static file in the repository
 # (no longer auto-generated)
 
+# Helper function to sync environment variables from source to destination file
+# without overwriting existing ones.
+sync_env_file() {
+  local src="$1"
+  local dest="$2"
+  
+  if [ ! -f "$dest" ]; then
+    cp "$src" "$dest"
+    echo "[INFO] Added new env file: $dest"
+    return
+  fi
+
+  local added_count=0
+  local first_addition=true
+
+  # Read source line by line
+  while IFS= read -r line || [ -n "$line" ]; do
+    # Only process lines that look like KEY=VALUE (start with alphanumeric/underscore followed by =)
+    if [[ "$line" =~ ^[A-Za-z0-9_]+= ]]; then
+      local key="${line%%=*}"
+      # Check if key exists in destination file
+      if ! grep -qE "^${key}=" "$dest"; then
+        if [ "$first_addition" = true ]; then
+          echo "[INFO] Syncing env vars for $dest"
+          printf "\n# --- Added by upgrade on $(date +%Y-%m-%d) ---\n" >> "$dest"
+          first_addition=false
+        fi
+        echo "$line" >> "$dest"
+        echo "[INFO]   Added new config: $key"
+        added_count=$((added_count + 1))
+      fi
+    fi
+  done < "$src"
+}
+
 ensure_env_files() {
   if [ ! -f "$ENV_FILE" ]; then
     if [ -f ".env.example" ]; then
@@ -602,22 +637,13 @@ ENVEOF
     cp -R "envs.docker" "envs"
     echo "[INFO] Created envs/ from envs.docker."
   elif [ -d "envs" ] && [ -d "envs.docker" ]; then
-    # Sync new env files from envs.docker to envs (don't overwrite existing)
-    local new_files_added=false
+    # Sync env files and variables from envs.docker to envs
     for src_file in envs.docker/*.env; do
       [ -f "$src_file" ] || continue
       local filename
       filename=$(basename "$src_file")
-      local dest_file="envs/$filename"
-      if [ ! -f "$dest_file" ]; then
-        cp "$src_file" "$dest_file"
-        echo "[INFO] Added new env file: envs/$filename"
-        new_files_added=true
-      fi
+      sync_env_file "$src_file" "envs/$filename"
     done
-    if [ "$new_files_added" = false ]; then
-      : # All env files already exist, nothing to report
-    fi
   fi
 }
 
