@@ -1171,6 +1171,7 @@
       "title": "组件库",
       "search": "搜索组件...",
       "noMatch": "未找到匹配组件",
+      "underDevelopment": "开发中",
       "insertVariable": "插入变量",
       "searchVariables": "搜索变量...",
       "noUpstreamVariables": "无上游可用变量",

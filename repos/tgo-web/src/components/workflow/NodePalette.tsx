@@ -70,6 +70,8 @@ const NodePalette: React.FC<NodePaletteProps> = ({ isCollapsed, onToggleCollapse
     'answer',
   ];
 
+  const disabledNodeTypes: WorkflowNodeType[] = ['timer', 'webhook', 'event'];
+
   const filteredNodeTypes = nodeTypes.filter((type) => {
     const config = NODE_TYPE_CONFIG[type];
     const label = t(`workflow.node_types.${type}.label`, config.label);
@@ -97,6 +99,7 @@ const NodePalette: React.FC<NodePaletteProps> = ({ isCollapsed, onToggleCollapse
     const label = t(`workflow.node_types.${type}.label`, config.label);
     const description = t(`workflow.node_types.${type}.description`, config.description);
     const Icon = iconMap[config.icon] || Play;
+    const isDisabled = disabledNodeTypes.includes(type);
     
     const colorClasses: Record<string, string> = {
       green: 'text-green-500 bg-green-50 dark:bg-green-900/20',
@@ -111,12 +114,15 @@ const NodePalette: React.FC<NodePaletteProps> = ({ isCollapsed, onToggleCollapse
     return (
       <div
         key={type}
-        draggable
-        onDragStart={(e) => handleDragStart(e, type)}
+        draggable={!isDisabled}
+        onDragStart={(e) => !isDisabled && handleDragStart(e, type)}
         className={`
           group flex items-start gap-3 p-2 rounded-xl border border-transparent
-          hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50
-          cursor-grab active:cursor-grabbing transition-all duration-200
+          ${isDisabled 
+            ? 'opacity-50 cursor-not-allowed grayscale' 
+            : 'hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-grab active:cursor-grabbing'
+          }
+          transition-all duration-200
           ${isCollapsed ? 'justify-center' : ''}
         `}
         title={isCollapsed ? label : ''}
@@ -126,9 +132,16 @@ const NodePalette: React.FC<NodePaletteProps> = ({ isCollapsed, onToggleCollapse
         </div>
         
         {!isCollapsed && (
-          <div className="min-w-0">
-            <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
-              {label}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">
+                {label}
+              </div>
+              {isDisabled && (
+                <span className="shrink-0 text-[8px] bg-gray-100 dark:bg-gray-700 text-gray-500 px-1 py-0.5 rounded uppercase font-bold">
+                  {t('workflow.palette.underDevelopment', '开发中')}
+                </span>
+              )}
             </div>
             <div className="text-[10px] text-gray-400 dark:text-gray-500 line-clamp-1 mt-0.5 leading-relaxed">
               {description}

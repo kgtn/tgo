@@ -852,6 +852,7 @@
       "title": "Components",
       "search": "Search components...",
       "noMatch": "No components found",
+      "underDevelopment": "Under Development",
       "insertVariable": "Insert Variable",
       "searchVariables": "Search variables...",
       "noUpstreamVariables": "No upstream variables",
