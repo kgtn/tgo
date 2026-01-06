@@ -1,8 +1,11 @@
 """Plugin API endpoints."""
 
+import json
+import asyncio
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.responses import StreamingResponse
 
 from app.core.logging import get_logger
 from app.services.plugin_manager import plugin_manager
@@ -30,6 +33,8 @@ from app.schemas.install import (
     PluginLogResponse,
     PluginFetchRequest,
     PluginFetchResponse,
+    PluginUpdateCheckResponse,
+    PluginUpgradeRequest,
 )
 from app.core.database import AsyncSessionLocal
 from app.models.plugin import InstalledPlugin
@@ -89,6 +94,8 @@ async def list_installed_plugins(project_id: Optional[str] = None) -> InstalledP
                 author=p.author,
                 status=status,
                 install_type=p.install_type,
+                source_url=p.source_url,
+                latest_version=p.latest_version or p.version,
                 installed_at=p.installed_at,
                 updated_at=p.updated_at,
                 pid=pid,
@@ -142,6 +149,8 @@ async def fetch_plugin_info(request: PluginFetchRequest) -> PluginFetchResponse:
         logger.error(f"Failed to fetch plugin info from {request.url}: {e}")
         raise HTTPException(status_code=500, detail=f"Internal error fetching plugin info: {e}")
 
+
+# ==================== Generic Plugin Routes ====================
 
 @router.get("/plugins/{plugin_id}", response_model=PluginInfo)
 async def get_plugin(plugin_id: str, project_id: Optional[str] = None) -> PluginInfo:
@@ -409,93 +418,102 @@ async def execute_plugin_tool(
 
 # ==================== Installation & Lifecycle ====================
 
+# ==================== Installation & Lifecycle ====================
+
+@router.post("/plugins/install-stream")
+async def install_plugin_stream(request: PluginInstallRequest):
+    """
+    Install a plugin and stream progress via SSE.
+    """
+    async def event_generator():
+        queue = asyncio.Queue()
+
+        async def progress_callback(stage: str, message: str):
+            await queue.put({"stage": stage, "message": message})
+
+        # Run installation in background
+        async def run_install():
+            try:
+                # 1. Update DB to installing status
+                async with AsyncSessionLocal() as session:
+                    stmt = select(InstalledPlugin).where(InstalledPlugin.plugin_id == request.id)
+                    result = await session.execute(stmt)
+                    existing = result.scalar_one_or_none()
+                    
+                    if existing:
+                        plugin = existing
+                        plugin.name = request.name
+                        plugin.version = request.version
+                        plugin.latest_version = request.version
+                        plugin.description = request.description
+                        plugin.author = request.author
+                        plugin.source_url = request.source_url
+                        plugin.status = "installing"
+                    else:
+                        plugin = InstalledPlugin(
+                            plugin_id=request.id,
+                            project_id=request.project_id,
+                            name=request.name,
+                            version=request.version,
+                            latest_version=request.version,
+                            description=request.description,
+                            author=request.author,
+                            source_url=request.source_url,
+                            install_type="github" if request.source.github else "binary",
+                            source_config=request.source.model_dump(exclude_none=True),
+                            build_config=request.build.model_dump(exclude_none=True) if request.build else None,
+                            runtime_config=request.runtime.model_dump(exclude_none=True),
+                            status="installing"
+                        )
+                        session.add(plugin)
+                    
+                    await session.commit()
+
+                # 2. Run actual installation
+                success, message, install_path = await installer.install(request, progress_callback=progress_callback)
+
+                # 3. Update DB with results
+                async with AsyncSessionLocal() as session:
+                    stmt = select(InstalledPlugin).where(InstalledPlugin.plugin_id == request.id)
+                    result = await session.execute(stmt)
+                    plugin = result.scalar_one_or_none()
+                    
+                    if success:
+                        plugin.status = "stopped"
+                        plugin.install_path = install_path
+                        await session.commit()
+                        
+                        # Auto-start
+                        await queue.put({"stage": "starting", "message": "Starting plugin process..."})
+                        await process_manager.start_plugin(plugin.plugin_id, request.model_dump())
+                        
+                        await queue.put({"stage": "complete", "message": "Installation successful"})
+                    else:
+                        plugin.status = "error"
+                        plugin.last_error = message
+                        await session.commit()
+                        await queue.put({"stage": "error", "message": message})
+            except Exception as e:
+                logger.error(f"Error in install-stream for {request.id}: {e}")
+                await queue.put({"stage": "error", "message": str(e)})
+            finally:
+                # Signal end of stream
+                await queue.put(None)
+
+        # Start installation
+        asyncio.create_task(run_install())
+
+        # Stream progress from queue
+        while True:
+            event = await queue.get()
+            if event is None:
+                break
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+
 @router.post("/plugins/install", response_model=InstalledPluginInfo)
-async def install_plugin(request: PluginInstallRequest):
-    """
-    Install a plugin from GitHub or binary URL.
-    """
-    async with AsyncSessionLocal() as session:
-        # Check if already exists
-        stmt = select(InstalledPlugin).where(InstalledPlugin.plugin_id == request.id)
-        result = await session.execute(stmt)
-        existing = result.scalar_one_or_none()
-        
-        if existing:
-            plugin = existing
-            plugin.name = request.name
-            plugin.version = request.version
-            plugin.description = request.description
-            plugin.author = request.author
-            plugin.status = "installing"
-        else:
-            plugin = InstalledPlugin(
-                plugin_id=request.id,
-                project_id=request.project_id,
-                name=request.name,
-                version=request.version,
-                description=request.description,
-                author=request.author,
-                install_type="github" if request.source.github else "binary",
-                source_config=request.source.model_dump(exclude_none=True),
-                build_config=request.build.model_dump(exclude_none=True) if request.build else None,
-                runtime_config=request.runtime.model_dump(exclude_none=True),
-                status="installing"
-            )
-            session.add(plugin)
-        
-        await session.commit()
-        await session.refresh(plugin)
-        
-        try:
-            success, message, install_path = await installer.install(request)
-            if success:
-                plugin.status = "stopped"
-                plugin.install_path = install_path
-                await session.commit()
-                await session.refresh(plugin)
-                
-                # Auto-start after install
-                await process_manager.start_plugin(plugin.plugin_id, request.model_dump())
-                
-                # Get capabilities if plugin is connected
-                active_plugin = plugin_manager.get_plugin(plugin.plugin_id)
-                capabilities = active_plugin.capabilities if active_plugin else []
-                
-                return InstalledPluginInfo(
-                    id=plugin.id,
-                    plugin_id=plugin.plugin_id,
-                    name=plugin.name,
-                    version=plugin.version,
-                    description=plugin.description,
-                    author=plugin.author,
-                    status=plugin.status,
-                    install_type=plugin.install_type,
-                    installed_at=plugin.installed_at,
-                    updated_at=plugin.updated_at,
-                    pid=plugin.pid,
-                    last_error=plugin.last_error,
-                    is_dev_mode=False,
-                    capabilities=capabilities
-                )
-            else:
-                plugin.status = "error"
-                plugin.last_error = message
-                await session.commit()
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=message
-                )
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Failed during installation of {request.id}: {e}")
-            plugin.status = "error"
-            plugin.last_error = str(e)
-            await session.commit()
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(e)
-            )
 
 
 @router.delete("/plugins/{plugin_id}/uninstall", response_model=Dict[str, Any])
@@ -663,4 +681,154 @@ async def get_plugin_status(plugin_id: str, project_id: Optional[str] = None):
             raise HTTPException(status_code=404, detail="Plugin not found for this project")
 
     return process_manager.get_status(plugin_id)
+
+
+@router.get("/plugins/{plugin_id}/check-update", response_model=PluginUpdateCheckResponse)
+async def check_plugin_update(plugin_id: str, project_id: Optional[str] = None) -> PluginUpdateCheckResponse:
+    """
+    Check if an update is available for an installed plugin.
+    """
+    async with AsyncSessionLocal() as session:
+        stmt = select(InstalledPlugin).where(InstalledPlugin.plugin_id == plugin_id)
+        if project_id:
+            stmt = stmt.where(InstalledPlugin.project_id == project_id)
+        
+        result = await session.execute(stmt)
+        plugin = result.scalar_one_or_none()
+        
+        if not plugin:
+            raise HTTPException(status_code=404, detail="Plugin not found")
+        
+        if not plugin.source_url:
+            return PluginUpdateCheckResponse(
+                has_update=False,
+                current_version=plugin.version,
+                latest_version=plugin.version,
+                message="No source URL found for this plugin, cannot check for updates."
+            )
+        
+        resolver = PluginURLResolver()
+        try:
+            latest_config_dict = await resolver.resolve(plugin.source_url)
+            latest_config = PluginFetchResponse(**latest_config_dict, source_url=plugin.source_url)
+            
+            # Simple version comparison
+            has_update = latest_config.version != plugin.version
+            
+            # Save latest version to DB
+            plugin.latest_version = latest_config.version
+            await session.commit()
+            
+            return PluginUpdateCheckResponse(
+                has_update=has_update,
+                current_version=plugin.version,
+                latest_version=latest_config.version,
+                latest_config=latest_config
+            )
+        except Exception as e:
+            logger.error(f"Failed to check update for {plugin_id}: {e}")
+            return PluginUpdateCheckResponse(
+                has_update=False,
+                current_version=plugin.version,
+                latest_version=plugin.version,
+                message=f"Error checking update: {str(e)}"
+            )
+
+
+@router.post("/plugins/{plugin_id}/upgrade")
+async def upgrade_plugin(
+    plugin_id: str, 
+    request: PluginUpgradeRequest,
+    project_id: Optional[str] = None
+):
+    """
+    Upgrade an installed plugin and stream progress via SSE.
+    """
+    async def event_generator():
+        queue = asyncio.Queue()
+
+        async def progress_callback(stage: str, message: str):
+            await queue.put({"stage": stage, "message": message})
+
+        async def run_upgrade():
+            try:
+                # 1. Get existing plugin
+                async with AsyncSessionLocal() as session:
+                    stmt = select(InstalledPlugin).where(InstalledPlugin.plugin_id == plugin_id)
+                    if project_id:
+                        stmt = stmt.where(InstalledPlugin.project_id == project_id)
+                    result = await session.execute(stmt)
+                    plugin = result.scalar_one_or_none()
+                    
+                    if not plugin:
+                        await queue.put({"stage": "error", "message": "Plugin not found"})
+                        return
+
+                # 2. Stop existing process
+                await progress_callback("stopping", "Stopping plugin process...")
+                await process_manager.stop_plugin(plugin_id)
+
+                # 3. Create InstallRequest for installer
+                from sqlalchemy import func
+                install_request = PluginInstallRequest(
+                    id=plugin_id,
+                    project_id=str(plugin.project_id),
+                    name=request.latest_config.name,
+                    version=request.latest_config.version,
+                    description=request.latest_config.description,
+                    author=request.latest_config.author,
+                    source=request.latest_config.source,
+                    source_url=request.latest_config.source_url,
+                    build=request.latest_config.build,
+                    runtime=request.latest_config.runtime
+                )
+
+                # 4. Run upgrade (with backup/rollback support in installer)
+                success, message, install_path = await installer.upgrade(install_request, progress_callback=progress_callback)
+
+                # 5. Update DB and start
+                async with AsyncSessionLocal() as session:
+                    stmt = select(InstalledPlugin).where(InstalledPlugin.plugin_id == plugin_id)
+                    result = await session.execute(stmt)
+                    plugin = result.scalar_one_or_none()
+                    
+                    if success:
+                        plugin.name = install_request.name
+                        plugin.version = install_request.version
+                        plugin.description = install_request.description
+                        plugin.author = install_request.author
+                        plugin.latest_version = install_request.version
+                        plugin.status = "stopped"
+                        plugin.install_path = install_path
+                        plugin.updated_at = func.now()
+                        await session.commit()
+                        
+                        await progress_callback("starting", "Starting upgraded plugin...")
+                        await process_manager.start_plugin(plugin_id, install_request.model_dump())
+                        await progress_callback("complete", "Upgrade successful")
+                    else:
+                        plugin.status = "error"
+                        plugin.last_error = message
+                        await session.commit()
+                        await progress_callback("error", message)
+                        
+                        # Try to restart old version if rollback was successful
+                        await progress_callback("restarting", "Restarting original version...")
+                        await process_manager.start_plugin(plugin_id)
+
+            except Exception as e:
+                logger.error(f"Error in upgrade-stream for {plugin_id}: {e}")
+                await queue.put({"stage": "error", "message": str(e)})
+            finally:
+                await queue.put(None)
+
+        asyncio.create_task(run_upgrade())
+
+        while True:
+            event = await queue.get()
+            if event is None:
+                break
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 

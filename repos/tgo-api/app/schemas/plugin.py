@@ -124,6 +124,20 @@ class PluginFetchResponse(BaseModel):
     source_url: str
 
 
+class PluginUpdateCheckResponse(BaseModel):
+    """Response for plugin update check."""
+    has_update: bool
+    current_version: str
+    latest_version: str
+    latest_config: Optional[PluginFetchResponse] = None
+    message: Optional[str] = None
+
+
+class PluginUpgradeRequest(BaseModel):
+    """Request to upgrade a plugin."""
+    latest_config: PluginFetchResponse
+
+
 class ToolExecuteContext(BaseModel):
     """Context for tool execution."""
     visitor_id: Optional[str] = None
@@ -248,6 +262,7 @@ class PluginInstallRequest(BaseModel):
     homepage: Optional[str] = None
     license: Optional[str] = None
     source: PluginSourceConfig = Field(..., description="Source configuration")
+    source_url: Optional[str] = None
     build: Optional[PluginBuildConfig] = None
     runtime: PluginRuntimeConfig = Field(default_factory=PluginRuntimeConfig)
 
@@ -262,6 +277,8 @@ class InstalledPluginInfo(BaseModel):
     author: Optional[str] = None
     status: str
     install_type: Optional[str] = None
+    source_url: Optional[str] = None
+    latest_version: Optional[str] = None
     installed_at: datetime
     updated_at: datetime
     pid: Optional[int] = None

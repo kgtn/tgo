@@ -175,6 +175,8 @@ class InstalledPluginInfo(BaseModel):
     author: Optional[str] = None
     status: str
     install_type: Optional[str] = None
+    source_url: Optional[str] = None
+    latest_version: Optional[str] = None
     installed_at: datetime
     updated_at: datetime
     pid: Optional[int] = None

@@ -45,6 +45,14 @@ class InstalledPlugin(Base):
         String(255),
         nullable=True,
     )
+    source_url: Mapped[Optional[str]] = mapped_column(
+        String(512),
+        nullable=True,
+    )
+    latest_version: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        nullable=True,
+    )
 
     # Installation configuration
     install_type: Mapped[str] = mapped_column(
