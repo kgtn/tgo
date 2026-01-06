@@ -45,6 +45,9 @@ async def startup_event():
     # Setup tool sync with plugin manager
     setup_tool_sync()
 
+    # Start socket server FIRST so plugins can connect on startup
+    await start_socket_server()
+
     # Start process manager monitor
     await process_manager.start()
 
@@ -69,9 +72,6 @@ async def startup_event():
                     asyncio.create_task(process_manager.start_plugin(p.plugin_id, config))
     except Exception as e:
         startup_log(f"❌ Failed to auto-start plugins: {e}")
-
-    # Start socket server
-    await start_socket_server()
 
     startup_log(f"   📍 HTTP API: http://0.0.0.0:{settings.PORT}")
     startup_log(f"   📚 API Docs: http://localhost:{settings.PORT}/docs")

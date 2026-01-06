@@ -15,8 +15,9 @@ from app.services.plugin_manager import plugin_manager, PluginConnection
 logger = get_logger("services.socket_server")
 
 # Global state
-_server: Optional[asyncio.AbstractServer] = None
-_server_task: Optional[asyncio.Task] = None
+_unix_server: Optional[asyncio.AbstractServer] = None
+_tcp_server: Optional[asyncio.AbstractServer] = None
+_server_tasks: List[asyncio.Task] = []
 
 
 async def _recv_message(reader: asyncio.StreamReader) -> Optional[dict]:
@@ -149,9 +150,9 @@ async def _handle_client(reader: asyncio.StreamReader, writer: asyncio.StreamWri
 
 async def start_socket_server():
     """Start the plugin socket server as a background task."""
-    global _server, _server_task
+    global _unix_server, _tcp_server, _server_tasks
     
-    if _server_task is not None and not _server_task.done():
+    if _server_tasks:
         logger.warning("Plugin socket server is already running")
         return
     
@@ -159,14 +160,8 @@ async def start_socket_server():
         socket_path = settings.PLUGIN_SOCKET_PATH
         tcp_port = settings.PLUGIN_TCP_PORT
         
-        if tcp_port:
-            _server = await asyncio.start_server(
-                _handle_client,
-                host="0.0.0.0",
-                port=tcp_port,
-            )
-            logger.info(f"Plugin socket server listening on TCP 0.0.0.0:{tcp_port}")
-        else:
+        # 1. Start UNIX Socket Server (Internal Plugins)
+        if socket_path:
             # Ensure directory exists
             socket_dir = os.path.dirname(socket_path)
             if socket_dir and not os.path.exists(socket_dir):
@@ -179,7 +174,7 @@ async def start_socket_server():
                 except Exception as e:
                     logger.error(f"Failed to remove existing socket file {socket_path}: {e}")
             
-            _server = await asyncio.start_unix_server(
+            _unix_server = await asyncio.start_unix_server(
                 _handle_client,
                 path=socket_path,
             )
@@ -191,39 +186,58 @@ async def start_socket_server():
                 logger.warning(f"Failed to set socket permissions: {e}")
             
             logger.info(f"Plugin socket server listening on UNIX {socket_path}")
+
+            async def serve_unix():
+                async with _unix_server:
+                    await _unix_server.serve_forever()
+            
+            _server_tasks.append(asyncio.create_task(serve_unix()))
+
+        # 2. Start TCP Server (External Debug Plugins)
+        if tcp_port:
+            _tcp_server = await asyncio.start_server(
+                _handle_client,
+                host="0.0.0.0",
+                port=tcp_port,
+            )
+            logger.info(f"Plugin socket server listening on TCP 0.0.0.0:{tcp_port}")
+
+            async def serve_tcp():
+                async with _tcp_server:
+                    await _tcp_server.serve_forever()
+            
+            _server_tasks.append(asyncio.create_task(serve_tcp()))
         
-        # Run the server loop in a background task
-        async def serve():
-            async with _server:
-                await _server.serve_forever()
-                
-        _server_task = asyncio.create_task(serve())
-        logger.info("Plugin socket server task started")
+        logger.info(f"Plugin socket server tasks started ({len(_server_tasks)} servers)")
     except Exception as e:
         logger.exception(f"Failed to start plugin socket server: {e}")
 
 
 async def stop_socket_server():
     """Stop the plugin socket server."""
-    global _server, _server_task
+    global _unix_server, _tcp_server, _server_tasks
     
-    # Stop the server
-    if _server:
-        _server.close()
-        try:
-            await _server.wait_closed()
-        except Exception:
-            pass
-        _server = None
+    # Stop the servers
+    for server in [_unix_server, _tcp_server]:
+        if server:
+            server.close()
+            try:
+                await server.wait_closed()
+            except Exception:
+                pass
     
-    # Cancel the task
-    if _server_task:
-        _server_task.cancel()
+    _unix_server = None
+    _tcp_server = None
+    
+    # Cancel the tasks
+    for task in _server_tasks:
+        task.cancel()
         try:
-            await _server_task
+            await task
         except asyncio.CancelledError:
             pass
-        _server_task = None
+    
+    _server_tasks = []
     
     # Remove socket file
     if os.path.exists(settings.PLUGIN_SOCKET_PATH):
