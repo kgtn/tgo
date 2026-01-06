@@ -4,7 +4,9 @@ from typing import Optional
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi.responses import StreamingResponse
 import httpx
+import json
 from sqlalchemy.orm import Session
 from jose import jwt
 
@@ -32,6 +34,8 @@ from app.schemas.plugin import (
     DevTokenResponse,
     PluginFetchRequest,
     PluginFetchResponse,
+    PluginUpdateCheckResponse,
+    PluginUpgradeRequest,
 )
 
 logger = get_logger("api.plugins")
@@ -246,6 +250,7 @@ async def list_installed_plugins(
     """Get all installed plugins from database via runtime service."""
     try:
         data = await plugin_runtime_client.list_installed_plugins(project_id=str(current_user.project_id))
+        # Ensure latest_version and source_url are preserved by converting to model
         return InstalledPluginListResponse(**data)
     except Exception as e:
         _handle_runtime_error(e, "list_installed_plugins")
@@ -264,6 +269,41 @@ async def fetch_plugin_info(
         return PluginFetchResponse(**data)
     except Exception as e:
         _handle_runtime_error(e, "fetch_plugin_info")
+
+
+@router.post("/install-stream")
+async def install_plugin_stream(
+    request: PluginInstallRequest,
+    current_user: Staff = Depends(get_current_active_user)
+):
+    """Install a plugin and stream progress via SSE proxy."""
+    async def stream_proxy():
+        runtime_url = f"{settings.PLUGIN_RUNTIME_URL.rstrip('/')}/plugins/install-stream"
+        
+        # Inject project_id from current user
+        install_data = request.model_dump()
+        install_data["project_id"] = str(current_user.project_id)
+        
+        async with httpx.AsyncClient(timeout=None) as client:
+            try:
+                async with client.stream(
+                    "POST", 
+                    runtime_url, 
+                    json=install_data,
+                    follow_redirects=False # Prevent 307 redirect from changing POST to GET
+                ) as response:
+                    if response.status_code != 200:
+                        yield f"data: {json.dumps({'stage': 'error', 'message': f'Runtime error: {response.status_code}'})}\n\n"
+                        return
+
+                    async for line in response.aiter_lines():
+                        if line:
+                            yield f"{line}\n\n"
+            except Exception as e:
+                logger.error(f"Stream proxy error: {e}")
+                yield f"data: {json.dumps({'stage': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(stream_proxy(), media_type="text/event-stream")
 
 
 @router.post("/install", response_model=InstalledPluginInfo)
@@ -285,6 +325,57 @@ async def install_plugin(
         _handle_runtime_error(e, "install_plugin")
 
 
+@router.get("/{plugin_id}/check-update", response_model=PluginUpdateCheckResponse)
+async def check_plugin_update(
+    plugin_id: str,
+    current_user: Staff = Depends(get_current_active_user)
+) -> PluginUpdateCheckResponse:
+    """Check for plugin updates via runtime service."""
+    try:
+        data = await plugin_runtime_client.check_plugin_update(plugin_id, project_id=str(current_user.project_id))
+        if data is None:
+            raise HTTPException(status_code=404, detail="Plugin update info not found")
+        return PluginUpdateCheckResponse(**data)
+    except Exception as e:
+        _handle_runtime_error(e, "check_plugin_update")
+
+
+@router.post("/{plugin_id}/upgrade")
+async def upgrade_plugin_stream(
+    plugin_id: str,
+    request: PluginUpgradeRequest,
+    current_user: Staff = Depends(get_current_active_user)
+):
+    """Upgrade a plugin and stream progress via SSE proxy."""
+    async def stream_proxy():
+        runtime_url = f"{settings.PLUGIN_RUNTIME_URL.rstrip('/')}/plugins/{plugin_id}/upgrade"
+        
+        params = {"project_id": str(current_user.project_id)}
+        upgrade_data = request.model_dump()
+        
+        async with httpx.AsyncClient(timeout=None) as client:
+            try:
+                async with client.stream(
+                    "POST", 
+                    runtime_url, 
+                    json=upgrade_data,
+                    params=params,
+                    follow_redirects=False
+                ) as response:
+                    if response.status_code != 200:
+                        yield f"data: {json.dumps({'stage': 'error', 'message': f'Runtime error: {response.status_code}'})}\n\n"
+                        return
+
+                    async for line in response.aiter_lines():
+                        if line:
+                            yield f"{line}\n\n"
+            except Exception as e:
+                logger.error(f"Upgrade stream proxy error: {e}")
+                yield f"data: {json.dumps({'stage': 'error', 'message': str(e)})}\n\n"
+
+    return StreamingResponse(stream_proxy(), media_type="text/event-stream")
+
+
 # ==================== Generic Plugin Routes ====================
 
 @router.get("/{plugin_id}", response_model=PluginInfo)
@@ -300,6 +391,76 @@ async def get_plugin(
         return PluginInfo(**data)
     except Exception as e:
         _handle_runtime_error(e, "get_plugin")
+
+
+@router.post("/{plugin_id}/render", response_model=PluginRenderResponse)
+async def render_plugin(
+    plugin_id: str,
+    request: PluginRenderRequest,
+    db: Session = Depends(get_db),
+    current_user: Staff = Depends(get_current_active_user)
+) -> PluginRenderResponse:
+    """Trigger a plugin to render its UI."""
+    visitor_info = _enrich_visitor_info(
+        request.visitor,
+        request.visitor_id,
+        request.language,
+        db
+    )
+    
+    request_data = {
+        "visitor_id": request.visitor_id,
+        "session_id": request.session_id,
+        "visitor": visitor_info.model_dump(exclude_none=True) if visitor_info else None,
+        "agent_id": request.agent_id,
+        "action_id": request.action_id,
+        "language": request.language,
+        "context": request.context or {},
+    }
+    
+    try:
+        data = await plugin_runtime_client.render_plugin(
+            plugin_id, 
+            request_data, 
+            project_id=str(current_user.project_id)
+        )
+        if data is None:
+            raise HTTPException(status_code=404, detail=f"Plugin not found: {plugin_id}")
+        return PluginRenderResponse(**data)
+    except Exception as e:
+        _handle_runtime_error(e, "render_plugin")
+
+
+@router.post("/{plugin_id}/event", response_model=PluginActionResponse)
+async def send_plugin_event(
+    plugin_id: str,
+    request: PluginEventRequest,
+    current_user: Staff = Depends(get_current_active_user)
+) -> PluginActionResponse:
+    """Send an event to a plugin."""
+    request_data = {
+        "event_type": request.event_type,
+        "action_id": request.action_id,
+        "extension_type": request.extension_type,
+        "visitor_id": request.visitor_id,
+        "session_id": request.session_id,
+        "selected_id": request.selected_id,
+        "language": request.language,
+        "form_data": request.form_data,
+        "payload": request.payload or {},
+    }
+    
+    try:
+        data = await plugin_runtime_client.send_plugin_event(
+            plugin_id, 
+            request_data, 
+            project_id=str(current_user.project_id)
+        )
+        if data is None:
+            raise HTTPException(status_code=404, detail=f"Plugin not found: {plugin_id}")
+        return PluginActionResponse(**data)
+    except Exception as e:
+        _handle_runtime_error(e, "send_plugin_event")
 
 
 @router.delete("/{plugin_id}", response_model=dict)

@@ -27,31 +27,40 @@ class PluginInstaller:
         self.base_path.mkdir(parents=True, exist_ok=True)
         self.temp_path.mkdir(parents=True, exist_ok=True)
 
-    async def install(self, request: PluginInstallRequest) -> Tuple[bool, str, Optional[str]]:
+    async def install(self, request: PluginInstallRequest, progress_callback: Optional[Any] = None) -> Tuple[bool, str, Optional[str]]:
         """
         Install a plugin based on the request.
         
         Returns:
             (success, message, install_path)
         """
+        async def report(stage: str, message: str):
+            if progress_callback:
+                if asyncio.iscoroutinefunction(progress_callback):
+                    await progress_callback(stage, message)
+                else:
+                    progress_callback(stage, message)
+
         plugin_id = request.id
         install_dir = self.base_path / plugin_id
         
         # Clean up existing installation if it exists
         if install_dir.exists():
+            await report("preparing", "Cleaning up existing installation...")
             shutil.rmtree(install_dir)
         
         install_dir.mkdir(parents=True, exist_ok=True)
         
         try:
             if request.source.github:
-                success, message = await self._install_from_github(plugin_id, install_dir, request.source.github, request.build)
+                success, message = await self._install_from_github(plugin_id, install_dir, request.source.github, request.build, report)
             elif request.source.binary:
-                success, message = await self._install_from_binary(plugin_id, install_dir, request.source.binary)
+                success, message = await self._install_from_binary(plugin_id, install_dir, request.source.binary, report)
             else:
                 return False, "No source configuration provided", None
             
             if success:
+                await report("starting", "Starting plugin...")
                 return True, "Installation successful", str(install_dir)
             else:
                 # Cleanup on failure
@@ -65,12 +74,62 @@ class PluginInstaller:
                 shutil.rmtree(install_dir)
             return False, f"Unexpected error: {str(e)}", None
 
+    async def upgrade(self, request: PluginInstallRequest, progress_callback: Optional[Any] = None) -> Tuple[bool, str, Optional[str]]:
+        """
+        Upgrade a plugin. Basically an install with backup/rollback support.
+        """
+        async def report(stage: str, message: str):
+            if progress_callback:
+                if asyncio.iscoroutinefunction(progress_callback):
+                    await progress_callback(stage, message)
+                else:
+                    progress_callback(stage, message)
+
+        plugin_id = request.id
+        install_dir = self.base_path / plugin_id
+        backup_dir = self.base_path / f"{plugin_id}_backup"
+        
+        # 1. Backup existing installation
+        if install_dir.exists():
+            await report("upgrading", "Backing up existing version...")
+            if backup_dir.exists():
+                shutil.rmtree(backup_dir)
+            shutil.copytree(install_dir, backup_dir)
+            
+        try:
+            # 2. Run installation (this will remove existing install_dir)
+            success, message, path = await self.install(request, progress_callback=progress_callback)
+            
+            if success:
+                # 3. Cleanup backup on success
+                if backup_dir.exists():
+                    shutil.rmtree(backup_dir)
+                return True, "Upgrade successful", path
+            else:
+                # 4. Rollback on failure
+                await report("error", f"Upgrade failed: {message}. Rolling back...")
+                if backup_dir.exists():
+                    if install_dir.exists():
+                        shutil.rmtree(install_dir)
+                    shutil.move(str(backup_dir), str(install_dir))
+                return False, message, None
+                
+        except Exception as e:
+            logger.exception(f"Unexpected error during upgrade of {plugin_id}: {e}")
+            # Rollback
+            if backup_dir.exists():
+                if install_dir.exists():
+                    shutil.rmtree(install_dir)
+                shutil.move(str(backup_dir), str(install_dir))
+            return False, f"Unexpected error during upgrade: {str(e)}", None
+
     async def _install_from_github(
         self, 
         plugin_id: str, 
         install_dir: Path, 
         github_config: Any, 
-        build_config: Optional[PluginBuildConfig]
+        build_config: Optional[PluginBuildConfig],
+        report: Any
     ) -> Tuple[bool, str]:
         """Clone and build from GitHub."""
         repo_url = f"https://github.com/{github_config.repo}.git"
@@ -81,7 +140,10 @@ class PluginInstaller:
             
         try:
             # Clone repo
-            logger.info(f"Cloning {repo_url} (ref: {github_config.ref})")
+            msg = f"Cloning {repo_url} (ref: {github_config.ref})"
+            logger.info(msg)
+            await report("cloning", msg)
+            
             clone_cmd = ["git", "clone", "-b", github_config.ref, repo_url, str(temp_repo_path)]
             try:
                 process = await asyncio.create_subprocess_exec(
@@ -95,6 +157,8 @@ class PluginInstaller:
             
             if process.returncode != 0:
                 return False, f"Git clone failed: {stderr.decode()}"
+            
+            await report("copying", "Copying files to installation directory...")
             
             # Move to target path
             source_path = temp_repo_path
@@ -113,7 +177,7 @@ class PluginInstaller:
             
             # Build if needed
             if build_config:
-                return await self._build_plugin(plugin_id, install_dir, build_config)
+                return await self._build_plugin(plugin_id, install_dir, build_config, report)
             
             return True, "Source installed successfully"
             
@@ -121,10 +185,11 @@ class PluginInstaller:
             if temp_repo_path.exists():
                 shutil.rmtree(temp_repo_path)
 
-    async def _install_from_binary(self, plugin_id: str, install_dir: Path, binary_config: Any) -> Tuple[bool, str]:
+    async def _install_from_binary(self, plugin_id: str, install_dir: Path, binary_config: Any, report: Any) -> Tuple[bool, str]:
         """Download and install binary."""
         # Replace variables in URL
         url = binary_config.url
+        # ... (rest of system/arch detection) ...
         system = platform.system().lower()
         if system == "darwin":
             system = "darwin"
@@ -141,7 +206,9 @@ class PluginInstaller:
             
         url = url.replace("${os}", system).replace("${arch}", arch)
         
-        logger.info(f"Downloading binary from {url}")
+        msg = f"Downloading binary from {url}"
+        logger.info(msg)
+        await report("downloading", msg)
         
         temp_file = self.temp_path / f"{plugin_id}_bin"
         try:
@@ -160,8 +227,9 @@ class PluginInstaller:
             if process.returncode != 0:
                 return False, f"Download failed: {stderr.decode()}"
             
+            await report("copying", "Extracting binary...")
+            
             # Check if it's an archive (zip/tar.gz)
-            # For simplicity, assume if it ends in .zip or .tar.gz it's an archive
             if url.endswith(".zip"):
                 unpack_cmd = ["unzip", "-o", str(temp_file), "-d", str(install_dir)]
                 process = await asyncio.create_subprocess_exec(*unpack_cmd)
@@ -182,7 +250,7 @@ class PluginInstaller:
             if temp_file.exists():
                 temp_file.unlink()
 
-    async def _build_plugin(self, plugin_id: str, install_dir: Path, build_config: PluginBuildConfig) -> Tuple[bool, str]:
+    async def _build_plugin(self, plugin_id: str, install_dir: Path, build_config: PluginBuildConfig, report: Any) -> Tuple[bool, str]:
         """Build plugin based on language."""
         lang = build_config.language.lower()
         
@@ -190,7 +258,10 @@ class PluginInstaller:
             if not build_config.go:
                 return False, "Missing Go build configuration"
             
-            logger.info(f"Building Go plugin {plugin_id}")
+            msg = f"Building Go plugin {plugin_id}"
+            logger.info(msg)
+            await report("building", msg)
+            
             cmd = ["go", "build", "-o", build_config.go.output, build_config.go.main]
             try:
                 process = await asyncio.create_subprocess_exec(
@@ -212,7 +283,10 @@ class PluginInstaller:
             if not build_config.python:
                 return False, "Missing Python build configuration"
             
-            logger.info(f"Installing Python dependencies for {plugin_id}")
+            msg = f"Installing Python dependencies for {plugin_id}"
+            logger.info(msg)
+            await report("building", msg)
+            
             # Create venv
             venv_dir = install_dir / ".venv"
             cmd_venv = ["python3", "-m", "venv", str(venv_dir)]
@@ -247,7 +321,10 @@ class PluginInstaller:
             if not build_config.nodejs:
                 return False, "Missing Node.js build configuration"
             
-            logger.info(f"Installing Node.js dependencies for {plugin_id}")
+            msg = f"Installing Node.js dependencies for {plugin_id}"
+            logger.info(msg)
+            await report("building", msg)
+            
             if (install_dir / build_config.nodejs.package).exists():
                 cmd = ["npm", "install"]
                 try:
@@ -265,6 +342,8 @@ class PluginInstaller:
                     return False, f"npm install failed: {stderr.decode()}"
             
             return True, "Node.js setup successful"
+            
+        return False, f"Unsupported language: {lang}"
             
         return False, f"Unsupported language: {lang}"
 

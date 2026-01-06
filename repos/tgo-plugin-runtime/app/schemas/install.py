@@ -65,6 +65,7 @@ class PluginInstallRequest(BaseModel):
     description: Optional[str] = None
     author: Optional[str] = None
     source: PluginSourceConfig
+    source_url: Optional[str] = None
     build: Optional[PluginBuildConfig] = None
     runtime: PluginRuntimeConfig = Field(default_factory=PluginRuntimeConfig)
 
@@ -99,4 +100,27 @@ class PluginFetchResponse(BaseModel):
     build: Optional[PluginBuildConfig] = None
     runtime: PluginRuntimeConfig = Field(default_factory=PluginRuntimeConfig)
     source_url: str
+
+
+class PluginUpdateCheckResponse(BaseModel):
+    """Response for plugin update check."""
+    has_update: bool
+    current_version: str
+    latest_version: str
+    latest_config: Optional[PluginFetchResponse] = None
+    message: Optional[str] = None
+
+
+class PluginUpgradeRequest(BaseModel):
+    """Request to upgrade a plugin."""
+    latest_config: PluginFetchResponse
+
+
+class PluginInstallProgress(BaseModel):
+    """Progress info for installation/upgrade."""
+    stage: str
+    message: str
+    current_step: int = 0
+    total_steps: int = 0
+    status: str = "in_progress" # in_progress | complete | error
 

@@ -36,9 +36,21 @@ interface PluginState {
   fetchVisitorPanels: (visitorId: string, context?: any) => Promise<void>;
   fetchToolbarButtons: () => Promise<void>;
   fetchPluginInfo: (url: string) => Promise<any>;
+  checkPluginUpdate: (pluginId: string) => Promise<any>;
+  upgradePluginStream: (
+    pluginId: string,
+    latestConfig: any,
+    onProgress: (data: { stage: string; message: string }) => void,
+    onError: (error: any) => void
+  ) => Promise<void>;
   
   // Installation & Lifecycle Actions
   installPlugin: (config: string | any) => Promise<void>;
+  installPluginStream: (
+    config: any,
+    onProgress: (data: { stage: string; message: string }) => void,
+    onError: (error: any) => void
+  ) => Promise<void>;
   uninstallPlugin: (pluginId: string) => Promise<void>;
   startPlugin: (pluginId: string) => Promise<void>;
   stopPlugin: (pluginId: string) => Promise<void>;
@@ -52,7 +64,7 @@ interface PluginState {
   sendPluginEvent: (pluginId: string, eventType: string, actionId: string, context: any, formData?: any) => Promise<void>;
   
   // Action Handling
-  handlePluginAction: (action: PluginActionResponse, context: any) => void;
+  handlePluginAction: (pluginId: string, action: PluginActionResponse, context: any) => void;
 }
 
 export const usePluginStore = create<PluginState>((set, get) => ({
@@ -83,6 +95,16 @@ export const usePluginStore = create<PluginState>((set, get) => ({
       await get().fetchInstalledPlugins();
     } catch (error) {
       console.error('Failed to install plugin:', error);
+      throw error;
+    }
+  },
+
+  installPluginStream: async (config, onProgress, onError) => {
+    try {
+      const parsedConfig = typeof config === 'string' ? yaml.load(config) : config;
+      await pluginApiService.installPluginStream(parsedConfig, onProgress, onError);
+    } catch (error) {
+      console.error('Failed to start installation stream:', error);
       throw error;
     }
   },
@@ -188,6 +210,25 @@ export const usePluginStore = create<PluginState>((set, get) => ({
     }
   },
 
+  checkPluginUpdate: async (pluginId: string) => {
+    try {
+      return await pluginApiService.checkPluginUpdate(pluginId);
+    } catch (error) {
+      console.error('Failed to check plugin update:', error);
+      throw error;
+    }
+  },
+
+  upgradePluginStream: async (pluginId, latestConfig, onProgress, onError) => {
+    try {
+      await pluginApiService.upgradePluginStream(pluginId, latestConfig, onProgress, onError);
+      await get().fetchInstalledPlugins();
+    } catch (error) {
+      console.error('Failed to start upgrade stream:', error);
+      throw error;
+    }
+  },
+
   openPluginModal: async (pluginId, title, context) => {
     try {
       const ui = await pluginApiService.renderChatToolbarPlugin(pluginId, {
@@ -223,15 +264,22 @@ export const usePluginStore = create<PluginState>((set, get) => ({
         form_data: formData,
         payload: context,
       });
-      get().handlePluginAction(action, context);
+      get().handlePluginAction(pluginId, action, context);
     } catch (error) {
       console.error(`Failed to send plugin event to ${pluginId}:`, error);
     }
   },
 
-  handlePluginAction: (action, context) => {
+  handlePluginAction: (pluginId, action, context) => {
     const { action: type, data } = action;
-    console.log(`Handling plugin action: ${type}`, data);
+    console.log(`Handling plugin action from ${pluginId}: ${type}`, data);
+
+    if (type === 'batch' && data?.actions && Array.isArray(data.actions)) {
+      for (const subAction of data.actions) {
+        get().handlePluginAction(pluginId, subAction, context);
+      }
+      return;
+    }
 
     switch (type) {
       case 'open_url':
@@ -281,7 +329,7 @@ export const usePluginStore = create<PluginState>((set, get) => ({
         if (data.template && data.data) {
           set({
             activeModal: {
-              pluginId: 'action_modal',
+              pluginId: pluginId,
               title: data.title || 'Plugin',
               ui: { template: data.template, data: data.data },
               context,

@@ -11,9 +11,9 @@ logger = get_logger("services.url_resolver")
 class PluginURLResolver:
     """Resolves plugin URL and fetches plugin.yml configuration."""
     
-    GITHUB_PATTERN = re.compile(r'^https?://github\.com/([^/]+)/([^/]+)(?:/tree/([^/]+))?/?$')
+    GITHUB_PATTERN = re.compile(r'^https?://github\.com/([^/]+)/([^/]+)(?:/tree/([^/]+)(?:/(.*))?)?/?$')
     GITHUB_BLOB_PATTERN = re.compile(r'^https?://github\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*)$')
-    GITEE_PATTERN = re.compile(r'^https?://gitee\.com/([^/]+)/([^/]+)(?:/tree/([^/]+))?/?$')
+    GITEE_PATTERN = re.compile(r'^https?://gitee\.com/([^/]+)/([^/]+)(?:/tree/([^/]+)(?:/(.*))?)?/?$')
     GITEE_BLOB_PATTERN = re.compile(r'^https?://gitee\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*)$')
     
     async def resolve(self, url: str) -> Dict[str, Any]:
@@ -67,11 +67,15 @@ class PluginURLResolver:
         raise ValueError(f"Could not fetch or parse plugin configuration from {raw_url}")
 
     async def _resolve_github(self, match) -> Dict[str, Any]:
-        user, repo, branch = match.groups()
+        user, repo, branch, path = match.groups()
         branches = [branch] if branch else ['main', 'master']
+        path = path.strip('/') if path else ""
         
         for br in branches:
             base_url = f"https://raw.githubusercontent.com/{user}/{repo}/{br}/"
+            if path:
+                base_url = urljoin(base_url, path + '/')
+            
             config = await self._fetch_yaml_with_fallbacks(base_url)
             if config:
                 return self._resolve_relative_urls(config, base_url)
@@ -79,11 +83,15 @@ class PluginURLResolver:
         raise ValueError("Could not find plugin.yml or plugin.yaml in the GitHub repository.")
 
     async def _resolve_gitee(self, match) -> Dict[str, Any]:
-        user, repo, branch = match.groups()
+        user, repo, branch, path = match.groups()
         branches = [branch] if branch else ['master', 'main']
+        path = path.strip('/') if path else ""
         
         for br in branches:
             base_url = f"https://gitee.com/{user}/{repo}/raw/{br}/"
+            if path:
+                base_url = urljoin(base_url, path + '/')
+                
             config = await self._fetch_yaml_with_fallbacks(base_url)
             if config:
                 return self._resolve_relative_urls(config, base_url)

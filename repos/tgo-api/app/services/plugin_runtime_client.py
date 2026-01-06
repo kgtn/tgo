@@ -242,6 +242,15 @@ class PluginRuntimeClient:
             params=params,
         )
 
+    async def check_plugin_update(self, plugin_id: str, project_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        """Check for plugin updates."""
+        params = {"project_id": project_id} if project_id else None
+        return await self._request(
+            "GET",
+            f"/plugins/{plugin_id}/check-update",
+            params=params,
+        )
+
 
 # Global client instance
 plugin_runtime_client = PluginRuntimeClient()

@@ -37,6 +37,20 @@ class PluginApiService {
   }
 
   /**
+   * Install a new plugin and stream progress via SSE
+   */
+  async installPluginStream(
+    config: any,
+    onProgress: (data: { stage: string; message: string }) => void,
+    onError: (error: any) => void
+  ): Promise<void> {
+    return apiClient.stream('/v1/plugins/install-stream', config, {
+      onMessage: (_event, data) => onProgress(data),
+      onError,
+    });
+  }
+
+  /**
    * Uninstall a plugin
    */
   async uninstallPlugin(pluginId: string): Promise<any> {
@@ -141,6 +155,28 @@ class PluginApiService {
    */
   async fetchPluginInfo(url: string): Promise<any> {
     return apiClient.post<any>('/v1/plugins/fetch-info', { url });
+  }
+
+  /**
+   * Check for plugin updates
+   */
+  async checkPluginUpdate(pluginId: string): Promise<any> {
+    return apiClient.get<any>(`/v1/plugins/${pluginId}/check-update`);
+  }
+
+  /**
+   * Upgrade a plugin and stream progress via SSE
+   */
+  async upgradePluginStream(
+    pluginId: string,
+    latestConfig: any,
+    onProgress: (data: { stage: string; message: string }) => void,
+    onError: (error: any) => void
+  ): Promise<void> {
+    return apiClient.stream(`/v1/plugins/${pluginId}/upgrade`, { latest_config: latestConfig }, {
+      onMessage: (_event, data) => onProgress(data),
+      onError,
+    });
   }
 }
 
