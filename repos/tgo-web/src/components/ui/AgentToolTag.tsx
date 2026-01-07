@@ -74,7 +74,7 @@ const AgentToolTag: React.FC<AgentToolTagProps> = ({
   const titleFromApi = (tool as any)?.title || (tool as any)?.name;
   const baseFromToolName = displayName && displayName !== '工具' ? displayName : undefined;
   const finalDisplayName = titleFromApi || baseFromToolName || (tool as any)?.id || '工具';
-  const providerDisplay = (tool as any)?.mcp_server?.short_no || (tool as any)?.tool_source_type || provider;
+  const providerDisplay = (tool as any)?.tool_server?.short_no || (tool as any)?.tool_source_type || provider;
 
   const handleClick = () => {
     if (onClick) {

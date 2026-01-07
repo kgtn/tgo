@@ -1,13 +1,13 @@
 import React from 'react';
 import { Wrench } from 'lucide-react';
-import MCPToolTag from './MCPToolTag';
-import type { MCPTool } from '@/types';
+import ToolTag from './ToolTag';
+import type { AiTool } from '@/types';
 
-interface MCPToolsListProps {
+interface ToolsListProps {
   toolIds: string[];
-  toolsMap?: Record<string, MCPTool>;
-  tools?: MCPTool[];
-  onToolClick?: (tool: MCPTool) => void;
+  toolsMap?: Record<string, AiTool>;
+  tools?: AiTool[];
+  onToolClick?: (tool: AiTool) => void;
   size?: 'xs' | 'sm' | 'md';
   showIcon?: boolean;
   maxDisplay?: number;
@@ -17,10 +17,10 @@ interface MCPToolsListProps {
 }
 
 /**
- * MCP工具列表组件
- * 用于显示AI员工关联的MCP工具列表
+ * 工具列表组件
+ * 用于显示AI员工关联的工具列表
  */
-const MCPToolsList: React.FC<MCPToolsListProps> = ({
+const ToolsList: React.FC<ToolsListProps> = ({
   toolIds,
   toolsMap,
   tools,
@@ -59,7 +59,7 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
 
       <div className="flex flex-wrap gap-1.5">
         {displayToolIds.map((toolId) => (
-          <MCPToolTag
+          <ToolTag
             key={toolId}
             toolId={toolId}
             toolsMap={toolsMap}
@@ -83,4 +83,4 @@ const MCPToolsList: React.FC<MCPToolsListProps> = ({
   );
 };
 
-export default MCPToolsList;
+export default ToolsList;

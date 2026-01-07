@@ -192,7 +192,7 @@ const TeamInfoModal: React.FC<TeamInfoModalProps> = ({ isOpen, onClose, team, on
                 {t('team.modal.title', '团队信息')}
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                {t('team.modal.subtitle', '配置您的 AI 协作团队参数')}
+                {t('team.modal.subtitle', '配置您的 AI 协作团队，整合工具、工作流及知识库以增强集体能力')}
               </p>
             </div>
           </div>
@@ -281,7 +281,7 @@ const TeamInfoModal: React.FC<TeamInfoModalProps> = ({ isOpen, onClose, team, on
                 </div>
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100/50 dark:border-blue-800/50">
                   <p className="text-xs text-blue-600 dark:text-blue-400 leading-relaxed">
-                    {t('team.modal.instructionHint', '💡 此指令将作为团队的全局背景信息，应用于团队中的所有 AI 员工，帮助他们更好地理解协作上下文。')}
+                    {t('team.modal.instructionHint', '💡 此指令作为团队全局背景，将整合工具调用、工作流执行及知识库能力，应用于所有成员以实现高效协作。')}
                   </p>
                 </div>
               </div>

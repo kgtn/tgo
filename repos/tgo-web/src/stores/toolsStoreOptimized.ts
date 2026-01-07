@@ -1,5 +1,5 @@
 /**
- * Optimized MCP Tools Store
+ * Optimized Tool Tools Store
  * Uses base store patterns to eliminate duplication and improve maintainability
  */
 
@@ -12,13 +12,13 @@ import {
   type BaseCrudOperations 
 } from './base/BaseStore';
 import type { ToolSummary, ToolResponse } from '@/types';
-import { MCPToolsApiService, type MCPToolsQueryParams } from '@/services/mcpToolsApi';
-import { OptimizedTransforms } from '@/utils/mcpToolsTransformOptimized';
+import { ToolsApiService, type ToolsQueryParams } from '@/services/toolsApi';
+import { OptimizedTransforms } from '@/utils/toolsTransformOptimized';
 
 /**
- * Extended state interface for MCP Tools specific functionality
+ * Extended state interface for Tool Tools specific functionality
  */
-interface MCPToolsExtendedState {
+interface ToolsExtendedState {
   // Tool details state
   toolDetails: ToolResponse | null;
   isLoadingToolDetails: boolean;
@@ -34,18 +34,18 @@ interface MCPToolsExtendedState {
     has_prev: boolean;
   } | null;
   
-  // Additional filters specific to MCP tools
+  // Additional filters specific to Tool tools
   selectedSourceType: string;
   
   // Computed properties for transformed data
   get transformedStoreItems(): any[];
-  get transformedMCPTools(): any[];
+  get transformedTools(): any[];
 }
 
 /**
- * Extended actions interface for MCP Tools specific operations
+ * Extended actions interface for Tool Tools specific operations
  */
-interface MCPToolsExtendedActions {
+interface ToolsExtendedActions {
   // Tool details operations
   loadToolDetails: (id: string) => Promise<void>;
   clearToolDetails: () => void;
@@ -54,29 +54,29 @@ interface MCPToolsExtendedActions {
   setToolDetailsError: (error: string | null) => void;
   
   // Metadata operations
-  setMeta: (meta: MCPToolsExtendedState['meta']) => void;
+  setMeta: (meta: ToolsExtendedState['meta']) => void;
   
   // Filter operations
   setSelectedSourceType: (sourceType: string) => void;
   
   // Batch operations with transformation
-  loadAndTransformTools: (params?: MCPToolsQueryParams) => Promise<void>;
+  loadAndTransformTools: (params?: ToolsQueryParams) => Promise<void>;
   refreshAndTransform: () => Promise<void>;
 }
 
 /**
- * Complete MCP Tools Store State
+ * Complete Tool Tools Store State
  */
-type MCPToolsStoreState = BaseStoreState<ToolSummary> & 
-                         MCPToolsExtendedState & 
+type ToolsStoreState = BaseStoreState<ToolSummary> & 
+                         ToolsExtendedState & 
                          BaseStoreActions<ToolSummary> & 
-                         MCPToolsExtendedActions &
+                         ToolsExtendedActions &
                          BaseCrudOperations<ToolSummary, any, any>;
 
 /**
- * Create the optimized MCP Tools store
+ * Create the optimized Tool Tools store
  */
-export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
+export const useToolsStoreOptimized = create<ToolsStoreState>()(
   devtools(
     (set, get, store) => ({
       // Base store functionality
@@ -95,9 +95,9 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
         return OptimizedTransforms.toolSummariesToStoreItems(items);
       },
       
-      get transformedMCPTools() {
+      get transformedTools() {
         const { transformedStoreItems } = get();
-        return OptimizedTransforms.storeItemsToMCPTools(transformedStoreItems);
+        return OptimizedTransforms.storeItemsToAiTools(transformedStoreItems);
       },
       
       // Extended actions
@@ -121,7 +121,7 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
         setToolDetailsError(null);
         
         try {
-          const details = await MCPToolsApiService.getToolDetails(id);
+          const details = await ToolsApiService.getToolDetails(id);
           setToolDetails(details);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to load tool details';
@@ -142,20 +142,20 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
       setToolDetailsError: (toolDetailsError) => set({ toolDetailsError }),
       
       // CRUD Operations Implementation
-      loadItems: async (params?: MCPToolsQueryParams) => {
+      loadItems: async (params?: ToolsQueryParams) => {
         const { setLoading, setError, setItems, setMeta } = get();
         
         setLoading(true);
         setError(null);
         
         try {
-          const response = await MCPToolsApiService.getTools(params);
+          const response = await ToolsApiService.getTools(params);
           setItems(response.data);
           setMeta(response.meta);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to load tools';
           setError(errorMessage);
-          console.error('Failed to load MCP tools:', error);
+          console.error('Failed to load Tool tools:', error);
         } finally {
           setLoading(false);
         }
@@ -168,7 +168,7 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
         setError(null);
         
         try {
-          const tool = await MCPToolsApiService.getTool(id);
+          const tool = await ToolsApiService.getTool(id);
           setSelectedItem(tool);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to load tool';
@@ -179,7 +179,7 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
         }
       },
       
-      searchItems: async (query: string, filters?: MCPToolsQueryParams) => {
+      searchItems: async (query: string, filters?: ToolsQueryParams) => {
         const { setSearching, setSearchError, setItems, setMeta, setSearchQuery } = get();
         
         setSearching(true);
@@ -187,19 +187,19 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
         setSearchQuery(query);
         
         try {
-          const response = await MCPToolsApiService.searchTools(query, filters);
+          const response = await ToolsApiService.searchTools(query, filters);
           setItems(response.data);
           setMeta(response.meta);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to search tools';
           setSearchError(errorMessage);
-          console.error('Failed to search MCP tools:', error);
+          console.error('Failed to search Tool tools:', error);
         } finally {
           setSearching(false);
         }
       },
       
-      loadByCategory: async (category: string, params?: MCPToolsQueryParams) => {
+      loadByCategory: async (category: string, params?: ToolsQueryParams) => {
         const { setLoading, setError, setItems, setMeta, setSelectedCategory } = get();
         
         setLoading(true);
@@ -207,7 +207,7 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
         setSelectedCategory(category);
         
         try {
-          const response = await MCPToolsApiService.getToolsByCategory(category, params);
+          const response = await ToolsApiService.getToolsByCategory(category, params);
           setItems(response.data);
           setMeta(response.meta);
         } catch (error) {
@@ -219,7 +219,7 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
         }
       },
       
-      loadByStatus: async (status: string, params?: MCPToolsQueryParams) => {
+      loadByStatus: async (status: string, params?: ToolsQueryParams) => {
         const { setLoading, setError, setItems, setMeta, setSelectedStatus } = get();
         
         setLoading(true);
@@ -227,7 +227,7 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
         setSelectedStatus(status);
         
         try {
-          const response = await MCPToolsApiService.getToolsByStatus(status, params);
+          const response = await ToolsApiService.getToolsByStatus(status, params);
           setItems(response.data);
           setMeta(response.meta);
         } catch (error) {
@@ -247,12 +247,12 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
         setCurrentPage(page);
         
         try {
-          const filters: MCPToolsQueryParams = {};
+          const filters: ToolsQueryParams = {};
           if (searchQuery) filters.search = searchQuery;
           if (selectedCategory && selectedCategory !== 'all') filters.category = selectedCategory;
           if (selectedStatus && selectedStatus !== 'all') filters.status = selectedStatus;
           
-          const response = await MCPToolsApiService.getToolsPage(page, pageSize, filters);
+          const response = await ToolsApiService.getToolsPage(page, pageSize, filters);
           setItems(response.data);
           setMeta(response.meta);
         } catch (error) {
@@ -273,7 +273,7 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
       refreshItems: async () => {
         const { loadItems, searchQuery, selectedCategory, selectedStatus, selectedSourceType } = get();
         
-        const params: MCPToolsQueryParams = {};
+        const params: ToolsQueryParams = {};
         if (searchQuery) params.search = searchQuery;
         if (selectedCategory && selectedCategory !== 'all') params.category = selectedCategory;
         if (selectedStatus && selectedStatus !== 'all') params.status = selectedStatus;
@@ -310,7 +310,7 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
       }),
       
       // Enhanced operations with transformation
-      loadAndTransformTools: async (params?: MCPToolsQueryParams) => {
+      loadAndTransformTools: async (params?: ToolsQueryParams) => {
         await get().loadItems(params);
         // Transformation happens automatically via computed properties
       },
@@ -321,9 +321,9 @@ export const useMCPToolsStoreOptimized = create<MCPToolsStoreState>()(
       },
     }),
     {
-      name: 'mcp-tools-store-optimized',
+      name: 'tools-store-optimized',
     }
   )
 );
 
-export default useMCPToolsStoreOptimized;
+export default useToolsStoreOptimized;

@@ -25,6 +25,7 @@ class ToolType(str, Enum):
     """Tool type enumeration."""
     MCP = "MCP"
     FUNCTION = "FUNCTION"
+    ALL = "ALL"
 
 
 class Tool(BaseModel):

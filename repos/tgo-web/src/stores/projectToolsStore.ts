@@ -27,7 +27,7 @@ interface ProjectToolsState {
 
   // Filters (client-side filtering since new API returns flat array)
   enabledFilter: 'all' | 'enabled' | 'disabled'; // Maps to deleted_at field
-  toolTypeFilter: ToolType | 'all'; // Filter by MCP or FUNCTION
+  toolTypeFilter: ToolType | 'ALL'; // Filter by Tool or FUNCTION
 
   // Actions
   setAiTools: (tools: AiToolResponse[]) => void;
@@ -39,15 +39,15 @@ interface ProjectToolsState {
   setError: (error: string | null) => void;
   setToolError: (error: string | null) => void;
   setEnabledFilter: (filter: 'all' | 'enabled' | 'disabled') => void;
-  setToolTypeFilter: (filter: ToolType | 'all') => void;
+  setToolTypeFilter: (filter: ToolType | 'ALL') => void;
 
   // Async actions
   loadAiTools: (params?: AiToolsQueryParams) => Promise<void>;
   loadAiTool: (id: string) => Promise<void>;
   loadActiveTools: (toolType?: ToolType) => Promise<void>;
-  loadMcpTools: (includeDeleted?: boolean) => Promise<void>;
+  loadTools: (includeDeleted?: boolean) => Promise<void>;
   createTool: (data: AiToolCreateRequest) => Promise<void>;
-  updateMcpTool: (id: string, updateData: AiToolUpdateRequest) => Promise<AiToolResponse>;
+  updateTool: (id: string, updateData: AiToolUpdateRequest) => Promise<AiToolResponse>;
   deleteTool: (id: string) => Promise<void>;
   refreshTools: () => Promise<void>;
   clearError: () => void;
@@ -66,7 +66,7 @@ const initialState = {
   error: null,
   toolError: null,
   enabledFilter: 'all' as const,
-  toolTypeFilter: 'all' as const,
+  toolTypeFilter: 'ALL' as const,
 };
 
 // Create the store
@@ -143,20 +143,20 @@ export const useProjectToolsStore = create<ProjectToolsState>()(
         }
       },
 
-      loadMcpTools: async (includeDeleted = false) => {
+      loadTools: async (includeDeleted = false) => {
         const { setLoading, setError, setAiTools, setToolTypeFilter } = get();
 
         setLoading(true);
         setError(null);
-        setToolTypeFilter('MCP');
+        setToolTypeFilter('ALL');
 
         try {
-          const tools = await ProjectToolsApiService.getMcpTools(includeDeleted);
+          const tools = await ProjectToolsApiService.getTools(includeDeleted);
           setAiTools(tools);
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to load MCP tools';
+          const errorMessage = error instanceof Error ? error.message : 'Failed to load Tool tools';
           setError(errorMessage);
-          console.error('Failed to load MCP tools:', error);
+          console.error('Failed to load Tool tools:', error);
         } finally {
           setLoading(false);
         }
@@ -181,7 +181,7 @@ export const useProjectToolsStore = create<ProjectToolsState>()(
         }
       },
 
-      updateMcpTool: async (id, updateData) => {
+      updateTool: async (id, updateData) => {
         const { setError, setAiTools, aiTools } = get();
 
         setError(null);
@@ -233,10 +233,17 @@ export const useProjectToolsStore = create<ProjectToolsState>()(
       refreshTools: async () => {
         const { loadAiTools, enabledFilter, toolTypeFilter } = get();
 
+        // If toolTypeFilter is 'ALL', we use loadTools logic to fetch everything
+        if (toolTypeFilter === 'ALL') {
+          const includeDeleted = enabledFilter === 'all' || enabledFilter === 'disabled';
+          await get().loadTools(includeDeleted);
+          return;
+        }
+
         const params: AiToolsQueryParams = {};
 
         // Map toolTypeFilter to tool_type param
-        if (toolTypeFilter !== 'all') {
+        if (toolTypeFilter !== 'ALL' as ToolType) {
           params.tool_type = toolTypeFilter;
         }
 

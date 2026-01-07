@@ -37,6 +37,7 @@ from app.runtime.tools.utils import (
     create_rag_tool,
     create_workflow_tools,
     create_plugin_tool,
+    create_http_tool,
     wrap_mcp_authenticate_tool,
 )
 
@@ -462,28 +463,33 @@ class AgentBuilder:
         """
         from app.models.internal import AgentTool
 
-        # Filter MCP tools that are enabled
+        # Filter MCP and HTTP tools that are enabled
         mcp_tools = [
             tool for tool in internal_agent.tools
-            if tool.tool_type == "MCP" and tool.enabled
+            if (tool.tool_type == "MCP" or tool.transport_type == "http_webhook") and tool.enabled
         ]
 
         if not mcp_tools:
-            self._logger.debug("No enabled MCP tools found in agent configuration")
+            self._logger.debug("No enabled MCP or HTTP tools found in agent configuration")
             return []
 
         self._logger.debug(
-            "Loading MCP tools from agent configuration",
+            "Loading MCP and HTTP tools from agent configuration",
             agent_id=str(internal_agent.id) if internal_agent.id else "unknown",
-            mcp_tool_count=len(mcp_tools),
+            tool_count=len(mcp_tools),
         )
 
         # Group tools by endpoint and transport type
         tools_by_endpoint: Dict[str, List[AgentTool]] = {}
         plugin_tools: List[AgentTool] = []
+        http_tools: List[AgentTool] = []
         for tool in mcp_tools:
             if tool.transport_type == "plugin":
                 plugin_tools.append(tool)
+                continue
+            
+            if tool.transport_type == "http_webhook":
+                http_tools.append(tool)
                 continue
 
             if not tool.endpoint:
@@ -567,8 +573,32 @@ class AgentBuilder:
             except Exception as exc:
                 self._logger.warning(f"Failed to create plugin tool {tool_binding.tool_name}: {exc}")
 
-        if not tools_by_endpoint and not plugin_tools:
-            self._logger.debug("No valid MCP endpoints or plugin tools found after filtering")
+        # Handle HTTP webhook tools
+        for tool_binding in http_tools:
+            try:
+                # Load tool definition from tool.base_config (which contains the Tool model config)
+                config = tool_binding.base_config or {}
+                
+                if not tool_binding.endpoint:
+                    self._logger.warning(f"HTTP tool missing endpoint: {tool_binding.tool_name}")
+                    continue
+
+                http_tool_func = create_http_tool(
+                    name=tool_binding.tool_name,
+                    description=config.get("description") or tool_binding.tool_name,
+                    endpoint=tool_binding.endpoint,
+                    method=config.get("method", "POST"),
+                    headers=config.get("headers"),
+                    parameters=config.get("parameters"),
+                    timeout=config.get("timeout", 30.0),
+                )
+                mcp_tools_instances.append(http_tool_func)
+                self._logger.debug(f"Added HTTP tool: {tool_binding.tool_name} (endpoint={tool_binding.endpoint})")
+            except Exception as exc:
+                self._logger.warning(f"Failed to create HTTP tool {tool_binding.tool_name}: {exc}")
+
+        if not tools_by_endpoint and not plugin_tools and not http_tools:
+            self._logger.debug("No valid MCP endpoints, plugin tools, or HTTP tools found after filtering")
             return []
 
         for endpoint, endpoint_tools in tools_by_endpoint.items():

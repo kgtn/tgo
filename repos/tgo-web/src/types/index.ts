@@ -113,11 +113,11 @@ export interface Agent {
   successRate: number;
   responseTime: string;
   tags: string[];
-  mcpTools: string[]; // MCP工具ID列表 (for backward compatibility)
-  mcpToolConfigs?: Record<string, Record<string, any>>; // 工具配置
+  tools: string[]; // 工具ID列表
+  toolConfigs?: Record<string, Record<string, any>>; // 工具配置
   knowledgeBases: string[]; // 知识库ID列表 (for backward compatibility)
   collections?: AICollectionResponse[]; // Full collection objects from API
-  tools?: AgentToolResponse[]; // Full tool objects from API
+  agentTools?: AgentToolResponse[]; // Full tool objects from API
   workflows?: any[]; // Full workflow objects from API
 }
 
@@ -130,8 +130,8 @@ export interface CreateAgentFormData {
   profession: string; // 职业/角色字段
   description: string;
   llmModel: string;
-  mcpTools: string[];
-  mcpToolConfigs: Record<string, Record<string, any>>; // 工具配置
+  tools: string[];
+  toolConfigs: Record<string, Record<string, any>>; // 工具配置
   knowledgeBases: string[];
   workflows: string[]; // 工作流ID列表
 }
@@ -186,8 +186,8 @@ export interface AgentToolDetailed {
   meta_data?: Record<string, any> | null;
   created_at?: string;
   updated_at?: string;
-  mcp_server_id?: string | null;
-  mcp_server?: {
+  tool_server_id?: string | null;
+  tool_server?: {
     id?: string;
     name?: string;
     description?: string;
@@ -295,13 +295,13 @@ export interface AgentQueryParams {
   offset?: number;
 }
 
-export interface MCPTool {
+export interface AiTool {
   id: string;
   name: string;
   title?: string; // Display title for the tool (may be different from name)
   description: string;
-  category: MCPCategory;
-  status: MCPToolStatus;
+  category: ToolCategory;
+  status: AiToolStatus;
   version: string;
   endpoint?: string;
   author: string;
@@ -317,9 +317,9 @@ export interface MCPTool {
   short_no?: string; // Add short_no field from API response
 }
 
-export type MCPCategory = 'all' | 'productivity' | 'communication' | 'data' | 'ai' | 'integration';
+export type ToolCategory = 'all' | 'productivity' | 'communication' | 'data' | 'ai' | 'integration';
 
-export type MCPToolStatus = 'active' | 'inactive' | 'updating' | 'error';
+export type AiToolStatus = 'active' | 'inactive' | 'updating' | 'error';
 
 // API Response types for AI Models (based on OpenAPI spec)
 export interface ModelInfo {
@@ -361,7 +361,7 @@ export interface ModelQueryParams {
   offset?: number;
 }
 
-// API Response types for MCP Tools (based on OpenAPI spec)
+// API Response types for Tool Tools (based on OpenAPI spec)
 export interface ToolSummary {
   id: string;
   name: string;
@@ -374,7 +374,7 @@ export interface ToolSummary {
   tool_source_type: ToolSourceType;
   execution_count: number | null;
   created_at: string;
-  mcp_server_id: string | null;
+  tool_server_id: string | null;
   input_schema: Record<string, any>;
   output_schema: Record<string, any> | null;
   short_no: string | null;
@@ -389,7 +389,7 @@ export interface ToolListResponse {
 }
 
 // Detailed tool response interface (based on OpenAPI spec)
-// NOTE: This is the OLD ToolResponse for MCP tools marketplace
+// NOTE: This is the OLD ToolResponse for Tool tools marketplace
 // For the new /v1/ai/tools API, see AiToolResponse below
 export interface ToolResponse {
   id: string;
@@ -404,7 +404,7 @@ export interface ToolResponse {
   output_schema: Record<string, any> | null;
   meta_data: Record<string, any> | null;
   tool_source_type: ToolSourceType;
-  mcp_server_id: string | null;
+  tool_server_id: string | null;
   project_id: string | null;
   execution_count: number | null;
   last_executed_at: string | null;
@@ -432,10 +432,10 @@ export interface ProjectToolsMeta {
 }
 
 export type ToolStatus = 'ACTIVE' | 'INACTIVE' | 'DEPRECATED';
-export type ToolSourceType = 'MARKETPLACE' | 'CUSTOM' | 'MCP_SERVER' | 'PLUGIN';
+export type ToolSourceType = 'MARKETPLACE' | 'CUSTOM' | 'Tool_SERVER' | 'PLUGIN';
 
 // Tool type enumeration for /v1/ai/tools API
-export type ToolType = 'MCP' | 'FUNCTION';
+export type ToolType = 'Tool' | 'HTTP' | 'FUNCTION' | 'ALL';
 
 // Project Tools API Response types (based on updated OpenAPI spec)
 // @deprecated - Old API, will be removed after migration to /v1/ai/tools
@@ -455,7 +455,7 @@ export interface ProjectToolResponse {
   tool_description: string | null;
   tool_category: string | null;
   // New fields from updated API
-  mcp_server_id: string | null;
+  tool_server_id: string | null;
   input_schema: Record<string, any>;
   output_schema: Record<string, any> | null;
   short_no: string | null;
@@ -485,10 +485,28 @@ export interface AiToolResponse {
   project_id: string; // uuid
   name: string;
   description: string | null;
-  tool_type: ToolType; // "MCP" | "FUNCTION"
+  tool_type: ToolType; // "Tool" | "FUNCTION"
   transport_type: string | null;
   endpoint: string | null;
   config: Record<string, any> | null;
+}
+
+/**
+ * HTTP tool configuration
+ */
+export interface HttpToolConfig {
+  method: string;
+  headers: Record<string, string>;
+  parameters: HttpToolParameter[];
+  timeout?: number;
+}
+
+export interface HttpToolParameter {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'enum' | 'object' | 'array';
+  description: string;
+  required: boolean;
+  enum_values?: string[];
 }
 
 /**
@@ -498,7 +516,7 @@ export interface AiToolCreateRequest {
   project_id: string; // uuid - required
   name: string; // required
   description?: string | null;
-  tool_type: ToolType; // "MCP" | "FUNCTION" - required
+  tool_type: ToolType; // "Tool" | "FUNCTION" - required
   transport_type?: string | null;
   endpoint?: string | null;
   config?: Record<string, any> | null;
@@ -511,7 +529,7 @@ export interface AiToolCreateRequest {
 export interface AiToolUpdateRequest {
   name?: string | null;
   description?: string | null;
-  tool_type?: ToolType | null; // "MCP" | "FUNCTION"
+  tool_type?: ToolType | null; // "Tool" | "FUNCTION"
   transport_type?: string | null;
   endpoint?: string | null;
   config?: Record<string, any> | null;
@@ -538,8 +556,8 @@ export interface ToolStoreItem {
   screenshots: string[];
   longDescription: string;
   requirements: string[];
-  changelog: string;
-  mcpMethods?: MCPToolMethod[];
+  changelog:string;
+  methods?: ToolMethod[];
   isInstalled?: boolean; // Whether the tool is already installed in the project
   input_schema?: Record<string, any>; // Schema from API response
   short_no?: string; // Short number/identifier from API response
@@ -551,17 +569,17 @@ export interface ToolStoreCategory {
   icon: string;
 }
 
-// MCP Tool Method Types
-export interface MCPToolMethod {
+// Tool Method Types
+export interface ToolMethod {
   id: string;
   name: string;
   description: string;
-  parameters: MCPToolParameter[];
+  parameters: ToolParameter[];
   returnType: string;
   example?: string;
 }
 
-export interface MCPToolParameter {
+export interface ToolParameter {
   name: string;
   type: string;
   required: boolean;

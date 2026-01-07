@@ -6,16 +6,16 @@ import { useAIStore } from '@/stores';
 import { useKnowledgeStore } from '@/stores';
 
 import { useToast } from '@/hooks/useToast';
-// import { transformToolSummaryList } from '@/utils/mcpToolsTransform';
+// import { transformToolSummaryList } from '@/utils/toolsTransform';
 import { transformAiToolResponseList } from '@/utils/projectToolsTransform';
 import { TransformUtils } from '@/utils/base/BaseTransform';
 
 import SectionHeader from '@/components/ui/SectionHeader';
 import { AIAgentsApiService, AIAgentsTransformUtils } from '@/services/aiAgentsApi';
-import MCPToolSelectionModal from './MCPToolSelectionModal';
+import ToolSelectionModal from './ToolSelectionModal';
 import KnowledgeBaseSelectionModal from './KnowledgeBaseSelectionModal';
 import { WorkflowSelectionModal } from '@/components/workflow';
-import type { Agent, MCPTool, AgentToolResponse, KnowledgeBaseItem, AgentToolDetailed, AgentToolUnion, ToolSummary } from '@/types';
+import type { Agent, AiTool, AgentToolResponse, KnowledgeBaseItem, AgentToolDetailed, AgentToolUnion, ToolSummary } from '@/types';
 import type { WorkflowSummary } from '@/types/workflow';
 import AgentToolsSection from '@/components/ui/AgentToolsSection';
 import AgentKnowledgeBasesSection from '@/components/ui/AgentKnowledgeBasesSection';
@@ -42,7 +42,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
 }) => {
   const { updateAgent, refreshAgents } = useAIStore();
   const { knowledgeBases, fetchKnowledgeBases } = useKnowledgeStore();
-  const { aiTools, loadMcpTools } = useProjectToolsStore();
+  const { aiTools, loadTools } = useProjectToolsStore();
   const { showToast } = useToast();
   const { t } = useTranslation();
 
@@ -174,7 +174,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
   useEffect(() => {
     if (agent && !isLoadingAgent) {
       // 直接使用 Agent 返回的工具详情
-      const toolIds: string[] = (agent.tools || []).map(t => t.id);
+      const toolIds: string[] = agent.tools || [];
 
       // Handle knowledge bases - use collections if available, fallback to knowledgeBases
       const kbIds = agent.collections?.map(collection => collection.id) || agent.knowledgeBases || [];
@@ -187,8 +187,8 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
         profession: agent.role || t('agents.copy.defaultProfession', '专家'),
         description: agent.description,
         llmModel: agent.llmModel || 'gemini-1.5-pro',
-        mcpTools: toolIds,
-        mcpToolConfigs: agent.mcpToolConfigs || {},
+        tools: toolIds,
+        toolConfigs: agent.toolConfigs || {},
         knowledgeBases: kbIds,
         workflows: workflowIds,
       });
@@ -200,20 +200,20 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
   // Ensure AI tools are available for mapping when saving
   useEffect(() => {
     if (aiTools.length === 0) {
-      // Load AI tools list (only active MCP tools)
-      loadMcpTools(false).catch(() => {});
+      // Load AI tools list (only active Tool tools)
+      loadTools(false).catch(() => {});
     }
-  }, [aiTools.length, loadMcpTools]);
+  }, [aiTools.length, loadTools]);
 
 
 
-  // 将 AgentToolResponse 转为用于展示的 MCPTool 结构（最小化依赖）
-  const agentToolToMCPTool = (t: AgentToolUnion): MCPTool => {
+  // 将 AgentToolResponse 转为用于展示的 AiTool 结构（最小化依赖）
+  const agentToolToAiTool = (t: AgentToolUnion): AiTool => {
     // Branch 1: legacy AgentToolResponse shape with tool_name
     if ((t as AgentToolResponse) && typeof (t as AgentToolResponse).tool_name === 'string') {
       const tt = t as AgentToolResponse;
       const namePart = tt.tool_name.includes(':') ? tt.tool_name.split(':').slice(1).join(':') : (tt.tool_name || 'tool');
-      const provider = tt.tool_name.includes(':') ? tt.tool_name.split(':')[0] : 'mcp';
+      const provider = tt.tool_name.includes(':') ? tt.tool_name.split(':')[0] : 'tool';
       return {
         id: tt.id,
         name: namePart,
@@ -229,15 +229,15 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
         tags: [],
         config: tt.config || undefined,
         short_no: provider,
-      } as MCPTool;
+      } as AiTool;
     }
 
     // Branch 2: detailed tool object from new API
     const tool = (t as AgentToolDetailed) || {};
     const statusMapped = TransformUtils.transformToolStatus((tool.status || 'ACTIVE') as any);
     const categoryMapped = TransformUtils.transformCategory(tool.category || 'integration');
-    const shortNo = tool.mcp_server?.short_no;
-    const author = shortNo || tool.mcp_server?.name || tool.tool_source_type || 'mcp';
+    const shortNo = tool.tool_server?.short_no;
+    const author = shortNo || tool.tool_server?.name || tool.tool_source_type || 'tool';
 
     return {
       id: tool.id,
@@ -255,46 +255,46 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
       config: tool.meta_data || undefined,
       input_schema: tool.input_schema,
       short_no: shortNo,
-    } as MCPTool;
+    } as AiTool;
   };
 
-  // 已添加的MCP工具列表 - 结合 agent.tools 和 AI tools 数据
-  const addedMCPTools = useMemo(() => {
+  // 已添加的Tool工具列表 - 结合 agent.tools 和 AI tools 数据
+  const addedAiTools = useMemo(() => {
     const byId = new Map<string, AgentToolUnion>();
-    ((agent?.tools as AgentToolUnion[]) || []).forEach((t) => byId.set(t.id, t));
+    ((agent?.agentTools as AgentToolUnion[]) || []).forEach((t) => byId.set(t.id, t));
 
-    const toolsFromAgent = formData.mcpTools
+    const toolsFromAgent = formData.tools
       .map(id => byId.get(id))
       .filter(Boolean) as AgentToolUnion[];
 
     // 对于不在 agent.tools 中的工具ID，从 AI tools 获取完整信息
-    const missingIds = formData.mcpTools.filter(id => !byId.has(id));
-    const mcpToolsFromStore = transformAiToolResponseList(aiTools);
-    const toolsFromStore = mcpToolsFromStore.filter((tool: MCPTool) => missingIds.includes(tool.id));
+    const missingIds = formData.tools.filter(id => !byId.has(id));
+    const toolsFromStore = transformAiToolResponseList(aiTools)
+      .filter((tool: AiTool) => missingIds.includes(tool.id));
 
     // 对于既不在 agent.tools 也不在工具商店中的工具ID，创建占位符
     const foundStoreIds = toolsFromStore.map(t => t.id);
     const stillMissingIds = missingIds.filter(id => !foundStoreIds.includes(id));
-    const placeholderTools: MCPTool[] = stillMissingIds.map(id => ({
+    const placeholderTools: AiTool[] = stillMissingIds.map(id => ({
       id,
       name: id,
       description: t('agents.edit.tools.pendingNewTool', '待保存的新工具'),
       category: 'integration',
       status: 'active',
       version: 'v1.0.0',
-      author: 'mcp',
+      author: 'tool',
       lastUpdated: new Date().toISOString().split('T')[0],
       usageCount: 0,
       rating: 0,
       tags: [],
-    } as MCPTool));
+    } as AiTool));
 
     return [
-      ...toolsFromAgent.map(agentToolToMCPTool),
+      ...toolsFromAgent.map(agentToolToAiTool),
       ...toolsFromStore,
       ...placeholderTools,
     ];
-  }, [agent?.tools, formData.mcpTools, aiTools]);
+  }, [agent?.agentTools, formData.tools, aiTools]);
 
   // 知识库启用状态：后端暂不支持单独启用/禁用，选中即关联
 
@@ -339,7 +339,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
     setIsUpdating(true);
     try {
       // 合并可用工具来源：AI tools + 当前已添加/选择的工具（包含 short_no）
-      const extraSummaries: ToolSummary[] = addedMCPTools.map((t) => ({
+      const extraSummaries: ToolSummary[] = addedAiTools.map((t) => ({
         id: t.id,
         name: t.name,
         title: t.title || t.name,
@@ -348,10 +348,10 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
         category: typeof t.category === 'string' ? t.category : (t.category as any) || null,
         tags: t.tags || [],
         status: 'ACTIVE',
-        tool_source_type: 'MCP_SERVER',
+        tool_source_type: 'Tool_SERVER',
         execution_count: null,
         created_at: new Date().toISOString(),
-        mcp_server_id: null,
+        tool_server_id: null,
         input_schema: t.input_schema || {},
         output_schema: null,
         short_no: t.short_no || null,
@@ -368,10 +368,10 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
         category: null,
         tags: [],
         status: 'ACTIVE',
-        tool_source_type: 'MCP_SERVER',
+        tool_source_type: 'Tool_SERVER',
         execution_count: null,
         created_at: aiTool.created_at,
-        mcp_server_id: null,
+        tool_server_id: null,
         input_schema: {},
         output_schema: null,
         short_no: null,
@@ -384,13 +384,13 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
       const mergedAvailable = Array.from(byId.values());
 
       // Preflight: ensure every selected tool has name
-      const missing = formData.mcpTools.filter(id => {
+      const missing = formData.tools.filter(id => {
         const s = byId.get(id);
         return !s || !s.name;
       });
       if (missing.length > 0) {
-        // Try to resolve readable names from addedMCPTools
-        const nameMap = new Map(addedMCPTools.map(t => [t.id, t.title || t.name || t.id] as const));
+        // Try to resolve readable names from addedAiTools
+        const nameMap = new Map(addedAiTools.map(t => [t.id, t.title || t.name || t.id] as const));
         const missingNames = missing.map(id => nameMap.get(id) || id).join(t('common.separator', '、'));
         showToast('error', t('agents.edit.tools.missingTitle', '工具信息缺失'), t('agents.edit.tools.missingDesc', '以下工具缺少名称：{{names}}，请重新选择后重试', { names: missingNames }));
         setIsUpdating(false);
@@ -417,8 +417,8 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
         description: formData.description,
         llmModel: normalized,
         role: formData.profession,
-        mcpTools: formData.mcpTools,
-        mcpToolConfigs: formData.mcpToolConfigs,
+        tools: formData.tools,
+        toolConfigs: formData.toolConfigs,
         knowledgeBases: formData.knowledgeBases,
         workflows: formData.workflows,
       }, mergedAvailable);
@@ -451,8 +451,8 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
         profession: agent.role || t('agents.copy.defaultProfession', '专家'),
         description: agent.description,
         llmModel: agent.llmModel || 'gemini-1.5-pro',
-        mcpTools: toolIds,
-        mcpToolConfigs: agent.mcpToolConfigs || {},
+        tools: toolIds,
+        toolConfigs: agent.toolConfigs || {},
         knowledgeBases: kbIds,
         workflows: workflowIds,
       });
@@ -662,12 +662,12 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
                     </h3>
                   </div>
                   <div className="grid grid-cols-1 gap-6">
-                    {/* MCP工具 */}
+                    {/* Tool工具 */}
                     <div className="bg-white dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                      <SectionHeader icon={<Wrench className="w-4 h-4 text-orange-600" />} title={t('agents.create.sections.mcpTools', 'MCP工具')} />
+                      <SectionHeader icon={<Wrench className="w-4 h-4 text-orange-600" />} title={t('agents.create.sections.tools', 'Tool工具')} />
                       <AgentToolsSection
-                        tools={addedMCPTools}
-                        toolConfigs={formData.mcpToolConfigs}
+                        tools={addedAiTools}
+                        toolConfigs={formData.toolConfigs}
                         onAdd={() => setShowToolSelectionModal(true)}
                         onRemove={handleToolRemove}
                         disabled={isUpdating}
@@ -737,15 +737,15 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
       </div>
 
       {/* Modals - Always available regardless of loading state */}
-      <MCPToolSelectionModal
+      <ToolSelectionModal
         isOpen={showToolSelectionModal}
         onClose={() => setShowToolSelectionModal(false)}
-        selectedTools={formData.mcpTools}
-        toolConfigs={formData.mcpToolConfigs}
+        selectedTools={formData.tools}
+        toolConfigs={formData.toolConfigs}
         onConfirm={(selectedToolIds, toolConfigs) => {
           setFormData({
-            mcpTools: selectedToolIds,
-            mcpToolConfigs: toolConfigs,
+            tools: selectedToolIds,
+            toolConfigs: toolConfigs,
           });
         }}
       />

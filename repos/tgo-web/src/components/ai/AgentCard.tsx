@@ -5,7 +5,6 @@ import { Pencil, Trash2, MessageCircle, MoreVertical, Copy, Power, Bot } from 'l
 import AgentToolTag from '@/components/ui/AgentToolTag';
 import KnowledgeBaseTag from '@/components/ui/KnowledgeBaseTag';
 import WorkflowTag from '@/components/ui/WorkflowTag';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { generateDefaultAvatar, hasValidAvatar } from '@/utils/avatarUtils';
 import { useAIStore } from '@/stores';
 import { useToast } from '@/hooks/useToast';
@@ -26,8 +25,6 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
   const [showAllCollections, setShowAllCollections] = useState(false);
   const [showAllTools, setShowAllTools] = useState(false);
   const [showAllWorkflows, setShowAllWorkflows] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +48,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
   }, [showMenu]);
 
   // Get store functions and toast
-  const { deleteAgent, updateAgent } = useAIStore();
+  const { updateAgent } = useAIStore();
   const { showToast } = useToast();
 
   // Navigate to chat with this agent
@@ -68,11 +65,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
 
   const handleAction = (actionType: string): void => {
     setShowMenu(false);
-    if (actionType === 'delete') {
-      setShowDeleteConfirm(true);
-    } else {
-      onAction?.(actionType, agent);
-    }
+    onAction?.(actionType, agent);
   };
 
   const handleToggleStatus = async (e: React.MouseEvent) => {
@@ -84,21 +77,6 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
       showToast('success', t('agents.messages.statusUpdateSuccess', '刷新成功'), t('agents.messages.statusUpdateSuccessDesc', `AI员工 "${agent.name}" 状态已更新`, { name: agent.name }));
     } catch (error) {
       showToast('error', t('agents.messages.statusUpdateFailed', '刷新失败'), t('agents.messages.statusUpdateFailedDesc', '更新AI员工状态时发生错误'));
-    }
-  };
-
-  const handleDeleteAgent = async (): Promise<void> => {
-    setIsDeleting(true);
-    try {
-      await deleteAgent(agent.id);
-      showToast('success', t('agents.messages.deleteSuccess', '删除成功'), t('agents.messages.deleteSuccessDesc', `AI员工 "${agent.name}" 已删除`, { name: agent.name }));
-      setShowDeleteConfirm(false);
-      onAction?.('deleted', agent);
-    } catch (error) {
-      console.error('Failed to delete agent:', error);
-      showToast('error', t('agents.messages.deleteFailed', '删除失败'), t('agents.messages.deleteFailedDesc', '删除AI员工时发生错误'));
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -234,14 +212,14 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
 
           {/* 工具显示 */}
           <div className="min-h-[24px]">
-            {agent.tools && agent.tools.length > 0 ? (
+            {agent.agentTools && agent.agentTools.length > 0 ? (
               <div className="flex flex-wrap gap-1.5">
-                {(showAllTools ? agent.tools : agent.tools.slice(0, 2)).map((tool) => (
+                {(showAllTools ? agent.agentTools || [] : (agent.agentTools || []).slice(0, 2)).map((tool) => (
                   <AgentToolTag key={tool.id} tool={tool} onClick={handleToolClick} size="xs" />
                 ))}
-                {agent.tools.length > 2 && (
+                {agent.agentTools && agent.agentTools.length > 2 && (
                   <button onClick={() => setShowAllTools(!showAllTools)} className="text-[10px] text-blue-500 hover:text-blue-600 font-medium px-1 underline-offset-2 hover:underline">
-                    {showAllTools ? t('agents.actions.collapse', '收起') : `+${agent.tools.length - 2}`}
+                    {showAllTools ? t('agents.actions.collapse', '收起') : `+${agent.agentTools.length - 2}`}
                   </button>
                 )}
               </div>
@@ -303,18 +281,6 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onAction, onToolClick }) =
           <Pencil className="w-4 h-4" />
         </button>
       </div>
-
-      <ConfirmDialog
-        isOpen={showDeleteConfirm}
-        title={t('agents.modal.delete.title', '删除AI员工')}
-        message={t('agents.modal.delete.message', `确定要删除AI员工 "${agent.name}" 吗？此操作不可撤销。`, { name: agent.name })}
-        confirmText={t('agents.modal.delete.confirm', '删除')}
-        cancelText={t('agents.modal.delete.cancel', '取消')}
-        confirmVariant="danger"
-        onConfirm={handleDeleteAgent}
-        onCancel={() => setShowDeleteConfirm(false)}
-        isLoading={isDeleting}
-      />
     </div>
   );
 };

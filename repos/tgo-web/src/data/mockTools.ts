@@ -1,6 +1,6 @@
-import type { MCPTool, MCPCategory } from '@/types';
+import type { AiTool, ToolCategory } from '@/types';
 
-export const mockMCPTools: MCPTool[] = [
+export const mockAiTools: AiTool[] = [
   {
     id: '1',
     name: '快递100查询',
@@ -130,8 +130,8 @@ export const mockMCPTools: MCPTool[] = [
   }
 ];
 
-// MCP工具分类
-export const MCP_CATEGORIES: { id: MCPCategory; label: string }[] = [
+// 工具分类
+export const TOOL_CATEGORIES: { id: ToolCategory; label: string }[] = [
   { id: 'all', label: '全部' },
   { id: 'productivity', label: '效率工具' },
   { id: 'communication', label: '通信工具' },

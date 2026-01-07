@@ -56,6 +56,11 @@
     "duplicate": "Duplicate",
     "view": "View",
     "refresh": "Refresh",
+    "notice": "Notice",
+    "install": "Install",
+    "installing": "Installing...",
+    "complete": "Complete",
+    "action": "Action",
     "separator": ", ",
     "debug_mode": "Debug Mode",
     "true": "True",
@@ -104,14 +109,120 @@
       "viewDocs": "View Plugin Developer Guide",
       "status": {
         "connected": "Connected",
-        "disconnected": "Disconnected"
+        "disconnected": "Disconnected",
+        "label": "Current Status",
+        "running": "Running",
+        "error": "Error",
+        "installing": "Installing",
+        "stopped": "Stopped"
       },
       "capabilities": "Capabilities",
       "author": "Author",
       "connectedAt": "Connected At",
       "debug": {
         "title": "Debug Hint",
-        "description": "In development mode, you can connect local plugins via port 8005 (TCP) or /var/run/tgo/tgo.sock (Unix Socket)."
+        "description": "In development mode, you can connect local plugins via port 8005 (TCP) or /var/run/tgo/tgo.sock (Unix Socket).",
+        "badge": "Debug",
+        "autoManaged": "Debug Mode - Auto Managed"
+      },
+      "token": {
+        "generate": "Debug Token",
+        "error": "Failed to generate token",
+        "modal": {
+          "title": "Project Debug Token",
+          "warning": "Token is valid for 24 hours. Local debug plugins will be automatically associated with the current project after connecting with this token.",
+          "tokenLabel": "Your Debug Token",
+          "usage": "Usage",
+          "goSDK": "Go SDK:",
+          "pythonSDK": "Python SDK:"
+        }
+      },
+      "install": {
+        "button": "Install Plugin",
+        "now": "Install Now",
+        "modal": {
+          "title": "Install New Plugin",
+          "yamlLabel": "Plugin Config (YAML)"
+        },
+        "url": {
+          "title": "Install via URL",
+          "description": "Enter the remote URL of the plugin, the system will automatically fetch configuration and prepare for installation.",
+          "label": "Plugin URL",
+          "github": {
+            "desc": "Supports repo URL and branch path"
+          },
+          "gitee": {
+            "desc": "Domestic acceleration, supports Gitee"
+          },
+          "custom": {
+            "desc": "Supports direct YAML or directory URL"
+          }
+        },
+        "fetch": "Fetch Info",
+        "useManual": "Use manual YAML paste mode",
+        "backToUrl": "Back to URL mode",
+        "preview": {
+          "success": "Plugin configuration parsed successfully"
+        },
+        "confirm": "Confirm and Install",
+        "preparing": "Preparing installation...",
+        "processing": "Installing plugin...",
+        "success": "Installation successful",
+        "error": "Installation failed",
+        "enjoy": "Everything is ready, start exploring!",
+        "source": "Source",
+        "back": "Back",
+        "stage": {
+          "preparing": "Prepare environment",
+          "cloning": "Clone code",
+          "downloading": "Download artifact",
+          "copying": "Deploy files",
+          "building": "Compile and build",
+          "starting": "Start service"
+        }
+      },
+      "actions": {
+        "detail": "View Details",
+        "checkUpdate": "Check for updates",
+        "logs": "View logs",
+        "stop": "Stop",
+        "start": "Start",
+        "restart": "Restart",
+        "uninstall": "Uninstall",
+        "uninstallConfirm": "Are you sure you want to uninstall this plugin? This action cannot be undone."
+      },
+      "installed": {
+        "empty": {
+          "title": "No plugins yet",
+          "description": "You can install from GitHub source, via binary files, or connect local plugins using debug tokens."
+        }
+      },
+      "updateAvailable": "Update Available",
+      "checkUpdate": "Check Update",
+      "checkUpdateError": "Failed to check for updates",
+      "noUpdate": "Already the latest version",
+      "installedAt": "Installed At",
+      "installedAtTime": "Installation Time",
+      "installType": "Install Type",
+      "logs": {
+        "title": "Plugin Logs",
+        "empty": "No logs output yet"
+      },
+      "detail": {
+        "basicInfo": "Basic Information",
+        "noCapabilities": "This plugin does not declare any special capabilities"
+      },
+      "details": {
+        "description": "Description"
+      },
+      "upgrade": {
+        "title": "Plugin Upgrade",
+        "pluginName": "Plugin Name",
+        "currentVersion": "Current Version",
+        "latestVersion": "Latest Version",
+        "preparing": "Preparing upgrade...",
+        "confirm": "Upgrade Now",
+        "error": "Upgrade failed"
       }
     },
     "profile": {
@@ -548,7 +659,7 @@
     "teamChat": {
       "defaultName": "Agent Team"
     },
-    "teamDescription": "Through team collaboration, you can call multiple AI agents simultaneously to achieve more complex business logic and more efficient task processing.",
+    "teamDescription": "Through team collaboration, you can simultaneously call multiple AI agents equipped with tool calling, workflow execution, and knowledge base retrieval capabilities to achieve more complex business logic and more efficient task processing.",
     "listTitle": "Agent List",
     "stats": {
       "total": "Total Agents",
@@ -614,7 +725,7 @@
       "sections": {
         "modelConfig": "Model Configuration",
         "description": "Capability Description",
-        "mcpTools": "MCP Tools",
+        "tools": "Tools",
         "resources": "Resource Association"
       },
       "placeholders": {
@@ -653,7 +764,7 @@
     "detail": {
       "basicInfo": "Basic Info",
       "performanceStats": "Performance Stats",
-      "mcpTools": "Associated MCP Tools",
+      "tools": "Associated Tools",
       "knowledge_bases": "Associated Knowledge Bases",
       "workflows": "Associated Workflows",
       "tags": "Tags",
@@ -679,7 +790,7 @@
       "selectedCount": "{{count}} Selected",
       "addButton": "Add Tool",
       "emptyTitle": "No tools added",
-      "emptyDescription": "Click \"Add Tool\" to select MCP tools"
+      "emptyDescription": "Click \"Add Tool\" to select tools"
     },
     "knowledge_basesSection": {
       "selectedTitle": "Selected Knowledge Bases",
@@ -770,14 +881,14 @@
   "team": {
     "modal": {
       "title": "Team Info",
-      "subtitle": "Configure your AI collaboration team parameters",
+      "subtitle": "Configure your AI collaboration team, integrating tools, workflows, and knowledge bases to enhance collective capabilities",
       "name": "Team Name",
       "namePlaceholder": "Enter team name",
       "model": "LLM Model",
       "modelHint": "Select the default LLM model for the team",
       "instruction": "Team Instructions",
       "instructionPlaceholder": "Enter team system prompt or instructions...",
-      "instructionHint": "This instruction will be applied to all agents in the team",
+      "instructionHint": "💡 This instruction serves as the team's global background, integrating tool calling, workflow execution, and knowledge base capabilities across all members for efficient collaboration.",
       "noTeam": "Default team not found",
       "cancel": "Cancel",
       "save": "Save",
@@ -850,7 +961,7 @@
     "ai": "AI Assistant",
     "aiFeatures": "AI Features",
     "agents": "Agent Teams",
-    "mcpTools": "MCP Tools",
+    "tools": "Tools",
     "workflows": "Workflows",
     "visitors": "Visitors",
     "knowledge": "Knowledge Base",
@@ -860,10 +971,28 @@
   "workflow": {
     "title": "Workflows",
     "management": {
-      "title": "Workflow Management"
+      "title": "Workflow Management",
+      "subtitle": "Orchestrate complex AI task flows"
     },
-    "empty": "No workflows associated",
+    "banner": {
+      "title": "Automated Workflows",
+      "description": "Orchestrate AI nodes, conditional branches, and custom tools through a graphical interface to achieve automated processing from simple conversations to complex business logic."
+    },
+    "empty": {
+      "title": "No Workflows",
+      "description": "Click the \"Create Workflow\" button to build your first automated process",
+      "noResults": "No matching workflows found",
+      "noResultsDesc": "Try adjusting your search keywords or filters"
+    },
+    "modal": {
+      "delete": {
+        "title": "Delete Workflow",
+        "message": "Are you sure you want to delete workflow \"{{name}}\"? This action cannot be undone."
+      }
+    },
     "addWorkflow": "Add Workflow",
+    "viewWorkflow": "View Workflow",
+    "listTitle": "Workflow List",
     "noDescription": "No description",
     "nodes": "nodes",
     "lastUpdated": "Updated",
@@ -913,8 +1042,8 @@
         "description": "Call other AI agents"
       },
       "tool": {
-        "label": "MCP Tool",
-        "description": "Execute MCP tools"
+        "label": "Tool",
+        "description": "Execute tools"
       },
       "condition": {
         "label": "Condition",
@@ -986,7 +1115,7 @@
       "status": "Status",
       "tags": "Tags",
       "selectAgent": "Select AI Agent",
-      "selectTool": "Select MCP Tool",
+      "selectTool": "Select Tool",
       "output_variable": "Output Variable",
       "condition_type": "Condition Type",
       "expression": "Expression",
@@ -1022,7 +1151,7 @@
     },
     "placeholders": {
       "selectAgent": "Please select an AI Agent",
-      "selectTool": "Please select an MCP Tool",
+      "selectTool": "Please select an Tool",
       "cron_hint": "0 * * * * (Hourly)",
       "custom_path": "custom-path",
       "event_hint": "e.g. user_registered",
@@ -2083,24 +2212,35 @@
       "otherAgent": "another agent"
     }
   },
-  "mcp": {
+  "tools": {
+    "title": "Tools",
+    "subtitle": "Configure and extend the capabilities of AI agents",
+    "copyEndpoint": "Copy Endpoint",
+    "editTool": "Edit Tool",
+    "banner": {
+      "title": "Enhance AI Capabilities",
+      "description": "By adding HTTP or MCP protocol tools, you can give AI agents unlimited possibilities such as searching, querying databases, and calling external services."
+    },
+    "listTitle": "Tool List",
+    "addHttpTool": "Add HTTP Tool",
+    "addMCPTool": "Add MCP Tool",
     "newTool": "New Tool",
     "selectModal": {
       "title": "Select Tool",
       "searchPlaceholder": "Search tools...",
-      "loading": "Loading MCP tools...",
-      "noMatch": "No matching MCP tools found",
+      "loading": "Loading tools...",
+      "noMatch": "No matching tools found",
       "configTool": "Configure Tool",
-      "manageTools": "Manage MCP Tools",
+      "manageTools": "Manage Tools",
       "category": {
-        "mcpServer": "MCP Server",
+        "toolServer": "Tool Server",
         "custom": "Custom Tool",
         "plugin": "Plugin Tool"
       },
       "confirmSelection": "Confirm Selection ({{count}})",
-      "loadFailedDesc": "Unable to load MCP tool list, please try again later",
+      "loadFailedDesc": "Unable to load tool list, please try again later",
       "retryFailedTitle": "Retry Failed",
-      "retryFailedDesc": "Unable to load MCP tool list, please check your network connection"
+      "retryFailedDesc": "Unable to load tool list, please check your network connection"
     },
     "source": {
         "marketplace": "Tool Marketplace",
@@ -2113,7 +2253,7 @@
         "unknown": "Unknown Source"
       },
       "search": {
-        "placeholder": "Search MCP tools..."
+        "placeholder": "Search tools..."
       },
     "categories": {
       "all": "All",
@@ -2129,7 +2269,7 @@
         "customTool": "Custom Tool"
       },
       "tools": {
-        "addMcpTool": "Add MCP Tool",
+        "addMcpTool": "Add Tool",
         "delete": {
           "successTitle": "Deleted",
           "successMessage": "Tool \"{{name}}\" has been deleted"
@@ -2158,12 +2298,13 @@
         },
         "installedEmpty": {
           "title": "No installed tools",
-          "description": "Click the \"Add MCP Tool\" button in the top-right to create your first tool",
+          "description": "Click the \"Add Tool\" button in the top-right to create your first tool",
           "action": "Go to Tool Store"
         },
+        "addHttpTool": "Add HTTP Tool",
         "list": {
           "emptyTitle": "No tools",
-          "emptyDescriptionAll": "Click \"Add Tool\" to add your first MCP tool",
+          "emptyDescriptionAll": "Click \"Add Tool\" to add your first tool",
           "emptyDescriptionCategory": "No tools under category \"{{category}}\"",
           "emptyAction": "Start adding tools"
         },
@@ -2178,8 +2319,9 @@
           "notFoundMessage": "Unable to find detailed information for this tool"
         }
       },
-      "addMcpToolModal": {
+      "addToolModal": {
         "title": "Add MCP Tool",
+        "subtitle": "Connect to external capability servers via MCP protocol",
         "fields": {
           "name": "Tool Name",
           "description": "Tool Description",
@@ -2190,7 +2332,7 @@
         "placeholders": {
           "name": "e.g., weather-api",
           "description": "Brief description of the tool's functionality",
-          "endpoint": "e.g., https://api.example.com/mcp",
+          "endpoint": "e.g., https://api.example.com/tool",
           "config": "{\"key\": \"value\"}"
         },
         "hints": {
@@ -2207,13 +2349,74 @@
           "title": "Added Successfully",
           "message": "{{name}} has been successfully added"
         },
+        "confirm": "Confirm Create",
         "error": {
           "title": "Add Failed",
-          "message": "Failed to add MCP tool, please try again later"
+          "message": "Failed to add tool, please try again later"
         }
       },
-      "editMcpToolModal": {
-        "title": "Edit MCP Tool",
+      "addHttpToolModal": {
+        "title": "Add HTTP Tool",
+        "subtitle": "Configure external API endpoints as AI agent capabilities",
+        "sections": {
+          "basic": "Basic Information",
+          "config": "API Configuration"
+        },
+        "fields": {
+          "name": "Tool Name",
+          "description": "Tool Description",
+          "endpoint": "API Endpoint",
+          "method": "HTTP Method",
+          "headers": "Request Headers",
+          "parameters": "Input Parameters"
+        },
+        "placeholders": {
+          "name": "e.g., search_user",
+          "description": "Describe the tool's function to help AI understand when to call it",
+          "endpoint": "https://api.example.com/v1/users",
+          "paramDesc": "Parameter description..."
+        },
+        "params": {
+          "name": "Name",
+          "type": "Type",
+          "desc": "Description",
+          "required": "Required",
+          "empty": "Define dynamic parameters needed when AI calls the endpoint"
+        },
+        "addHeader": "Add Header",
+        "addParameter": "Add Parameter",
+        "confirm": "Confirm Create",
+        "errors": {
+          "nameRequired": "Please enter tool name",
+          "invalidName": "Tool name can only contain letters, numbers, underscores and hyphens",
+          "descriptionRequired": "Please enter tool description",
+          "endpointRequired": "Please enter API endpoint"
+        },
+        "success": {
+          "title": "Added Successfully",
+          "message": "HTTP tool {{name}} has been added"
+        },
+        "error": {
+          "title": "Add Failed",
+          "message": "Failed to add HTTP tool"
+        }
+      },
+      "editHttpToolModal": {
+        "title": "Edit HTTP Tool",
+        "subtitle": "Update external API endpoint configuration",
+        "save": "Save Changes",
+        "success": {
+          "title": "Updated Successfully",
+          "message": "HTTP tool {{name}} has been updated"
+        },
+        "error": {
+          "title": "Update Failed",
+          "message": "Failed to update HTTP tool"
+        }
+      },
+      "editToolModal": {
+        "title": "Edit Tool",
+        "subtitle": "Modify MCP tool connection configuration",
         "fields": {
           "name": "Tool Name",
           "description": "Tool Description",
@@ -2224,7 +2427,7 @@
         "placeholders": {
           "name": "e.g., weather-api",
           "description": "Brief description of the tool's functionality",
-          "endpoint": "e.g., https://api.example.com/mcp"
+          "endpoint": "e.g., https://api.example.com/tool"
         },
         "hints": {
           "toolTypeReadonly": "Tool type cannot be modified"
@@ -2238,21 +2441,22 @@
           "title": "Updated Successfully",
           "message": "{{name}} has been successfully updated"
         },
+        "save": "Save Changes",
         "error": {
           "title": "Update Failed",
-          "message": "Failed to update MCP tool, please try again later"
+          "message": "Failed to update tool, please try again later"
         }
       },
       "selectModal": {
         "title": "Select Tools",
         "searchPlaceholder": "Search tools...",
-        "loading": "Loading MCP tools...",
-        "loadFailedDesc": "Unable to load MCP tool list, please try again later",
+        "loading": "Loading tools...",
+        "loadFailedDesc": "Unable to load tool list, please try again later",
         "retryFailedTitle": "Retry Failed",
-        "retryFailedDesc": "Unable to load MCP tool list, please check your network connection",
-        "noMatch": "No matching MCP tools found",
+        "retryFailedDesc": "Unable to load tool list, please check your network connection",
+        "noMatch": "No matching tools found",
         "configTool": "Configure Tool",
-        "manageTools": "Manage MCP Tools",
+        "manageTools": "Manage Tools",
         "confirmSelection": "Confirm Selection ({{count}})"
       },
       "config": {

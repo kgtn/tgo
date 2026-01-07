@@ -38,7 +38,7 @@ class PluginToolCreate(BaseModel):
 @router.get("", response_model=List[ToolResponse])
 async def list_tools(
     project_id: uuid.UUID = Query(..., description="Project ID"),
-    tool_type: Optional[ToolType] = Query(None, description="Filter by tool type"),
+    tool_type: Optional[ToolType] = Query(None, description="Filter by tool type (MCP, FUNCTION, or ALL)"),
     include_deleted: bool = Query(False, description="Include soft-deleted tools"),
     db: AsyncSession = Depends(get_db),
 ) -> List[ToolResponse]:
@@ -48,7 +48,7 @@ async def list_tools(
     if not include_deleted:
         stmt = stmt.where(Tool.deleted_at.is_(None))
 
-    if tool_type is not None:
+    if tool_type is not None and tool_type != ToolType.ALL:
         stmt = stmt.where(Tool.tool_type == tool_type)
 
     result = await db.execute(stmt)

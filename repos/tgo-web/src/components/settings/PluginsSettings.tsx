@@ -374,7 +374,8 @@ const PluginsSettings: React.FC = () => {
                             plugin.status === 'installing' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400' :
                             'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
                           }`}>
-                          {plugin.status === 'running' && plugin.is_dev_mode ? t('settings.plugins.status.connected', '已连接') : plugin.status}
+                          {plugin.status === 'running' && plugin.is_dev_mode ? t('settings.plugins.status.connected', '已连接') : 
+                           t(`settings.plugins.status.${plugin.status}`, plugin.status)}
                           </span>
                         </div>
                       </div>
@@ -737,21 +738,21 @@ const PluginsSettings: React.FC = () => {
                               <Github className="w-3.5 h-3.5" />
                               <span className="text-xs font-bold">GitHub</span>
                             </div>
-                            <p className="text-[10px] text-gray-500">支持仓库地址及分支路径</p>
+                            <p className="text-[10px] text-gray-500">{t('settings.plugins.install.url.github.desc', '支持仓库地址及分支路径')}</p>
                           </div>
                           <div className="p-3 border border-gray-100 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-900/30">
                             <div className="flex items-center gap-2 mb-1 text-gray-900 dark:text-gray-100">
                               <Puzzle className="w-3.5 h-3.5 text-red-500" />
                               <span className="text-xs font-bold">Gitee</span>
                             </div>
-                            <p className="text-[10px] text-gray-500">国内加速，支持码云仓库</p>
+                            <p className="text-[10px] text-gray-500">{t('settings.plugins.install.url.gitee.desc', '国内加速，支持码云仓库')}</p>
                           </div>
                           <div className="p-3 border border-gray-100 dark:border-gray-700 rounded-lg bg-gray-50/50 dark:bg-gray-900/30">
                             <div className="flex items-center gap-2 mb-1 text-gray-900 dark:text-gray-100">
                               <ExternalLink className="w-3.5 h-3.5 text-blue-500" />
                               <span className="text-xs font-bold">Custom</span>
                             </div>
-                            <p className="text-[10px] text-gray-500">支持直接 YAML 或目录地址</p>
+                            <p className="text-[10px] text-gray-500">{t('settings.plugins.install.url.custom.desc', '支持直接 YAML 或目录地址')}</p>
                           </div>
                         </div>
                       </div>
@@ -917,7 +918,7 @@ const PluginsSettings: React.FC = () => {
                 <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">{t('settings.plugins.token.modal.usage', '使用方法')}</h4>
                 
                 <div className="space-y-2">
-                  <p className="text-xs text-gray-500 font-medium">Go SDK:</p>
+                  <p className="text-xs text-gray-500 font-medium">{t('settings.plugins.token.modal.goSDK', 'Go SDK:')}</p>
                   <pre className="p-3 bg-gray-900 text-gray-300 rounded-lg text-[10px] overflow-auto">
 {`tgo.Run(&MyPlugin{}, 
     tgo.WithTCPAddr("localhost:8005"), 
@@ -926,7 +927,7 @@ const PluginsSettings: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <p className="text-xs text-gray-500 font-medium">Python SDK:</p>
+                  <p className="text-xs text-gray-500 font-medium">{t('settings.plugins.token.modal.pythonSDK', 'Python SDK:')}</p>
                   <pre className="p-3 bg-gray-900 text-gray-300 rounded-lg text-[10px] overflow-auto">
 {`plugin = MyPlugin(
     tcp_addr="localhost:8005", 
@@ -1089,9 +1090,9 @@ plugin.run()`}
                           <div className="text-xs text-gray-400">Priority: {cap.priority}</div>
                         </div>
                         
-                        {cap.type === 'mcp_tools' && cap.tools && (
+                        {cap.type === 'tools' && cap.tools && (
                           <div className="mt-4 pl-4 border-l-2 border-gray-100 dark:border-gray-700 space-y-4">
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">MCP Tools ({cap.tools.length})</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Tools ({cap.tools.length})</p>
                             {cap.tools.map((tool, tidx) => (
                               <div key={tidx} className="space-y-2">
                                 <div className="flex items-center gap-2">

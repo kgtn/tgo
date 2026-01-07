@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Settings, Save, RotateCcw, Info } from 'lucide-react';
-import type { MCPTool } from '@/types';
+import type { AiTool } from '@/types';
 
-interface MCPToolConfigModalProps {
+interface ToolConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
-  tool: MCPTool | null;
+  tool: AiTool | null;
   initialConfig?: Record<string, any>;
   onSave: (toolId: string, config: Record<string, any>) => void;
 }
 
 /**
- * MCP Tool Configuration Modal Component
+ * Tool Configuration Modal Component
  * Allows users to configure tool-specific parameters
  */
-const MCPToolConfigModal: React.FC<MCPToolConfigModalProps> = ({
+const ToolConfigModal: React.FC<ToolConfigModalProps> = ({
   isOpen,
   onClose,
   tool,
@@ -71,16 +71,16 @@ const MCPToolConfigModal: React.FC<MCPToolConfigModalProps> = ({
     schemaRequired.forEach((key) => {
       const val = config[key];
       if (val === undefined || val === null || val === '') {
-        newErrors[key] = t('mcp.config.validation.required', '此字段为必填项');
+        newErrors[key] = t('tools.config.validation.required', '此字段为必填项');
       }
     });
     // Basic numeric check based on schema type
     Object.entries(schemaProps).forEach(([key, prop]: [string, any]) => {
-      const t = prop?.type;
-      if ((t === 'number' || t === 'integer') && config[key] !== undefined) {
+      const tProp = prop?.type;
+      if ((tProp === 'number' || tProp === 'integer') && config[key] !== undefined) {
         const numValue = Number(config[key]);
         if (Number.isNaN(numValue)) {
-          newErrors[key] = t('mcp.config.validation.number', '请输入有效的数字');
+          newErrors[key] = t('tools.config.validation.number', '请输入有效的数字');
         }
       }
     });
@@ -168,7 +168,7 @@ const MCPToolConfigModal: React.FC<MCPToolConfigModalProps> = ({
             }}
             className={baseInputClasses}
             rows={3}
-            placeholder={t('mcp.config.placeholders.array', '用逗号分隔多个值')}
+            placeholder={t('tools.config.placeholders.array', '用逗号分隔多个值')}
           />
         ) : (
           <input
@@ -179,7 +179,7 @@ const MCPToolConfigModal: React.FC<MCPToolConfigModalProps> = ({
               handleConfigChange(key, newValue);
             }}
             className={baseInputClasses}
-            placeholder={isRequired ? t('mcp.config.placeholders.required', '必填') : t('mcp.config.placeholders.optional', '可选')}
+            placeholder={isRequired ? t('tools.config.placeholders.required', '必填') : t('tools.config.placeholders.optional', '可选')}
           />
         )}
         
@@ -203,7 +203,7 @@ const MCPToolConfigModal: React.FC<MCPToolConfigModalProps> = ({
               <Settings className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('mcp.config.title', '工具配置')}</h2>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{t('tools.config.title', '工具配置')}</h2>
               <p className="text-sm text-gray-600 dark:text-gray-300">{tool.name}</p>
             </div>
           </div>
@@ -218,12 +218,12 @@ const MCPToolConfigModal: React.FC<MCPToolConfigModalProps> = ({
         {/* Content */}
         <div className="flex-1 p-6 overflow-y-auto dark:bg-gray-900">
           <div className="mb-6">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{t('mcp.config.info', '工具信息')}</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{t('tools.config.info', '工具信息')}</h3>
             <p className="text-gray-600 dark:text-gray-300 text-sm">{tool.description}</p>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('mcp.config.parameters', '配置参数')}</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">{t('tools.config.parameters', '配置参数')}</h3>
             {Object.keys(schemaProps).length > 0 ? (
               <div className="space-y-4">
                 {Object.keys(schemaProps).map((key) => renderConfigField(key, config[key]))}
@@ -231,7 +231,7 @@ const MCPToolConfigModal: React.FC<MCPToolConfigModalProps> = ({
             ) : (
               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                 <Settings className="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                <p>{t('mcp.config.noParams', '此工具暂无可配置参数')}</p>
+                <p>{t('tools.config.noParams', '此工具暂无可配置参数')}</p>
               </div>
             )}
           </div>
@@ -259,7 +259,7 @@ const MCPToolConfigModal: React.FC<MCPToolConfigModalProps> = ({
               className="flex items-center space-x-2 px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
             >
               <Save className="w-4 h-4" />
-              <span>{t('mcp.config.save', '保存配置')}</span>
+              <span>{t('tools.config.save', '保存配置')}</span>
             </button>
           </div>
         </div>
@@ -268,4 +268,4 @@ const MCPToolConfigModal: React.FC<MCPToolConfigModalProps> = ({
   );
 };
 
-export default MCPToolConfigModal;
+export default ToolConfigModal;

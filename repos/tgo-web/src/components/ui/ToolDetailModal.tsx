@@ -1,17 +1,17 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import type { MCPTool } from '@/types';
+import type { AiTool } from '@/types';
 
-interface MCPToolDetailModalProps {
-  tool: MCPTool | null;
+interface AiToolDetailModalProps {
+  tool: AiTool | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
 /**
- * MCP工具详情模态框组件
+ * Tool工具详情模态框组件
  */
-const MCPToolDetailModal: React.FC<MCPToolDetailModalProps> = ({
+const AiToolDetailModal: React.FC<AiToolDetailModalProps> = ({
   tool,
   isOpen,
   onClose
@@ -122,4 +122,4 @@ const MCPToolDetailModal: React.FC<MCPToolDetailModalProps> = ({
   );
 };
 
-export default MCPToolDetailModal;
+export default AiToolDetailModal;

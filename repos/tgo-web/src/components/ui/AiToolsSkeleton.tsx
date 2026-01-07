@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Single project tool card skeleton
@@ -64,11 +65,11 @@ export const ProjectToolCardSkeleton: React.FC = () => {
 /**
  * Project tools grid skeleton
  */
-interface ProjectToolsGridSkeletonProps {
+interface AiToolsGridSkeletonProps {
   count?: number;
 }
 
-export const ProjectToolsGridSkeleton: React.FC<ProjectToolsGridSkeletonProps> = ({ 
+export const AiToolsGridSkeleton: React.FC<AiToolsGridSkeletonProps> = ({ 
   count = 6 
 }) => {
   return (
@@ -83,7 +84,7 @@ export const ProjectToolsGridSkeleton: React.FC<ProjectToolsGridSkeletonProps> =
 /**
  * Project tools list skeleton (for list view)
  */
-export const ProjectToolsListSkeleton: React.FC<ProjectToolsGridSkeletonProps> = ({ 
+export const AiToolsListSkeleton: React.FC<AiToolsGridSkeletonProps> = ({ 
   count = 6 
 }) => {
   return (
@@ -120,7 +121,7 @@ export const ProjectToolsListSkeleton: React.FC<ProjectToolsGridSkeletonProps> =
 /**
  * Search bar skeleton
  */
-export const ProjectToolsSearchSkeleton: React.FC = () => {
+export const AiToolsSearchSkeleton: React.FC = () => {
   return (
     <div className="animate-pulse">
       <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded-lg w-full"></div>
@@ -131,7 +132,7 @@ export const ProjectToolsSearchSkeleton: React.FC = () => {
 /**
  * Header skeleton
  */
-export const ProjectToolsHeaderSkeleton: React.FC = () => {
+export const AiToolsHeaderSkeleton: React.FC = () => {
   return (
     <div className="flex items-center justify-between animate-pulse">
       <div>
@@ -150,23 +151,23 @@ export const ProjectToolsHeaderSkeleton: React.FC = () => {
 /**
  * Complete page skeleton
  */
-export const ProjectToolsPageSkeleton: React.FC = () => {
+export const AiToolsPageSkeleton: React.FC = () => {
   return (
     <main className="flex-grow flex flex-col bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Header skeleton */}
       <header className="px-6 py-4 border-b border-gray-200/80 dark:border-gray-700 bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg sticky top-0 z-10">
-        <ProjectToolsHeaderSkeleton />
+        <AiToolsHeaderSkeleton />
       </header>
 
       {/* Content area skeleton */}
       <div className="flex-grow overflow-y-auto p-6" style={{ height: 0 }}>
         {/* Search skeleton */}
         <div className="mb-6">
-          <ProjectToolsSearchSkeleton />
+          <AiToolsSearchSkeleton />
         </div>
 
         {/* Tools list skeleton */}
-        <ProjectToolsGridSkeleton count={9} />
+        <AiToolsGridSkeleton count={9} />
       </div>
     </main>
   );
@@ -175,15 +176,16 @@ export const ProjectToolsPageSkeleton: React.FC = () => {
 /**
  * Error state component
  */
-interface ProjectToolsErrorStateProps {
+interface AiToolsErrorStateProps {
   error: string;
   onRetry?: () => void;
 }
 
-export const ProjectToolsErrorState: React.FC<ProjectToolsErrorStateProps> = ({ 
+export const AiToolsErrorState: React.FC<AiToolsErrorStateProps> = ({ 
   error, 
   onRetry 
 }) => {
+  const { t } = useTranslation();
   return (
     <div className="text-center py-12">
       <div className="text-red-400 dark:text-red-500 mb-4">
@@ -191,7 +193,7 @@ export const ProjectToolsErrorState: React.FC<ProjectToolsErrorStateProps> = ({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
         </svg>
       </div>
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">加载失败</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{t('common.loadFailed', '加载失败')}</h3>
       <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-4">
         {error}
       </p>
@@ -200,7 +202,7 @@ export const ProjectToolsErrorState: React.FC<ProjectToolsErrorStateProps> = ({
           onClick={onRetry}
           className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 dark:bg-blue-700 hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
         >
-          重试
+          {t('common.retry', '重试')}
         </button>
       )}
     </div>
@@ -210,19 +212,24 @@ export const ProjectToolsErrorState: React.FC<ProjectToolsErrorStateProps> = ({
 /**
  * Empty state component
  */
-interface ProjectToolsEmptyStateProps {
+interface AiToolsEmptyStateProps {
   title?: string;
   description?: string;
   showToolIcon?: boolean;
   actionButton?: React.ReactNode;
 }
 
-export const ProjectToolsEmptyState: React.FC<ProjectToolsEmptyStateProps> = ({ 
-  title = "暂无已安装的工具",
-  description = "前往工具商店安装您需要的工具",
+export const AiToolsEmptyState: React.FC<AiToolsEmptyStateProps> = ({ 
+  title,
+  description,
   showToolIcon = true,
   actionButton
 }) => {
+  const { t } = useTranslation();
+  
+  const displayTitle = title || t('tools.tools.installedEmpty.title', '暂无已安装的工具');
+  const displayDescription = description || t('tools.tools.installedEmpty.description', '点击右上角按钮创建您的第一个工具');
+
   return (
     <div className="text-center py-12">
       <div className="text-gray-400 dark:text-gray-500 mb-4">
@@ -236,9 +243,9 @@ export const ProjectToolsEmptyState: React.FC<ProjectToolsEmptyStateProps> = ({
           </svg>
         )}
       </div>
-      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{title}</h3>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">{displayTitle}</h3>
       <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-4">
-        {description}
+        {displayDescription}
       </p>
       {actionButton && (
         <div className="mt-4">
@@ -249,4 +256,4 @@ export const ProjectToolsEmptyState: React.FC<ProjectToolsEmptyStateProps> = ({
   );
 };
 
-export default ProjectToolsGridSkeleton;
+export default AiToolsGridSkeleton;

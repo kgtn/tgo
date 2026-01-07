@@ -12,7 +12,7 @@ interface StatusIndicatorProps {
 }
 
 /**
- * Status indicator component for agents and MCP tools
+ * Status indicator component for agents and Tool tools
  */
 const StatusIndicator: React.FC<StatusIndicatorProps> = ({ status, statusConfig, className = '' }) => {
   const config = statusConfig[status];

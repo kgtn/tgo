@@ -75,73 +75,87 @@ const WorkflowToolbar: React.FC = () => {
   if (!currentWorkflow) return null;
 
   return (
-    <div className="flex items-center gap-2">
-      {/* Undo/Redo */}
-      <div className="flex items-center bg-gray-50 dark:bg-gray-900 rounded-lg p-0.5 border border-gray-200 dark:border-gray-700 mr-2">
+    <div className="flex items-center gap-4">
+      {/* Undo/Redo Group */}
+      <div className="flex items-center bg-gray-100/50 dark:bg-gray-800/50 rounded-2xl p-1 border border-gray-200/50 dark:border-gray-700/50 shadow-sm transition-all hover:bg-gray-100/80 dark:hover:bg-gray-800/80">
         <button
           onClick={undo}
           disabled={!canUndo}
-          className="p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white dark:hover:bg-gray-800 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          className="p-2 text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-white dark:hover:bg-gray-700 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-90"
           title={t('workflow.actions.undo', '撤销')}
         >
-          <Undo2 className="w-4 h-4" />
+          <Undo2 className="w-4.5 h-4.5" />
         </button>
-        <div className="w-[1px] h-4 bg-gray-200 dark:bg-gray-700 mx-0.5" />
+        <div className="w-px h-5 bg-gray-200/80 dark:bg-gray-700/80 mx-1" />
         <button
           onClick={redo}
           disabled={!canRedo}
-          className="p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white dark:hover:bg-gray-800 rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          className="p-2 text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-white dark:hover:bg-gray-700 rounded-xl disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-90"
           title={t('workflow.actions.redo', '重做')}
         >
-          <Redo2 className="w-4 h-4" />
+          <Redo2 className="w-4.5 h-4.5" />
         </button>
       </div>
 
-      {/* Debug */}
-      <button
-        onClick={() => setDebugPanelOpen(!isDebugPanelOpen)}
-        className={`flex items-center gap-1.5 px-3 h-8 text-xs font-semibold rounded-lg transition-all shadow-sm border ${
-          isDebugPanelOpen 
-            ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800' 
-            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400'
-        }`}
-      >
-        {isExecuting ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-orange-500" />
-        ) : (
-          <Bug className="w-3.5 h-3.5" />
-        )}
-        <span>{t('workflow.actions.debug', '调试')}</span>
-      </button>
+      <div className="h-8 w-px bg-gray-200/50 dark:bg-gray-800/50 mx-1" />
 
-      {/* Validate */}
-      <button
-        onClick={handleValidate}
-        disabled={isValidating}
-        className="flex items-center gap-1.5 px-3 h-8 text-xs font-semibold text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg transition-all disabled:opacity-50 shadow-sm"
-      >
-        {isValidating ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <CheckCircle className="w-3.5 h-3.5" />
-        )}
-        <span>{t('workflow.actions.validate', '验证')}</span>
-      </button>
+      {/* Action Buttons Group */}
+      <div className="flex items-center gap-3">
+        {/* Debug */}
+        <button
+          onClick={() => setDebugPanelOpen(!isDebugPanelOpen)}
+          className={`flex items-center gap-2 px-5 h-10 text-[11px] font-bold uppercase tracking-widest rounded-2xl transition-all shadow-sm border active:scale-95 ${
+            isDebugPanelOpen 
+              ? 'bg-orange-500 text-white border-orange-500 shadow-lg shadow-orange-200 dark:shadow-none' 
+              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-orange-500 hover:text-orange-600 dark:hover:text-orange-400'
+          }`}
+        >
+          {isExecuting ? (
+            <Loader2 className={`w-4 h-4 animate-spin ${isDebugPanelOpen ? 'text-white' : 'text-orange-500'}`} />
+          ) : (
+            <Bug className="w-4 h-4" />
+          )}
+          <span className="hidden lg:inline">{t('workflow.actions.debug', '调试')}</span>
+        </button>
 
-      {/* Save */}
-      <button
-        onClick={handleSave}
-        disabled={!isDirty || isSaving}
-        className="flex items-center gap-1.5 px-4 h-8 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm shadow-blue-200 dark:shadow-none"
-      >
-        {isSaving ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <Save className="w-3.5 h-3.5" />
-        )}
-        <span>{t('workflow.actions.save', '保存')}</span>
-        {isDirty && <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse ml-0.5" />}
-      </button>
+        {/* Validate */}
+        <button
+          onClick={handleValidate}
+          disabled={isValidating}
+          className="flex items-center gap-2 px-5 h-10 text-[11px] font-bold uppercase tracking-widest text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-2xl transition-all disabled:opacity-50 shadow-sm active:scale-95"
+        >
+          {isValidating ? (
+            <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+          ) : (
+            <CheckCircle className="w-4 h-4" />
+          )}
+          <span className="hidden lg:inline">{t('workflow.actions.validate', '验证')}</span>
+        </button>
+
+        {/* Save */}
+        <button
+          onClick={handleSave}
+          disabled={!isDirty || isSaving}
+          className={`flex items-center gap-2 px-6 h-10 text-[11px] font-bold uppercase tracking-widest text-white transition-all rounded-2xl shadow-lg active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 ${
+            isDirty 
+              ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/30 dark:shadow-none' 
+              : 'bg-gray-400 dark:bg-gray-700 shadow-none'
+          }`}
+        >
+          {isSaving ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Save className="w-4 h-4" />
+          )}
+          <span>{t('workflow.actions.save', '保存')}</span>
+          {isDirty && (
+            <span className="flex h-2 w-2 relative ml-1">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            </span>
+          )}
+        </button>
+      </div>
     </div>
   );
 };

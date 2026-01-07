@@ -5,7 +5,7 @@ import AgentCard from './AgentCard';
 import CreateAgentModal from './CreateAgentModal';
 import EditAgentModal from './EditAgentModal';
 import TeamInfoModal from './TeamInfoModal';
-// import MCPToolDetailModal from '@/components/ui/MCPToolDetailModal';
+// import AiToolDetailModal from '@/components/ui/AiToolDetailModal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { AgentsGridSkeleton, AgentsErrorState, AgentsEmptyState } from '@/components/ui/AgentsSkeleton';
 import { useAIStore } from '@/stores';
@@ -217,8 +217,8 @@ const AgentManagement: React.FC = () => {
         profession: agent.role || t('agents.copy.defaultProfession', '专家'),
         description: agent.description,
         llmModel: agent.llmModel || 'gemini-1.5-pro',
-        mcpTools: agent.mcpTools,
-        mcpToolConfigs: {},
+        tools: agent.tools,
+        toolConfigs: {},
         knowledgeBases: agent.knowledgeBases
       });
       showSuccess(
@@ -347,7 +347,7 @@ const AgentManagement: React.FC = () => {
                 {defaultTeam?.name || t('agents.teamChat.defaultName', 'AI员工团队')}
               </h3>
               <p className="text-blue-100 text-sm mt-1 opacity-90 max-w-xl">
-                {defaultTeam?.instruction || t('agents.teamDescription', '通过团队协作，您可以同时调用多个AI员工，实现更复杂的业务逻辑和更高效的任务处理。')}
+                {defaultTeam?.instruction || t('agents.teamDescription', '通过团队协作，您可以同时调用多个具备工具调用、工作流执行及知识库检索能力的AI员工，实现更复杂的业务逻辑和更高效的任务处理。')}
               </p>
             </div>
             <div className="flex items-center gap-3 relative z-10">

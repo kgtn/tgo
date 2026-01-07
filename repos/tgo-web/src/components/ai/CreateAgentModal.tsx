@@ -11,10 +11,10 @@ import { transformAiToolResponseList } from '@/utils/projectToolsTransform';
 // import { generateDefaultAvatar } from '@/utils/avatarUtils';
 import SectionHeader from '@/components/ui/SectionHeader';
 
-import MCPToolSelectionModal from './MCPToolSelectionModal';
+import ToolSelectionModal from './ToolSelectionModal';
 import KnowledgeBaseSelectionModal from './KnowledgeBaseSelectionModal';
 import { WorkflowSelectionModal } from '@/components/workflow';
-import type { MCPTool } from '@/types';
+import type { AiTool } from '@/types';
 import type { WorkflowSummary } from '@/types/workflow';
 import AgentToolsSection from '@/components/ui/AgentToolsSection';
 import AgentKnowledgeBasesSection from '@/components/ui/AgentKnowledgeBasesSection';
@@ -167,12 +167,12 @@ const CreateAgentModal: React.FC = () => {
 
 
 
-  // 已添加的MCP工具列表 - 显示所有已添加的工具（包括启用和禁用的）
-  const addedMCPTools = useMemo(() => {
-    // Transform AI tools (from NEW /v1/ai/tools API) to MCPTool format
-    const mcpTools = transformAiToolResponseList(aiTools);
-    return mcpTools.filter((tool: MCPTool) => createAgentFormData.mcpTools.includes(tool.id));
-  }, [aiTools, createAgentFormData.mcpTools]);
+  // 已添加的Tool工具列表 - 显示所有已添加的工具（包括启用和禁用的）
+  const addedAiTools = useMemo(() => {
+    // Transform AI tools (from NEW /v1/ai/tools API) to AiTool format
+    const tools = transformAiToolResponseList(aiTools);
+    return tools.filter((tool: AiTool) => createAgentFormData.tools.includes(tool.id));
+  }, [aiTools, createAgentFormData.tools]);
 
   // 知识库启用状态：后端暂不支持单独启用/禁用，选中即关联
 
@@ -229,7 +229,7 @@ const CreateAgentModal: React.FC = () => {
 
       // Preflight: ensure every selected tool has name
       const byId = new Map(aiTools.map(ts => [ts.id, ts] as const));
-      const missing = createAgentFormData.mcpTools.filter(id => {
+      const missing = createAgentFormData.tools.filter(id => {
         const s = byId.get(id);
         return !s || !s.name;
       });
@@ -269,10 +269,10 @@ const CreateAgentModal: React.FC = () => {
         category: null,
         tags: [],
         status: 'ACTIVE' as const,
-        tool_source_type: 'MCP_SERVER' as const,
+        tool_source_type: 'Tool_SERVER' as const,
         execution_count: null,
         created_at: aiTool.created_at,
-        mcp_server_id: null,
+        tool_server_id: null,
         input_schema: {},
         output_schema: null,
         short_no: null,
@@ -516,12 +516,12 @@ const CreateAgentModal: React.FC = () => {
                   </h3>
                 </div>
                 <div className="grid grid-cols-1 gap-6">
-                  {/* MCP工具 */}
+                  {/* Tool工具 */}
                   <div className="bg-white dark:bg-gray-900 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm">
-                    <SectionHeader icon={<Wrench className="w-4 h-4 text-orange-600" />} title={t('agents.create.sections.mcpTools', 'MCP工具')} />
+                    <SectionHeader icon={<Wrench className="w-4 h-4 text-orange-600" />} title={t('agents.create.sections.tools', 'Tool工具')} />
                     <AgentToolsSection
-                      tools={addedMCPTools}
-                      toolConfigs={createAgentFormData.mcpToolConfigs}
+                      tools={addedAiTools}
+                      toolConfigs={createAgentFormData.toolConfigs}
                       onAdd={() => setShowToolSelectionModal(true)}
                       onRemove={handleToolRemove}
                       disabled={isCreatingAgent}
@@ -590,16 +590,16 @@ const CreateAgentModal: React.FC = () => {
         </form>
       </div>
 
-      {/* MCP Tool Selection Modal */}
-      <MCPToolSelectionModal
+      {/* Tool Tool Selection Modal */}
+      <ToolSelectionModal
         isOpen={showToolSelectionModal}
         onClose={() => setShowToolSelectionModal(false)}
-        selectedTools={createAgentFormData.mcpTools}
-        toolConfigs={createAgentFormData.mcpToolConfigs}
+        selectedTools={createAgentFormData.tools}
+        toolConfigs={createAgentFormData.toolConfigs}
         onConfirm={(selectedToolIds, toolConfigs) => {
           setCreateAgentFormData({
-            mcpTools: selectedToolIds,
-            mcpToolConfigs: toolConfigs
+            tools: selectedToolIds,
+            toolConfigs: toolConfigs
           });
           setShowToolSelectionModal(false);
         }}

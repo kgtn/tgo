@@ -3,7 +3,7 @@ import { Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 
-interface MCPSearchBarProps {
+interface ToolSearchBarProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -11,9 +11,9 @@ interface MCPSearchBarProps {
 }
 
 /**
- * MCP工具搜索栏组件
+ * 工具搜索栏组件
  */
-const MCPSearchBar: React.FC<MCPSearchBarProps> = ({
+const ToolSearchBar: React.FC<ToolSearchBarProps> = ({
   value,
   onChange,
   placeholder,
@@ -52,7 +52,7 @@ const MCPSearchBar: React.FC<MCPSearchBarProps> = ({
           value={localValue}
           onChange={(e) => setLocalValue(e.target.value)}
           className="block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-700 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
-          placeholder={placeholder ?? t('mcp.search.placeholder', '搜索 MCP 工具...')}
+          placeholder={placeholder ?? t('tools.search.placeholder', '搜索工具...')}
         />
         {localValue && (
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
@@ -70,4 +70,4 @@ const MCPSearchBar: React.FC<MCPSearchBarProps> = ({
   );
 };
 
-export default MCPSearchBar;
+export default ToolSearchBar;

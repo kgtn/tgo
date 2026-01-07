@@ -1,15 +1,15 @@
 /**
- * MCP Tools Store
- * Zustand store for managing MCP tools state
+ * Tools Store
+ * Zustand store for managing tools state
  */
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import type { ToolSummary, ToolListResponse, ProjectToolsMeta, ToolResponse } from '@/types';
-import { MCPToolsApiService, type MCPToolsQueryParams } from '@/services/mcpToolsApi';
+import { ToolsApiService, type ToolsQueryParams } from '@/services/toolsApi';
 
 // Store state interface
-interface MCPToolsState {
+interface ToolsState {
   // Data
   tools: ToolSummary[];
   selectedTool: ToolSummary | null;
@@ -53,7 +53,7 @@ interface MCPToolsState {
   setPageSize: (size: number) => void;
   
   // Async actions
-  loadTools: (params?: MCPToolsQueryParams) => Promise<void>;
+  loadTools: (params?: ToolsQueryParams) => Promise<void>;
   loadTool: (id: string) => Promise<void>;
   loadToolDetails: (id: string) => Promise<void>;
   searchTools: (query: string, filters?: { category?: string; status?: string }) => Promise<void>;
@@ -88,7 +88,7 @@ const initialState = {
 };
 
 // Create the store
-export const useMCPToolsStore = create<MCPToolsState>()(
+export const useToolsStore = create<ToolsState>()(
   devtools(
     (set, get) => ({
       ...initialState,
@@ -119,7 +119,7 @@ export const useMCPToolsStore = create<MCPToolsState>()(
         setError(null);
 
         try {
-          const response: ToolListResponse = await MCPToolsApiService.getTools(params);
+          const response: ToolListResponse = await ToolsApiService.getTools(params);
 
 
 
@@ -128,7 +128,7 @@ export const useMCPToolsStore = create<MCPToolsState>()(
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to load tools';
           setError(errorMessage);
-          console.error('Failed to load MCP tools:', error);
+          console.error('Failed to load tools:', error);
 
 
         } finally {
@@ -143,12 +143,12 @@ export const useMCPToolsStore = create<MCPToolsState>()(
         setToolError(null);
 
         try {
-          const tool = await MCPToolsApiService.getTool(id);
+          const tool = await ToolsApiService.getTool(id);
           setSelectedTool(tool);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to load tool';
           setToolError(errorMessage);
-          console.error(`Failed to load MCP tool ${id}:`, error);
+          console.error(`Failed to load tool ${id}:`, error);
         } finally {
           setLoadingTool(false);
         }
@@ -161,12 +161,12 @@ export const useMCPToolsStore = create<MCPToolsState>()(
         setToolDetailsError(null);
 
         try {
-          const toolDetails = await MCPToolsApiService.getToolDetails(id);
+          const toolDetails = await ToolsApiService.getToolDetails(id);
           setToolDetails(toolDetails);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to load tool details';
           setToolDetailsError(errorMessage);
-          console.error(`Failed to load MCP tool details ${id}:`, error);
+          console.error(`Failed to load tool details ${id}:`, error);
         } finally {
           setLoadingToolDetails(false);
         }
@@ -180,13 +180,13 @@ export const useMCPToolsStore = create<MCPToolsState>()(
         setSearchQuery(query);
 
         try {
-          const response = await MCPToolsApiService.searchTools(query, filters);
+          const response = await ToolsApiService.searchTools(query, filters);
           setTools(response.data);
           setMeta(response.meta);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to search tools';
           setError(errorMessage);
-          console.error('Failed to search MCP tools:', error);
+          console.error('Failed to search tools:', error);
         } finally {
           setSearching(false);
         }
@@ -200,7 +200,7 @@ export const useMCPToolsStore = create<MCPToolsState>()(
         setSelectedCategory(category);
 
         try {
-          const response = await MCPToolsApiService.getToolsByCategory(category);
+          const response = await ToolsApiService.getToolsByCategory(category);
           setTools(response.data);
           setMeta(response.meta);
         } catch (error) {
@@ -220,7 +220,7 @@ export const useMCPToolsStore = create<MCPToolsState>()(
         setSelectedStatus(status);
 
         try {
-          const response = await MCPToolsApiService.getToolsByStatus(status);
+          const response = await ToolsApiService.getToolsByStatus(status);
           setTools(response.data);
           setMeta(response.meta);
         } catch (error) {
@@ -240,13 +240,13 @@ export const useMCPToolsStore = create<MCPToolsState>()(
         setCurrentPage(page);
 
         try {
-          const filters: MCPToolsQueryParams = {};
+          const filters: ToolsQueryParams = {};
 
           if (searchQuery) filters.search = searchQuery;
           if (selectedCategory && selectedCategory !== 'all') filters.category = selectedCategory;
           if (selectedStatus && selectedStatus !== 'all') filters.status = selectedStatus;
 
-          const response = await MCPToolsApiService.getToolsPage(page, pageSize, filters);
+          const response = await ToolsApiService.getToolsPage(page, pageSize, filters);
           setTools(response.data);
           setMeta(response.meta);
         } catch (error) {
@@ -261,7 +261,7 @@ export const useMCPToolsStore = create<MCPToolsState>()(
       refreshTools: async () => {
         const { loadTools, searchQuery, selectedCategory, selectedStatus } = get();
         
-        const params: MCPToolsQueryParams = {};
+        const params: ToolsQueryParams = {};
         if (searchQuery) params.search = searchQuery;
         if (selectedCategory && selectedCategory !== 'all') params.category = selectedCategory;
         if (selectedStatus && selectedStatus !== 'all') params.status = selectedStatus;
@@ -276,9 +276,9 @@ export const useMCPToolsStore = create<MCPToolsState>()(
       reset: () => set(initialState, false, 'reset'),
     }),
     {
-      name: 'mcp-tools-store',
+      name: 'tools-store',
     }
   )
 );
 
-export default useMCPToolsStore;
+export default useToolsStore;

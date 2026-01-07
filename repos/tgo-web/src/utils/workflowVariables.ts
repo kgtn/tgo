@@ -149,7 +149,7 @@ export function getAvailableVariables(
       const refKey = (data as any).reference_key || 'tool_1';
       variables.push({
         nodeId: node.id,
-        nodeLabel: data.label || 'MCP工具',
+        nodeLabel: data.label || 'Tool工具',
         nodeType: 'tool',
         variableName: 'result',
         fullPath: `${refKey}.result`

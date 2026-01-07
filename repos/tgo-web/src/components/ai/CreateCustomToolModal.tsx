@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Wrench, XCircle, ExternalLink, ChevronDown, Settings } from 'lucide-react';
 import { useAIStore } from '@/stores';
-import { useToast } from './MCPToastProvider';
+import { useToast } from './ToolToastProvider';
 import { parseOpenAPISchema, getMethodColorClass, type ParsedEndpoint, type AutoDetectedAuth } from '@/utils/schemaParser';
 import AuthMethodModal, { type AuthConfig } from './AuthMethodModal';
 import ApiTestModal from './ApiTestModal';
-import type { MCPCategory } from '@/types';
+import type { ToolCategory } from '@/types';
 
 interface CreateCustomToolModalProps {
   isOpen: boolean;
@@ -15,7 +15,7 @@ interface CreateCustomToolModalProps {
 interface CustomToolFormData {
   name: string;
   description: string;
-  category: MCPCategory;
+  category: ToolCategory;
   endpoint: string;
   apiKey: string;
   tags: string[];

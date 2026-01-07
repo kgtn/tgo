@@ -1,6 +1,6 @@
 /**
- * Optimized MCP Tools Transformation Utilities
- * Consolidates all MCP tool transformation logic using base patterns
+ * Optimized Tool Tools Transformation Utilities
+ * Consolidates all Tool tool transformation logic using base patterns
  */
 
 import { BaseTransformerClass, TransformUtils } from './base/BaseTransform';
@@ -8,7 +8,7 @@ import type {
   ToolSummary,
   ToolResponse,
   ToolStoreItem,
-  MCPTool
+  AiTool
 } from '@/types';
 
 /**
@@ -47,7 +47,7 @@ export class ToolSummaryToStoreItemTransformer extends BaseTransformerClass<Tool
       longDescription: TransformUtils.sanitizeString(toolSummary.description, '暂无描述'),
       requirements: [],
       changelog: '',
-      mcpMethods: [],
+      methods: [],
       
       // Preserve API fields
       isInstalled: toolSummary.is_installed || false,
@@ -58,10 +58,10 @@ export class ToolSummaryToStoreItemTransformer extends BaseTransformerClass<Tool
 }
 
 /**
- * Store Item to MCP Tool Transformer
+ * Store Item to Tool Tool Transformer
  */
-export class StoreItemToMCPToolTransformer extends BaseTransformerClass<ToolStoreItem, MCPTool> {
-  transform(storeItem: ToolStoreItem): MCPTool {
+export class StoreItemToAiToolTransformer extends BaseTransformerClass<ToolStoreItem, AiTool> {
+  transform(storeItem: ToolStoreItem): AiTool {
     // Determine status based on installation and verification
     const status = storeItem.isInstalled ? 'active' : 
                    storeItem.verified ? 'available' : 'inactive';
@@ -90,9 +90,9 @@ export class StoreItemToMCPToolTransformer extends BaseTransformerClass<ToolStor
         ratingCount: storeItem.ratingCount,
       },
       
-      // Schema handling - prioritize API schema, fallback to mcpMethods
+      // Schema handling - prioritize API schema, fallback to methods
       input_schema: storeItem.input_schema || 
-                   TransformUtils.createSchemaFromMethods(storeItem.mcpMethods || []),
+                   TransformUtils.createSchemaFromMethods(storeItem.methods || []),
       
       // Preserve short_no from API
       short_no: storeItem.short_no,
@@ -101,10 +101,10 @@ export class StoreItemToMCPToolTransformer extends BaseTransformerClass<ToolStor
 }
 
 /**
- * Tool Response to MCP Tool Transformer
+ * Tool Response to Tool Tool Transformer
  */
-export class ToolResponseToMCPToolTransformer extends BaseTransformerClass<ToolResponse, MCPTool> {
-  transform(toolResponse: ToolResponse): MCPTool {
+export class ToolResponseToAiToolTransformer extends BaseTransformerClass<ToolResponse, AiTool> {
+  transform(toolResponse: ToolResponse): AiTool {
     return {
       id: toolResponse.id,
       name: TransformUtils.sanitizeString(toolResponse.name),
@@ -130,42 +130,42 @@ export class ToolResponseToMCPToolTransformer extends BaseTransformerClass<ToolR
 }
 
 /**
- * MCP Tool to Store Item Transformer (reverse transformation)
+ * Tool Tool to Store Item Transformer (reverse transformation)
  */
-export class MCPToolToStoreItemTransformer extends BaseTransformerClass<MCPTool, ToolStoreItem> {
-  transform(mcpTool: MCPTool): ToolStoreItem {
+export class AiToolToStoreItemTransformer extends BaseTransformerClass<AiTool, ToolStoreItem> {
+  transform(toolTool: AiTool): ToolStoreItem {
     return {
-      id: mcpTool.id,
-      name: mcpTool.name,
-      title: TransformUtils.createDisplayName(mcpTool.title, mcpTool.name),
-      description: mcpTool.description,
-      author: mcpTool.author,
-      authorHandle: `@${mcpTool.author.toLowerCase().replace(/\s+/g, '')}`,
-      version: mcpTool.version,
-      category: mcpTool.category,
-      tags: mcpTool.tags,
-      rating: mcpTool.rating,
-      ratingCount: Math.floor(mcpTool.usageCount / 10),
-      downloads: mcpTool.usageCount,
-      lastUpdated: mcpTool.lastUpdated,
-      featured: mcpTool.rating >= 4.5,
-      verified: mcpTool.status === 'active',
+      id: toolTool.id,
+      name: toolTool.name,
+      title: TransformUtils.createDisplayName(toolTool.title, toolTool.name),
+      description: toolTool.description,
+      author: toolTool.author,
+      authorHandle: `@${toolTool.author.toLowerCase().replace(/\s+/g, '')}`,
+      version: toolTool.version,
+      category: toolTool.category,
+      tags: toolTool.tags,
+      rating: toolTool.rating,
+      ratingCount: Math.floor(toolTool.usageCount / 10),
+      downloads: toolTool.usageCount,
+      lastUpdated: toolTool.lastUpdated,
+      featured: toolTool.rating >= 4.5,
+      verified: toolTool.status === 'active',
       icon: '',
       screenshots: [],
-      longDescription: mcpTool.description,
+      longDescription: toolTool.description,
       requirements: [],
       changelog: '',
-      input_schema: mcpTool.input_schema,
-      short_no: mcpTool.short_no,
+      input_schema: toolTool.input_schema,
+      short_no: toolTool.short_no,
     };
   }
 }
 
 // Create transformer instances
 const toolSummaryToStoreItemTransformer = new ToolSummaryToStoreItemTransformer();
-const storeItemToMCPToolTransformer = new StoreItemToMCPToolTransformer();
-const toolResponseToMCPToolTransformer = new ToolResponseToMCPToolTransformer();
-const mcpToolToStoreItemTransformer = new MCPToolToStoreItemTransformer();
+const storeItemToAiToolTransformer = new StoreItemToAiToolTransformer();
+const toolResponseToAiToolTransformer = new ToolResponseToAiToolTransformer();
+const toolToolToStoreItemTransformer = new AiToolToStoreItemTransformer();
 
 /**
  * Optimized transformation functions using the new pattern
@@ -175,49 +175,49 @@ export const OptimizedTransforms = {
   toolSummaryToStoreItem: (item: ToolSummary): ToolStoreItem => 
     toolSummaryToStoreItemTransformer.transform(item),
   
-  storeItemToMCPTool: (item: ToolStoreItem): MCPTool => 
-    storeItemToMCPToolTransformer.transform(item),
+  storeItemToAiTool: (item: ToolStoreItem): AiTool => 
+    storeItemToAiToolTransformer.transform(item),
   
-  toolResponseToMCPTool: (item: ToolResponse): MCPTool => 
-    toolResponseToMCPToolTransformer.transform(item),
+  toolResponseToAiTool: (item: ToolResponse): AiTool => 
+    toolResponseToAiToolTransformer.transform(item),
   
-  mcpToolToStoreItem: (item: MCPTool): ToolStoreItem => 
-    mcpToolToStoreItemTransformer.transform(item),
+  toolToolToStoreItem: (item: AiTool): ToolStoreItem => 
+    toolToolToStoreItemTransformer.transform(item),
 
   // Batch transformations
   toolSummariesToStoreItems: (items: ToolSummary[]): ToolStoreItem[] => 
     toolSummaryToStoreItemTransformer.transformMany(items),
   
-  storeItemsToMCPTools: (items: ToolStoreItem[]): MCPTool[] => 
-    storeItemToMCPToolTransformer.transformMany(items),
+  storeItemsToAiTools: (items: ToolStoreItem[]): AiTool[] => 
+    storeItemToAiToolTransformer.transformMany(items),
   
-  toolResponsesToMCPTools: (items: ToolResponse[]): MCPTool[] => 
-    toolResponseToMCPToolTransformer.transformMany(items),
+  toolResponsesToAiTools: (items: ToolResponse[]): AiTool[] => 
+    toolResponseToAiToolTransformer.transformMany(items),
   
-  mcpToolsToStoreItems: (items: MCPTool[]): ToolStoreItem[] => 
-    mcpToolToStoreItemTransformer.transformMany(items),
+  toolToolsToStoreItems: (items: AiTool[]): ToolStoreItem[] => 
+    toolToolToStoreItemTransformer.transformMany(items),
 };
 
 // Register transformers for global access (using TransformRegistry)
 import { TransformRegistry } from './base/BaseTransform';
 TransformRegistry.register('toolSummaryToStoreItem', toolSummaryToStoreItemTransformer);
-TransformRegistry.register('storeItemToMCPTool', storeItemToMCPToolTransformer);
-TransformRegistry.register('toolResponseToMCPTool', toolResponseToMCPToolTransformer);
-TransformRegistry.register('mcpToolToStoreItem', mcpToolToStoreItemTransformer);
+TransformRegistry.register('storeItemToAiTool', storeItemToAiToolTransformer);
+TransformRegistry.register('toolResponseToAiTool', toolResponseToAiToolTransformer);
+TransformRegistry.register('toolToolToStoreItem', toolToolToStoreItemTransformer);
 
 // Export individual transformers for direct use
 export {
   toolSummaryToStoreItemTransformer,
-  storeItemToMCPToolTransformer,
-  toolResponseToMCPToolTransformer,
-  mcpToolToStoreItemTransformer,
+  storeItemToAiToolTransformer,
+  toolResponseToAiToolTransformer,
+  toolToolToStoreItemTransformer,
 };
 
 // Backward compatibility exports (can be removed after migration)
 export const transformToolSummaryToStoreItem = OptimizedTransforms.toolSummaryToStoreItem;
-export const transformStoreItemToMCPTool = OptimizedTransforms.storeItemToMCPTool;
-export const transformToolResponseToMCPTool = OptimizedTransforms.toolResponseToMCPTool;
-export const transformMCPToolToStoreItem = OptimizedTransforms.mcpToolToStoreItem;
+export const transformStoreItemToAiTool = OptimizedTransforms.storeItemToAiTool;
+export const transformToolResponseToAiTool = OptimizedTransforms.toolResponseToAiTool;
+export const transformAiToolToStoreItem = OptimizedTransforms.toolToolToStoreItem;
 export const transformToolSummariesToStoreItems = OptimizedTransforms.toolSummariesToStoreItems;
 
 export default OptimizedTransforms;

@@ -2,9 +2,9 @@
  * Plugin system type definitions
  */
 
-export type PluginCapabilityType = 'visitor_panel' | 'chat_toolbar' | 'sidebar_iframe' | 'channel_integration' | 'mcp_tools';
+export type PluginCapabilityType = 'visitor_panel' | 'chat_toolbar' | 'sidebar_iframe' | 'channel_integration' | 'tools';
 
-export interface MCPToolParameter {
+export interface ToolParameter {
   name: string;
   type: string;
   description?: string;
@@ -12,11 +12,11 @@ export interface MCPToolParameter {
   enum_values?: string[];
 }
 
-export interface MCPToolDefinition {
+export interface ToolDefinition {
   name: string;
   title: string;
   description?: string;
-  parameters?: MCPToolParameter[];
+  parameters?: ToolParameter[];
 }
 
 export interface PluginCapability {
@@ -28,7 +28,7 @@ export interface PluginCapability {
   shortcut?: string;
   url?: string;
   width?: number;
-  tools?: MCPToolDefinition[];
+  tools?: ToolDefinition[];
 }
 
 export interface PluginInfo {

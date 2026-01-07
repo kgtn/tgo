@@ -5,12 +5,12 @@ import { X, Search, ExternalLink, Wrench, Settings, RefreshCw } from 'lucide-rea
 import { useProjectToolsStore } from '@/stores/projectToolsStore';
 import { transformAiToolResponseList, searchProjectTools } from '@/utils/projectToolsTransform';
 import { generateDefaultAvatar } from '@/utils/avatarUtils';
-import MCPToolConfigModal from './MCPToolConfigModal';
+import ToolConfigModal from './ToolConfigModal';
 import { useToast } from '@/hooks/useToast';
-import type { MCPTool } from '@/types';
+import type { AiTool } from '@/types';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
-interface MCPToolSelectionModalProps {
+interface ToolSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   selectedTools: string[];
@@ -21,18 +21,18 @@ interface MCPToolSelectionModalProps {
 // Tool categories for filtering
 const TOOL_CATEGORIES = [
   { id: 'all', label: 'common.all' },
-  { id: 'mcp_server', label: 'mcp.selectModal.category.mcpServer' },
-  { id: 'custom', label: 'mcp.selectModal.category.custom' },
-  { id: 'plugin', label: 'mcp.selectModal.category.plugin' },
+  { id: 'tool_server', label: 'tools.selectModal.category.toolServer' },
+  { id: 'custom', label: 'tools.selectModal.category.custom' },
+  { id: 'plugin', label: 'tools.selectModal.category.plugin' },
 ];
 
 
 
 /**
- * MCP Tool Selection Modal Component
- * Allows users to browse and select MCP tools to associate with agents
+ * Tool Selection Modal Component
+ * Allows users to browse and select tools to associate with agents
  */
-const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
+const ToolSelectionModal: React.FC<ToolSelectionModalProps> = ({
   isOpen,
   onClose,
   selectedTools,
@@ -45,7 +45,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
   const [tempSelectedTools, setTempSelectedTools] = useState<string[]>([]);
   const [tempToolConfigs, setTempToolConfigs] = useState<Record<string, Record<string, any>>>({});
   const [showConfigModal, setShowConfigModal] = useState(false);
-  const [configTool, setConfigTool] = useState<MCPTool | null>(null);
+  const [configTool, setConfigTool] = useState<AiTool | null>(null);
 
   // Navigation hook
   const navigate = useNavigate();
@@ -55,22 +55,22 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
     aiTools,
     isLoading,
     error,
-    loadMcpTools,
+    loadTools,
     clearError,
   } = useProjectToolsStore();
 
   const { showToast } = useToast();
   const { t } = useTranslation();
 
-  // Load tools when modal opens (only active MCP tools)
+  // Load tools when modal opens (only active tools)
   useEffect(() => {
     if (isOpen && aiTools.length === 0) {
-      loadMcpTools(false).catch(error => {
-        console.error('Failed to load MCP tools:', error);
-        showToast('error', t('common.loadFailed', '加载失败'), t('mcp.selectModal.loadFailedDesc', '无法加载MCP工具列表，请稍后重试'));
+      loadTools(false).catch(error => {
+        console.error('Failed to load tools:', error);
+        showToast('error', t('common.loadFailed', '加载失败'), t('tools.selectModal.loadFailedDesc', '无法加载工具列表，请稍后重试'));
       });
     }
-  }, [isOpen, aiTools.length, loadMcpTools, showToast, t]);
+  }, [isOpen, aiTools.length, loadTools, showToast, t]);
 
   // Initialize temporary selection state when modal opens
   useEffect(() => {
@@ -80,16 +80,16 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
     }
   }, [isOpen, selectedTools, toolConfigs]);
 
-  // Transform API tools to MCPTool format and filter
+  // Transform API tools to AiTool format and filter
   const filteredTools = useMemo(() => {
-    // Transform AI tools (from NEW /v1/ai/tools API) to MCPTool format
-    const mcpTools = transformAiToolResponseList(aiTools);
-    let filtered = mcpTools;
+    // Transform AI tools (from NEW /v1/ai/tools API) to AiTool format
+    const tools = transformAiToolResponseList(aiTools);
+    let filtered = tools;
 
     // Filter by category
     if (selectedCategory !== 'all') {
       filtered = filtered.filter(tool => {
-        if (selectedCategory === 'mcp_server') {
+        if (selectedCategory === 'tool_server') {
           return tool.config?.transport_type === 'http' || tool.config?.transport_type === 'sse';
         } else if (selectedCategory === 'custom') {
           return tool.config?.transport_type === undefined || tool.config?.transport_type === null;
@@ -108,7 +108,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
     return filtered;
   }, [aiTools, debouncedSearch, selectedCategory]);
 
-  const handleToolClick = (tool: MCPTool) => {
+  const handleToolClick = (tool: AiTool) => {
     setTempSelectedTools(prev => {
       if (prev.includes(tool.id)) {
         return prev.filter(id => id !== tool.id);
@@ -123,7 +123,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
     onClose();
   };
 
-  const handleConfigTool = (tool: MCPTool) => {
+  const handleConfigTool = (tool: AiTool) => {
     setConfigTool(tool);
     setShowConfigModal(true);
   };
@@ -143,17 +143,17 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
 
   const handleRetry = () => {
     clearError();
-    loadMcpTools(false).catch(error => {
-      console.error('Failed to retry loading MCP tools:', error);
-      showToast('error', t('mcp.selectModal.retryFailedTitle', '重试失败'), t('mcp.selectModal.retryFailedDesc', '无法加载MCP工具列表，请检查网络连接'));
+    loadTools(false).catch(error => {
+      console.error('Failed to retry loading tools:', error);
+      showToast('error', t('tools.selectModal.retryFailedTitle', '重试失败'), t('tools.selectModal.retryFailedDesc', '无法加载工具列表，请检查网络连接'));
     });
   };
 
   const handleManageTools = () => {
     // Close the modal first
     onClose();
-    // Navigate to MCP tools management page
-    navigate('/ai/mcp-tools');
+    // Navigate to tools management page
+    navigate('/ai/tools');
   };
 
   if (!isOpen) return null;
@@ -163,7 +163,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('mcp.selectModal.title', '选择工具')}</h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t('tools.selectModal.title', '选择工具')}</h3>
           <button
             onClick={onClose}
             className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -180,7 +180,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('mcp.selectModal.searchPlaceholder', '搜索工具...')}
+              placeholder={t('tools.selectModal.searchPlaceholder', '搜索工具...')}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder-gray-400"
             />
           </div>
@@ -213,7 +213,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <RefreshCw className="w-6 h-6 animate-spin text-gray-400 dark:text-gray-500 mx-auto mb-2" />
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">{t('mcp.selectModal.loading', '正在加载MCP工具...')}</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{t('tools.selectModal.loading', '正在加载工具...')}</p>
                 </div>
               </div>
             )}
@@ -243,10 +243,10 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
                 {filteredTools.length === 0 ? (
                   <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                     <Wrench className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p>{t('mcp.selectModal.noMatch', '未找到匹配的MCP工具')}</p>
+                    <p>{t('tools.selectModal.noMatch', '未找到匹配的工具')}</p>
                   </div>
                 ) : (
-                  filteredTools.map((tool: MCPTool) => {
+                  filteredTools.map((tool: AiTool) => {
                     const isSelected = tempSelectedTools.includes(tool.id);
                     // Use consistent avatar generation like other components
                     const displayName = tool.title || tool.name;
@@ -283,7 +283,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
                           handleConfigTool(tool);
                         }}
                         className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                        title={t('mcp.selectModal.configTool', '配置工具')}
+                        title={t('tools.selectModal.configTool', '配置工具')}
                       >
                         <Settings className="w-4 h-4" />
                       </button>
@@ -309,7 +309,7 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
             onClick={handleManageTools}
             className="flex items-center space-x-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm transition-colors"
           >
-            <span>{t('mcp.selectModal.manageTools', '管理MCP工具')}</span>
+            <span>{t('tools.selectModal.manageTools', '管理工具')}</span>
             <ExternalLink className="w-4 h-4" />
           </button>
         </div>
@@ -326,13 +326,13 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
             onClick={handleConfirm}
             className="px-4 py-2 text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 border border-transparent rounded-md hover:bg-blue-700 dark:hover:bg-blue-800"
           >
-            {t('mcp.selectModal.confirmSelection', '确认选择 ({{count}})', { count: tempSelectedTools.length })}
+            {t('tools.selectModal.confirmSelection', '确认选择 ({{count}})', { count: tempSelectedTools.length })}
           </button>
         </div>
       </div>
 
       {/* Tool Configuration Modal */}
-      <MCPToolConfigModal
+      <ToolConfigModal
         isOpen={showConfigModal}
         onClose={() => setShowConfigModal(false)}
         tool={configTool}
@@ -343,4 +343,4 @@ const MCPToolSelectionModal: React.FC<MCPToolSelectionModalProps> = ({
   );
 };
 
-export default MCPToolSelectionModal;
+export default ToolSelectionModal;

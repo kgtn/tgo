@@ -16,14 +16,14 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
-interface MCPToastProviderProps {
+interface ToolToastProviderProps {
   children: React.ReactNode;
 }
 
 /**
- * MCP Toast提供者组件
+ * Toast提供者组件
  */
-export const MCPToastProvider: React.FC<MCPToastProviderProps> = ({ children }) => {
+export const ToolToastProvider: React.FC<ToolToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const showToast = useCallback((type: ToastType, title: string, message?: string, duration?: number) => {
@@ -74,9 +74,9 @@ export const MCPToastProvider: React.FC<MCPToastProviderProps> = ({ children }) 
 export const useToast = (): ToastContextType => {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error('useToast must be used within a MCPToastProvider');
+    throw new Error('useToast must be used within a ToolToastProvider');
   }
   return context;
 };
 
-export default MCPToastProvider;
+export default ToolToastProvider;

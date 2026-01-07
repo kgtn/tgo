@@ -50,10 +50,10 @@ export const AI_MENU_ITEMS: NavigationItem[] = [
     path: '/ai/agents'
   },
   {
-    id: 'mcp-tools',
-    title: 'navigation.mcpTools',
+    id: 'tools',
+    title: 'navigation.tools',
     icon: 'Wrench',
-    path: '/ai/mcp-tools'
+    path: '/ai/tools'
   },
   {
     id: 'workflows',

@@ -1,23 +1,23 @@
 import React from 'react';
 import { Wrench, ExternalLink } from 'lucide-react';
-import type { MCPTool } from '@/types';
+import type { AiTool } from '@/types';
 
-interface MCPToolTagProps {
+interface ToolTagProps {
   toolId?: string;
-  tool?: MCPTool;
-  toolsMap?: Record<string, MCPTool>;
-  tools?: MCPTool[];
-  onClick?: (tool: MCPTool) => void;
+  tool?: AiTool;
+  toolsMap?: Record<string, AiTool>;
+  tools?: AiTool[];
+  onClick?: (tool: AiTool) => void;
   size?: 'xs' | 'sm' | 'md';
   showIcon?: boolean;
   className?: string;
 }
 
 /**
- * MCP工具标签组件
- * 用于显示AI员工关联的MCP工具
+ * 工具标签组件
+ * 用于显示AI员工关联的工具
  */
-const MCPToolTag: React.FC<MCPToolTagProps> = ({
+const ToolTag: React.FC<ToolTagProps> = ({
   toolId,
   tool: toolProp,
   toolsMap,
@@ -28,7 +28,7 @@ const MCPToolTag: React.FC<MCPToolTagProps> = ({
   className = ''
 }) => {
   // Resolve tool from provided sources without relying on mocks
-  const resolvedTool: MCPTool | undefined = (() => {
+  const resolvedTool: AiTool | undefined = (() => {
     if (toolProp) return toolProp;
     if (toolId && toolsMap && toolsMap[toolId]) return toolsMap[toolId];
     if (toolId && tools && tools.length) return tools.find(t => t.id === toolId);
@@ -107,4 +107,4 @@ const MCPToolTag: React.FC<MCPToolTagProps> = ({
   );
 };
 
-export default MCPToolTag;
+export default ToolTag;

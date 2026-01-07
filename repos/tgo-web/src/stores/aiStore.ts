@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { Agent, MCPTool, CreateAgentFormData, FormValidationErrors, AgentQueryParams, ToolSummary } from '@/types';
+import type { Agent, AiTool, CreateAgentFormData, FormValidationErrors, AgentQueryParams, ToolSummary } from '@/types';
 import { AIAgentsApiService, AIAgentsTransformUtils } from '@/services/aiAgentsApi';
 import { useOnboardingStore } from './onboardingStore';
 import i18n from '@/i18n';
@@ -14,9 +14,9 @@ interface AIState {
   agentCurrentPage: number;
   agentPageSize: number;
   
-  // MCP工具相关
-  mcpTools: MCPTool[];
-  selectedTool: MCPTool | null;
+  // 工具相关
+  tools: AiTool[];
+  selectedTool: AiTool | null;
   toolSearchQuery: string;
   toolCategory: string;
   toolCurrentPage: number;
@@ -61,22 +61,22 @@ interface AIState {
   resetCreateAgentForm: () => void;
   validateCreateAgentForm: () => boolean;
   
-  // Actions - MCP工具
-  setMCPTools: (tools: MCPTool[]) => void;
-  setSelectedTool: (tool: MCPTool | null) => void;
+  // Actions - 工具
+  setTools: (tools: AiTool[]) => void;
+  setSelectedTool: (tool: AiTool | null) => void;
   setToolSearchQuery: (query: string) => void;
   setToolCategory: (category: string) => void;
   setToolCurrentPage: (page: number) => void;
-  createTool: (toolData: Partial<MCPTool>) => void;
-  updateTool: (toolId: string, updates: Partial<MCPTool>) => void;
+  createTool: (toolData: Partial<AiTool>) => void;
+  updateTool: (toolId: string, updates: Partial<AiTool>) => void;
   deleteTool: (toolId: string) => void;
   toggleToolStatus: (toolId: string) => void;
   
   // 计算属性
   getFilteredAgents: () => Agent[];
-  getFilteredTools: () => MCPTool[];
+  getFilteredTools: () => AiTool[];
   getAgentsPaginated: () => { agents: Agent[]; totalPages: number };
-  getToolsPaginated: () => { tools: MCPTool[]; totalPages: number };
+  getToolsPaginated: () => { tools: AiTool[]; totalPages: number };
 }
 
 export const useAIStore = create<AIState>()(
@@ -91,7 +91,7 @@ export const useAIStore = create<AIState>()(
         agentCurrentPage: 1,
         agentPageSize: 9,
 
-        mcpTools: [],
+        tools: [],
         selectedTool: null,
         toolSearchQuery: '',
         toolCategory: 'all',
@@ -112,8 +112,8 @@ export const useAIStore = create<AIState>()(
           profession: '',
           description: '',
           llmModel: '',
-          mcpTools: [],
-          mcpToolConfigs: {},
+          tools: [],
+          toolConfigs: {},
           knowledgeBases: [],
           workflows: []
         },
@@ -156,7 +156,7 @@ export const useAIStore = create<AIState>()(
                     ...t,
                     title: t.title || summary.title || summary.name,
                     name: t.name || summary.name,
-                    mcp_server: t.mcp_server || (summary.short_no ? { short_no: summary.short_no } : undefined),
+                    tool_server: t.tool_server || (summary.short_no ? { short_no: summary.short_no } : undefined),
                   };
                 }
                 return t;
@@ -225,7 +225,7 @@ export const useAIStore = create<AIState>()(
                     ...t,
                     title: t.title || summary.title || summary.name,
                     name: t.name || summary.name,
-                    mcp_server: t.mcp_server || (summary.short_no ? { short_no: summary.short_no } : undefined),
+                    tool_server: t.tool_server || (summary.short_no ? { short_no: summary.short_no } : undefined),
                   };
                 }
                 return t;
@@ -304,8 +304,8 @@ export const useAIStore = create<AIState>()(
             profession: '',
             description: '',
             llmModel: '',
-            mcpTools: [],
-            mcpToolConfigs: {},
+            tools: [],
+            toolConfigs: {},
             knowledgeBases: [],
             workflows: []
           },
@@ -337,8 +337,8 @@ export const useAIStore = create<AIState>()(
           return Object.keys(errors).length === 0;
         },
 
-        // MCP工具Actions
-        setMCPTools: (tools) => set({ mcpTools: tools }, false, 'setMCPTools'),
+        // 工具Actions
+        setTools: (tools) => set({ tools: tools }, false, 'setTools'),
         setSelectedTool: (tool) => set({ selectedTool: tool }, false, 'setSelectedTool'),
         setToolSearchQuery: (query) => set({ 
           toolSearchQuery: query, 
@@ -351,9 +351,9 @@ export const useAIStore = create<AIState>()(
         setToolCurrentPage: (page) => set({ toolCurrentPage: page }, false, 'setToolCurrentPage'),
         
         createTool: (toolData) => {
-          const newTool: MCPTool = {
+          const newTool: AiTool = {
             id: Date.now().toString(),
-            name: toolData.name || i18n.t('mcp.newTool', '新工具'),
+            name: toolData.name || i18n.t('tools.newTool', '新工具'),
             description: toolData.description || '',
             category: toolData.category || 'productivity',
             status: 'inactive',
@@ -367,7 +367,7 @@ export const useAIStore = create<AIState>()(
           };
           
           set(
-            (state) => ({ mcpTools: [newTool, ...state.mcpTools] }),
+            (state) => ({ tools: [newTool, ...state.tools] }),
             false,
             'createTool'
           );
@@ -375,7 +375,7 @@ export const useAIStore = create<AIState>()(
         
         updateTool: (toolId, updates) => set(
           (state) => ({
-            mcpTools: state.mcpTools.map(tool =>
+            tools: state.tools.map(tool =>
               tool.id === toolId ? { ...tool, ...updates } : tool
             )
           }),
@@ -385,7 +385,7 @@ export const useAIStore = create<AIState>()(
         
         deleteTool: (toolId) => set(
           (state) => ({
-            mcpTools: state.mcpTools.filter(tool => tool.id !== toolId),
+            tools: state.tools.filter(tool => tool.id !== toolId),
             selectedTool: state.selectedTool?.id === toolId ? null : state.selectedTool
           }),
           false,
@@ -394,7 +394,7 @@ export const useAIStore = create<AIState>()(
         
         toggleToolStatus: (toolId) => set(
           (state) => ({
-            mcpTools: state.mcpTools.map(tool =>
+            tools: state.tools.map(tool =>
               tool.id === toolId 
                 ? { ...tool, status: tool.status === 'active' ? 'inactive' : 'active' }
                 : tool
@@ -426,8 +426,8 @@ export const useAIStore = create<AIState>()(
         },
         
         getFilteredTools: () => {
-          const { mcpTools, toolSearchQuery, toolCategory } = get();
-          let filtered = mcpTools;
+          const { tools, toolSearchQuery, toolCategory } = get();
+          let filtered = tools;
           
           // 搜索过滤
           if (toolSearchQuery.trim()) {

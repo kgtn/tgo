@@ -17,32 +17,32 @@ export const mockAgents: Agent[] = [
     successRate: 95.2,
     responseTime: '1.2s',
     tags: ['协调员', 'Coordinator', 'gemini-1.5-pro'],
-    mcpTools: ['1', '3'], // 关联了快递查询和数据库查询工具
+    tools: ['1', '3'], // 关联了快递查询和数据库查询工具
     knowledgeBases: ['1', '2'] // 关联了产品知识库和支持知识库
   },
   {
     id: '2',
     name: '李四',
-    description: '调用快递100 MCP服务查询实时快递状态。',
+    description: '调用快递100 Tool服务查询实时快递状态。',
     avatar: 'https://i.pravatar.cc/48?img=2',
     status: 'inactive',
     type: 'expert',
     role: '快递查询专员',
     llmModel: 'gemini-1.5-flash',
     endpoint: 'http://127.0.0.1:8002/a2a',
-    capabilities: ['快递查询', '物流跟踪', 'MCP服务'],
+    capabilities: ['快递查询', '物流跟踪', 'Tool服务'],
     lastActive: '2024-01-15 12:15',
     conversationCount: 89,
     successRate: 98.7,
     responseTime: '0.8s',
     tags: ['快递专员', 'Expert', 'gemini-1.5-flash'],
-    mcpTools: ['1'], // 关联了快递查询工具
+    tools: ['1'], // 关联了快递查询工具
     knowledgeBases: ['3'] // 关联了物流知识库
   },
   {
     id: '3',
     name: '王五',
-    description: '根据用户数据生成画像报告 (MCP连接失败)。',
+    description: '根据用户数据生成画像报告 (Tool连接失败)。',
     avatar: 'https://i.pravatar.cc/48?img=3',
     status: 'error',
     type: 'expert',
@@ -55,7 +55,7 @@ export const mockAgents: Agent[] = [
     successRate: 92.8,
     responseTime: '2.1s',
     tags: ['分析师', 'Analyst', 'claude-3-sonnet'],
-    mcpTools: ['2'], // 关联了数据分析工具
+    tools: ['2'], // 关联了数据分析工具
     knowledgeBases: [] // 暂无关联知识库
   },
   {
@@ -74,7 +74,7 @@ export const mockAgents: Agent[] = [
     successRate: 88.5,
     responseTime: '1.8s',
     tags: ['售后专员', 'Support', 'gpt-4-turbo'],
-    mcpTools: ['4'], // 关联了客服工具
+    tools: ['4'], // 关联了客服工具
     knowledgeBases: ['2'] // 关联了支持知识库
   },
   {
@@ -93,7 +93,7 @@ export const mockAgents: Agent[] = [
     successRate: 94.1,
     responseTime: '1.5s',
     tags: ['技术专员', 'Technical', 'gemini-1.5-pro'],
-    mcpTools: ['3'], // 关联了数据库查询工具
+    tools: ['3'], // 关联了数据库查询工具
     knowledgeBases: ['1', '2'] // 关联了产品和支持知识库
   },
   {
@@ -112,7 +112,7 @@ export const mockAgents: Agent[] = [
     successRate: 91.3,
     responseTime: '1.1s',
     tags: ['销售专员', 'Sales', 'claude-3-haiku'],
-    mcpTools: [], // 暂无关联MCP工具
+    tools: [], // 暂无关联工具
     knowledgeBases: ['1'] // 关联了产品知识库
   },
   // Test entries for default avatar generation
@@ -132,7 +132,7 @@ export const mockAgents: Agent[] = [
     successRate: 98.1,
     responseTime: '0.8s',
     tags: ['英文', 'International', 'gpt-4'],
-    mcpTools: ['1', '4'], // 关联了快递查询和翻译工具
+    tools: ['1', '4'], // 关联了快递查询和翻译工具
     knowledgeBases: ['1', '3'] // 关联了产品知识库和培训知识库
   },
   {
@@ -151,7 +151,7 @@ export const mockAgents: Agent[] = [
     successRate: 94.5,
     responseTime: '1.5s',
     tags: ['技术', 'Technical', 'claude-3-haiku'],
-    mcpTools: ['2', '3'], // 关联了支付系统和数据库查询工具
+    tools: ['2', '3'], // 关联了支付系统和数据库查询工具
     knowledgeBases: ['1', '2'] // 关联了产品知识库和支持知识库
   },
   {
@@ -170,7 +170,7 @@ export const mockAgents: Agent[] = [
     successRate: 97.3,
     responseTime: '1.0s',
     tags: ['销售', 'Sales', 'gemini-1.5-flash'],
-    mcpTools: ['1', '2'], // 关联了快递查询和支付系统工具
+    tools: ['1', '2'], // 关联了快递查询和支付系统工具
     knowledgeBases: ['1', '3'] // 关联了产品知识库和培训知识库
   }
 ];

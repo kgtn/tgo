@@ -5,8 +5,8 @@ export interface AgentFormState {
   profession: string;
   description: string;
   llmModel: string;
-  mcpTools: string[];
-  mcpToolConfigs: Record<string, Record<string, any>>;
+  tools: string[];
+  toolConfigs: Record<string, Record<string, any>>;
   knowledgeBases: string[];
   workflows: string[];
 }
@@ -38,8 +38,8 @@ const defaultForm: AgentFormState = {
   profession: '',
   description: '',
   llmModel: 'gemini-1.5-pro',
-  mcpTools: [],
-  mcpToolConfigs: {},
+  tools: [],
+  toolConfigs: {},
   knowledgeBases: [],
   workflows: [],
 };
@@ -73,18 +73,18 @@ export function useAgentForm(options: UseAgentFormOptions = {}): UseAgentFormRes
 
   const removeTool = useCallback((toolId: string) => {
     // remove from list
-    const newTools = (formData.mcpTools || []).filter(id => id !== toolId);
-    setFormData({ mcpTools: newTools });
-  }, [formData.mcpTools, setFormData]);
+    const newTools = (formData.tools || []).filter(id => id !== toolId);
+    setFormData({ tools: newTools });
+  }, [formData.tools, setFormData]);
 
   const setToolConfig = useCallback((toolId: string, config: Record<string, any>) => {
     setFormData({
-      mcpToolConfigs: {
-        ...formData.mcpToolConfigs,
+      toolConfigs: {
+        ...formData.toolConfigs,
         [toolId]: config,
       },
     });
-  }, [formData.mcpToolConfigs, setFormData]);
+  }, [formData.toolConfigs, setFormData]);
 
   // Knowledge bases
   const removeKnowledgeBase = useCallback((kbId: string) => {

@@ -17,7 +17,7 @@ router = APIRouter()
 
 @router.get("", response_model=List[ToolResponse])
 async def list_tools(
-    tool_type: Optional[ToolType] = Query(None, description="Filter by tool type"),
+    tool_type: Optional[ToolType] = Query(None, description="Filter by tool type (MCP, FUNCTION, or ALL)"),
     include_deleted: bool = Query(False, description="Include soft-deleted tools"),
     project_and_api_key=Depends(get_authenticated_project),
 ) -> List[ToolResponse]:
@@ -28,18 +28,22 @@ async def list_tools(
     """
     project, _ = project_and_api_key
     
+    # Map 'ALL' to None for downstream service
+    effective_tool_type = None if tool_type == ToolType.ALL else (tool_type.value if tool_type else None)
+    
     logger.info(
         f"Listing tools for project {project.id}",
         extra={
             "project_id": str(project.id),
             "tool_type": tool_type,
+            "effective_tool_type": effective_tool_type,
             "include_deleted": include_deleted,
         }
     )
     
     result = await ai_client.list_tools(
         project_id=str(project.id),
-        tool_type=tool_type.value if tool_type else None,
+        tool_type=effective_tool_type,
         include_deleted=include_deleted,
     )
     

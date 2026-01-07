@@ -56,7 +56,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node }) => {
   const { t } = useTranslation();
   const { updateNode, deleteNode, setSelectedNode, currentWorkflow } = useWorkflowStore();
   const { agents, loadAgents } = useAIStore();
-  const { aiTools, loadMcpTools } = useProjectToolsStore();
+  const { aiTools, loadTools } = useProjectToolsStore();
   const { knowledgeBases, fetchKnowledgeBases } = useKnowledgeStore();
   const { providers, loadProviders } = useProvidersStore();
 
@@ -107,12 +107,12 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node }) => {
   // Load necessary data
   useEffect(() => {
     if (agents.length === 0) loadAgents().catch(() => {});
-    if (aiTools.length === 0) loadMcpTools(false).catch(() => {});
+    if (aiTools.length === 0) loadTools(false).catch(() => {});
     if (knowledgeBases.length === 0) fetchKnowledgeBases().catch(() => {});
     if (providers.length === 0) loadProviders().catch(() => {});
   }, [
     agents.length, loadAgents, 
-    aiTools.length, loadMcpTools, 
+    aiTools.length, loadTools, 
     knowledgeBases.length, fetchKnowledgeBases,
     providers.length, loadProviders
   ]);
@@ -160,23 +160,23 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node }) => {
   const colors = colorMap[nodeType] || colorMap.llm;
 
   return (
-    <div className="w-80 bg-white dark:bg-gray-900 border-l border-gray-100 dark:border-gray-800 flex flex-col z-20 shadow-2xl transition-all animate-in slide-in-from-right duration-300">
+    <div className="w-[22rem] bg-white dark:bg-gray-900 border-l border-gray-200/50 dark:border-gray-800/50 flex flex-col z-20 shadow-2xl transition-all animate-in slide-in-from-right duration-300">
       {/* Header */}
-      <div className="px-6 py-5 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl ${colors.bg} ${colors.text}`}>
-            <Icon className="w-5 h-5" />
+      <div className="px-8 py-6 border-b border-gray-100/50 dark:border-gray-800 flex items-center justify-between bg-white/80 dark:bg-gray-900/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className={`p-2.5 rounded-2xl ${colors.bg} ${colors.text} shadow-sm border border-white dark:border-gray-700`}>
+            <Icon className="w-6 h-6" />
           </div>
           <div className="flex flex-col">
-            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">
+            <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm tracking-tight">
               {t('workflow.panel.nodeConfig', '节点配置')}
             </h3>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{t(`workflow.node_types.${nodeType}.label`, nodeType)}</span>
               {localData.reference_key && (
                 <>
-                  <span className="text-[10px] text-gray-300 dark:text-gray-600">·</span>
-                  <span className="text-[10px] text-blue-500 font-mono font-bold">{localData.reference_key}</span>
+                  <span className="text-gray-300 dark:text-gray-600 font-bold">·</span>
+                  <span className="text-[10px] text-blue-500 font-mono font-bold bg-blue-50 dark:bg-blue-900/20 px-1.5 py-0.5 rounded-md border border-blue-100 dark:border-blue-800/50">{localData.reference_key}</span>
                 </>
               )}
             </div>
@@ -184,34 +184,38 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node }) => {
         </div>
         <button
           onClick={handleClose}
-          className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+          className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-all active:scale-90"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-white dark:bg-gray-900">
+      <div className="flex-1 overflow-y-auto p-8 space-y-10 bg-white dark:bg-gray-900 custom-scrollbar">
         {/* Common Fields Section */}
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-[11px] uppercase font-bold text-gray-400 tracking-wider">
+        <div className="space-y-4">
+          <div className="space-y-2.5">
+            <label className="text-[11px] uppercase font-bold text-gray-400 tracking-widest flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm"></div>
               {t('workflow.fields.label', '节点名称')}
             </label>
             <input
               type="text"
               value={localData.label || ''}
               onChange={(e) => handleUpdate({ label: e.target.value })}
-              className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm dark:text-gray-100"
+              className="w-full px-4 py-3 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm font-bold dark:text-gray-100 shadow-sm focus:bg-white dark:focus:bg-gray-800"
             />
           </div>
         </div>
 
-        <div className="h-[1px] bg-gray-50 dark:bg-gray-800" />
+        <div className="h-px bg-gray-100 dark:bg-gray-800" />
 
         {/* Type-specific fields Section */}
-        <div className="space-y-6">
-          <h4 className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em] mb-2">{t('workflow.panel.properties', '属性')}</h4>
+        <div className="space-y-8">
+          <h4 className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.25em] mb-4 flex items-center gap-2">
+            <Settings className="w-3.5 h-3.5" />
+            {t('workflow.panel.properties', '属性配置')}
+          </h4>
           
           {node.type === 'input' && (
             <InputNodeConfig data={localData as any} onUpdate={handleUpdate} />
@@ -813,7 +817,7 @@ const ToolNodeConfig: React.FC<{
             }}
             className="w-full px-4 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all text-sm dark:text-gray-100 appearance-none cursor-pointer pr-10"
           >
-            <option value="">{t('workflow.placeholders.selectTool', '请选择MCP工具')}</option>
+            <option value="">{t('workflow.placeholders.selectTool', '请选择Tool工具')}</option>
             {availableTools.map(tool => (
               <option key={tool.id} value={tool.id}>
                 {tool.name}
@@ -1100,7 +1104,7 @@ const LLMNodeConfig: React.FC<{
           {/* Tools */}
           <div className="space-y-3">
             <label className="text-[11px] uppercase font-bold text-gray-400 tracking-wider flex items-center gap-2">
-              <Wrench className="w-3 h-3" /> {t('agents.create.sections.mcpTools', 'MCP工具')}
+              <Wrench className="w-3 h-3" /> {t('agents.create.sections.toolTools', 'Tool工具')}
             </label>
             <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
               {availableTools.map(tool => (

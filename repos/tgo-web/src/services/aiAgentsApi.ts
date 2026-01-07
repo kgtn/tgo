@@ -138,9 +138,9 @@ export class AIAgentsApiService extends BaseApiService {
  */
 export class AIAgentsTransformUtils {
   /**
-   * Transform MCP tool IDs to AgentToolCreateRequest array
+   * Transform Tool tool IDs to AgentToolCreateRequest array
    */
-  static transformMCPToolsToAgentTools(
+  static transformToolsToAgentTools(
     toolIds: string[],
     toolConfigs: Record<string, Record<string, any>>,
     _availableTools?: ToolSummary[], // Prefixed with _ to indicate intentionally unused
@@ -164,11 +164,11 @@ export class AIAgentsTransformUtils {
     formData: import('@/types').CreateAgentFormData,
     availableTools?: ToolSummary[],
   ): AgentCreateRequest {
-    // Transform MCP tools to the API format (always pass array, never null)
-    const tools = formData.mcpTools.length > 0 ?
-      AIAgentsTransformUtils.transformMCPToolsToAgentTools(
-        formData.mcpTools,
-        formData.mcpToolConfigs,
+    // Transform Tool tools to the API format (always pass array, never null)
+    const tools = formData.tools.length > 0 ?
+      AIAgentsTransformUtils.transformToolsToAgentTools(
+        formData.tools,
+        formData.toolConfigs,
         availableTools,
       ) : [];
 
@@ -203,8 +203,8 @@ export class AIAgentsTransformUtils {
    */
   static transformApiAgentToAgent(apiAgent: import('@/types').AgentWithDetailsResponse): import('@/types').Agent {
     // Extract tool IDs and configs from the tools array (for backward compatibility)
-    const mcpTools = apiAgent.tools?.map(tool => tool.id) || [];
-    const mcpToolConfigs = AIAgentsTransformUtils.extractToolConfigs(apiAgent.tools);
+    const toolIds = apiAgent.tools?.map(tool => tool.id) || [];
+    const toolConfigs = AIAgentsTransformUtils.extractToolConfigs(apiAgent.tools);
 
     // Extract collection IDs from the collections array (for backward compatibility)
     const knowledgeBases = apiAgent.collections?.map(collection => collection.id) || [];
@@ -231,11 +231,11 @@ export class AIAgentsTransformUtils {
       successRate: 0.95, // Default success rate
       responseTime: '1.2s', // Default response time
       tags: [apiAgent.model], // Use model as tag
-      mcpTools: mcpTools,
-      mcpToolConfigs: mcpToolConfigs,
+      tools: toolIds,
+      toolConfigs: toolConfigs,
       knowledgeBases: knowledgeBases,
       collections: collections,
-      tools: tools,
+      agentTools: tools,
       workflows: (apiAgent as any).workflows || [],
     };
   }
@@ -269,7 +269,7 @@ export class AIAgentsTransformUtils {
       const toolDetails: any[] = (agent as any).tools || [];
       resolvedAvailableTools = toolDetails.map((t) => {
         // Derive short_no and simple name from legacy AgentToolResponse.tool_name if present
-        let derivedShortNo: string | null = t?.mcp_server?.short_no || null;
+        let derivedShortNo: string | null = t?.tool_server?.short_no || null;
         let derivedName: string | null = t?.name || t?.title || null;
         if (!derivedShortNo || !derivedName) {
           const tn: string | undefined = t?.tool_name;
@@ -293,10 +293,10 @@ export class AIAgentsTransformUtils {
           category: t.category || null,
           tags: Array.isArray(t.tags) ? t.tags : [],
           status: (t.status as any) || 'ACTIVE',
-          tool_source_type: (t.tool_source_type as any) || 'MCP_SERVER',
+          tool_source_type: (t.tool_source_type as any) || 'Tool_SERVER',
           execution_count: null,
           created_at: t.created_at || new Date().toISOString(),
-          mcp_server_id: t.mcp_server_id || (t.mcp_server?.id ?? null),
+          tool_server_id: t.tool_server_id || (t.tool_server?.id ?? null),
           input_schema: t.input_schema || {},
           output_schema: t.output_schema || null,
           short_no: derivedShortNo || null,
@@ -305,11 +305,11 @@ export class AIAgentsTransformUtils {
       }) as ToolSummary[];
     }
 
-    // Transform MCP tools to the API format (always pass array, never null)
-    const tools = agent.mcpTools && agent.mcpTools.length > 0 ?
-      AIAgentsTransformUtils.transformMCPToolsToAgentTools(
-        agent.mcpTools,
-        agent.mcpToolConfigs || {},
+    // Transform Tool tools to the API format (always pass array, never null)
+    const tools = agent.tools && agent.tools.length > 0 ?
+      AIAgentsTransformUtils.transformToolsToAgentTools(
+        agent.tools,
+        agent.toolConfigs || {},
         resolvedAvailableTools,
       ) : [];
 

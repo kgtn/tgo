@@ -284,6 +284,85 @@ def wrap_mcp_authenticate_tool(func: Function) -> Function:
     return Function.from_callable(wrapped, name=func.name, description=func.description)
 
 
+def create_http_tool(
+    name: str,
+    description: str,
+    endpoint: str,
+    method: str = "POST",
+    headers: Optional[Dict[str, str]] = None,
+    parameters: Optional[List[Dict[str, Any]]] = None,
+    timeout: float = 30.0,
+) -> Function:
+    """根据HTTP接口信息生成工具包装."""
+
+    async def http_tool_entrypoint(**tool_args: Any) -> Any:
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                upper_method = method.upper()
+                if upper_method == "GET":
+                    response = await client.get(endpoint, params=tool_args, headers=headers)
+                elif upper_method == "POST":
+                    response = await client.post(endpoint, json=tool_args, headers=headers)
+                elif upper_method == "PUT":
+                    response = await client.put(endpoint, json=tool_args, headers=headers)
+                elif upper_method == "DELETE":
+                    response = await client.delete(endpoint, params=tool_args, headers=headers)
+                elif upper_method == "PATCH":
+                    response = await client.patch(endpoint, json=tool_args, headers=headers)
+                else:
+                    return f"<error>Unsupported HTTP method: {method}</error>"
+
+                response.raise_for_status()
+                try:
+                    return json.dumps(response.json(), ensure_ascii=False)
+                except ValueError:
+                    return response.text
+        except httpx.HTTPStatusError as e:
+            return f"<error>HTTP execution failed with status {e.response.status_code}: {e.response.text}</error>"
+        except Exception as e:
+            return f"<error>HTTP execution failed: {str(e)}</error>"
+
+    # Convert simple parameters to JSON Schema
+    properties = {}
+    required = []
+    if parameters:
+        for p in parameters:
+            p_name = p.get("name")
+            if not p_name:
+                continue
+            
+            p_type = p.get("type", "string")
+            # Map frontend types to JSON Schema types
+            js_type = p_type
+            if p_type == "enum":
+                js_type = "string"
+            
+            prop = {
+                "type": js_type,
+                "description": p.get("description", ""),
+            }
+            
+            if p_type == "enum" and "enum_values" in p:
+                prop["enum"] = p["enum_values"]
+            
+            properties[p_name] = prop
+            if p.get("required"):
+                required.append(p_name)
+
+    return Function(
+        name=name,
+        description=description,
+        parameters={
+            "type": "object",
+            "properties": properties,
+            "required": required,
+        },
+        entrypoint=http_tool_entrypoint,
+        skip_entrypoint_processing=True,
+    )
+
+
 def _find_first_mcp_error(exc: BaseException) -> Optional[McpError]:
     if isinstance(exc, McpError):
         return exc

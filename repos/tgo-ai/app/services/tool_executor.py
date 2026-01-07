@@ -1,5 +1,6 @@
 import json
 import uuid
+import httpx
 from typing import Any, Dict, List, Optional
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -51,6 +52,8 @@ class ToolExecutor:
                 tool_type_str = "mcp" if tool.tool_type == ToolType.MCP else "function"
                 if tool.transport_type == "plugin":
                     tool_type_str = "plugin"
+                elif tool.transport_type == "http_webhook":
+                    tool_type_str = "http"
                 
                 self._tool_registry[tool.name] = {
                     "type": tool_type_str,
@@ -91,6 +94,8 @@ class ToolExecutor:
                 return await self._execute_mcp(info["tool"], args)
             elif tool_type == "plugin":
                 return await self._execute_plugin(info["tool"], args)
+            elif tool_type == "http":
+                return await self._execute_http(info["tool"], args)
             elif tool_type == "function":
                 # For now, we don't have a specific implementation for generic functions 
                 # in the database that aren't MCP. 
@@ -175,3 +180,41 @@ class ToolExecutor:
                 return f"<error>{error_msg}</error>"
         except Exception as e:
             return f"<error>Plugin tool execution failed: {str(e)}</error>"
+
+    async def _execute_http(self, tool_model: Tool, args: Dict[str, Any]) -> str:
+        """Execute a custom HTTP webhook tool."""
+        if not tool_model.endpoint:
+            return "<error>HTTP tool missing endpoint</error>"
+
+        config = tool_model.config or {}
+        method = config.get("method", "POST").upper()
+        headers = config.get("headers", {})
+        
+        # Ensure timeout is handled
+        timeout = config.get("timeout", 30.0)
+
+        try:
+            async with httpx.AsyncClient(timeout=timeout) as client:
+                if method == "GET":
+                    response = await client.get(tool_model.endpoint, params=args, headers=headers)
+                elif method == "POST":
+                    response = await client.post(tool_model.endpoint, json=args, headers=headers)
+                elif method == "PUT":
+                    response = await client.put(tool_model.endpoint, json=args, headers=headers)
+                elif method == "DELETE":
+                    response = await client.delete(tool_model.endpoint, params=args, headers=headers)
+                elif method == "PATCH":
+                    response = await client.patch(tool_model.endpoint, json=args, headers=headers)
+                else:
+                    return f"<error>Unsupported HTTP method: {method}</error>"
+
+                response.raise_for_status()
+                
+                try:
+                    return json.dumps(response.json(), ensure_ascii=False)
+                except ValueError:
+                    return response.text
+        except httpx.HTTPStatusError as e:
+            return f"<error>HTTP execution failed with status {e.response.status_code}: {e.response.text}</error>"
+        except Exception as e:
+            return f"<error>HTTP execution failed: {str(e)}</error>"

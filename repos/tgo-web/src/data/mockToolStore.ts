@@ -18,12 +18,12 @@ export const TOOL_STORE_CATEGORIES: ToolStoreCategory[] = [
 export const mockToolStoreItems: ToolStoreItem[] = [
   {
     id: 'mcp-sse-streamable-http',
-    name: 'MCP SSE / StreamableHTTP',
-    description: '通过 HTTP with SSE 或 Streamable HTTP 传输方式使用 MCP 协议来连接和管理工具。',
+    name: 'Tool SSE / StreamableHTTP',
+    description: '通过 HTTP with SSE 或 Streamable HTTP 传输方式使用 Tool 协议来连接和管理工具。',
     author: 'langgenius',
     authorHandle: 'mcp_sse',
     category: 'tool',
-    tags: ['HTTP', 'SSE', 'Streamable', 'MCP'],
+    tags: ['HTTP', 'SSE', 'Streamable', 'Tool'],
     downloads: 71652,
     rating: 4.8,
     ratingCount: 234,
@@ -33,9 +33,9 @@ export const mockToolStoreItems: ToolStoreItem[] = [
     verified: true,
     icon: '🔗',
     screenshots: [],
-    longDescription: `# MCP SSE / StreamableHTTP
+    longDescription: `# Tool SSE / StreamableHTTP
 
-这是一个强大的 **MCP 工具**，支持通过 HTTP with SSE 或 Streamable HTTP 传输方式来连接和管理各种工具和服务。
+这是一个强大的 **工具**，支持通过 HTTP with SSE 或 Streamable HTTP 传输方式来连接和管理各种工具和服务。
 
 ## 主要特性
 
@@ -55,17 +55,17 @@ export const mockToolStoreItems: ToolStoreItem[] = [
 更多信息请访问 [官方文档](https://example.com/docs)。`,
     requirements: ['Node.js >= 16', 'HTTP Server'],
     changelog: '修复了连接稳定性问题，增加了错误重试机制。',
-    mcpMethods: [
+    methods: [
       {
         id: 'connect',
         name: 'connect',
-        description: '建立与 MCP 服务器的连接',
+        description: '建立与 Tool 服务器的连接',
         parameters: [
           {
             name: 'url',
             type: 'string',
             required: true,
-            description: 'MCP 服务器的 URL 地址',
+            description: 'Tool 服务器的 URL 地址',
             example: 'http://localhost:3000/mcp'
           },
           {
@@ -82,7 +82,7 @@ export const mockToolStoreItems: ToolStoreItem[] = [
       {
         id: 'send',
         name: 'send',
-        description: '向 MCP 服务器发送消息',
+        description: '向 Tool 服务器发送消息',
         parameters: [
           {
             name: 'message',
@@ -98,7 +98,7 @@ export const mockToolStoreItems: ToolStoreItem[] = [
       {
         id: 'disconnect',
         name: 'disconnect',
-        description: '断开与 MCP 服务器的连接',
+        description: '断开与 Tool 服务器的连接',
         parameters: [],
         returnType: 'Promise<void>',
         example: 'await mcp.disconnect()'
@@ -149,7 +149,7 @@ export const mockToolStoreItems: ToolStoreItem[] = [
 *适用于各种 AI 应用场景，提供可靠的信息检索服务。*`,
     requirements: ['API Key', 'Internet Connection'],
     changelog: '增加了搜索结果过滤功能，提升了搜索准确性。',
-    mcpMethods: [
+    methods: [
       {
         id: 'search',
         name: 'search',

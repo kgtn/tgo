@@ -56,6 +56,11 @@
     "duplicate": "复制",
     "view": "查看",
     "refresh": "刷新",
+    "notice": "提示",
+    "install": "安装",
+    "installing": "正在安装...",
+    "complete": "完成",
+    "action": "操作",
     "separator": "、",
     "debug_mode": "调试模式",
     "true": "True",
@@ -104,14 +109,120 @@
       "viewDocs": "查看插件开发指南",
       "status": {
         "connected": "已连接",
-        "disconnected": "已断开"
+        "disconnected": "已断开",
+        "label": "当前状态",
+        "running": "正在运行",
+        "error": "错误",
+        "installing": "正在安装",
+        "stopped": "已停止"
       },
       "capabilities": "功能声明",
       "author": "作者",
-      "connectedAt": "连接时间",
+      "connectedAt": "连接于",
       "debug": {
         "title": "调试提示",
-        "description": "在开发模式下，插件可以通过 8005 端口（TCP）连接到 TGO AI 服务。"
+        "description": "在开发模式下，插件可以通过 8005 端口（TCP）连接到 TGO AI 服务。",
+        "badge": "调试",
+        "autoManaged": "调试模式 - 自动管理"
+      },
+      "token": {
+        "generate": "调试令牌",
+        "error": "生成令牌失败",
+        "modal": {
+          "title": "项目调试令牌",
+          "warning": "令牌有效期为 24 小时。本地调试插件使用此令牌连接后，将自动关联到当前项目。",
+          "tokenLabel": "您的调试令牌",
+          "usage": "使用方法",
+          "goSDK": "Go SDK:",
+          "pythonSDK": "Python SDK:"
+        }
+      },
+      "install": {
+        "button": "安装插件",
+        "now": "立即安装",
+        "modal": {
+          "title": "安装新插件",
+          "yamlLabel": "插件配置 (YAML)"
+        },
+        "url": {
+          "title": "通过 URL 安装",
+          "description": "输入插件的远程地址，系统将自动获取配置并准备安装。",
+          "label": "插件地址",
+          "github": {
+            "desc": "支持仓库地址及分支路径"
+          },
+          "gitee": {
+            "desc": "国内加速，支持码云仓库"
+          },
+          "custom": {
+            "desc": "支持直接 YAML 或目录地址"
+          }
+        },
+        "fetch": "获取信息",
+        "useManual": "使用手动 YAML 粘贴模式",
+        "backToUrl": "返回 URL 安装模式",
+        "preview": {
+          "success": "已成功解析插件配置信息"
+        },
+        "confirm": "确认并安装",
+        "preparing": "准备安装...",
+        "processing": "正在安装插件",
+        "success": "安装成功",
+        "error": "安装失败",
+        "enjoy": "一切就绪，开始探索吧",
+        "source": "来源",
+        "back": "上一步",
+        "stage": {
+          "preparing": "准备环境",
+          "cloning": "克隆代码",
+          "downloading": "下载产物",
+          "copying": "部署文件",
+          "building": "编译构建",
+          "starting": "启动服务"
+        }
+      },
+      "actions": {
+        "detail": "查看详情",
+        "checkUpdate": "检查更新",
+        "logs": "查看日志",
+        "stop": "停止",
+        "start": "启动",
+        "restart": "重启",
+        "uninstall": "卸载",
+        "uninstallConfirm": "确定要卸载此插件吗？此操作不可恢复。"
+      },
+      "installed": {
+        "empty": {
+          "title": "暂无插件",
+          "description": "您可以从 GitHub 源码编译安装、通过二进制文件安装，或使用调试令牌连接本地插件。"
+        }
+      },
+      "updateAvailable": "有新版本",
+      "checkUpdate": "检查更新",
+      "checkUpdateError": "检查更新失败",
+      "noUpdate": "当前已是最新版本",
+      "installedAt": "安装于",
+      "installedAtTime": "安装时间",
+      "installType": "安装方式",
+      "logs": {
+        "title": "插件日志",
+        "empty": "暂无日志输出"
+      },
+      "detail": {
+        "basicInfo": "基本信息",
+        "noCapabilities": "该插件未声明任何特殊功能"
+      },
+      "details": {
+        "description": "描述"
+      },
+      "upgrade": {
+        "title": "插件升级",
+        "pluginName": "插件名称",
+        "currentVersion": "当前版本",
+        "latestVersion": "最新版本",
+        "preparing": "准备升级...",
+        "confirm": "立即升级",
+        "error": "升级失败"
       }
     },
     "profile": {
@@ -871,7 +982,7 @@
     "teamChat": {
       "defaultName": "AI员工团队"
     },
-    "teamDescription": "通过团队协作，您可以同时调用多个AI员工，实现更复杂的业务逻辑和更高效的任务处理。",
+    "teamDescription": "通过团队协作，您可以同时调用多个具备工具调用、工作流执行及知识库检索能力的AI员工，实现更复杂的业务逻辑和更高效的任务处理。",
     "listTitle": "AI员工列表",
     "stats": {
       "total": "全部员工",
@@ -936,7 +1047,7 @@
       "sections": {
         "modelConfig": "模型配置",
         "description": "能力描述",
-        "mcpTools": "MCP工具",
+        "tools": "工具",
         "resources": "资源关联"
       },
       "placeholders": {
@@ -972,7 +1083,7 @@
     "detail": {
       "basicInfo": "基本信息",
       "performanceStats": "性能统计",
-      "mcpTools": "关联 MCP 工具",
+      "tools": "关联工具",
       "knowledge_bases": "关联知识库",
       "workflows": "关联工作流",
       "tags": "标签",
@@ -998,7 +1109,7 @@
       "selectedCount": "{{count}} 已选择",
       "addButton": "添加工具",
       "emptyTitle": "暂未添加工具",
-      "emptyDescription": "点击「添加工具」按钮选择MCP工具"
+      "emptyDescription": "点击「添加工具」按钮选择工具"
     },
     "knowledge_basesSection": {
       "selectedTitle": "已选择知识库",
@@ -1089,14 +1200,14 @@
   "team": {
     "modal": {
       "title": "团队信息",
-      "subtitle": "配置您的 AI 协作团队参数",
+      "subtitle": "配置您的 AI 协作团队，整合工具、工作流及知识库以增强集体能力",
       "name": "团队名称",
       "namePlaceholder": "输入团队名称",
       "model": "LLM 模型",
       "modelHint": "选择团队使用的默认 LLM 模型",
       "instruction": "团队指令",
       "instructionPlaceholder": "输入团队的系统提示词或指令...",
-      "instructionHint": "此指令将应用于团队中的所有AI员工",
+      "instructionHint": "💡 此指令作为团队全局背景，将整合工具调用、工作流执行及知识库能力，应用于所有成员以实现高效协作。",
       "noTeam": "未找到默认团队",
       "cancel": "取消",
       "save": "保存",
@@ -1169,7 +1280,7 @@
     "ai": "AI助手",
     "aiFeatures": "AI 功能",
     "agents": "AI员工团队",
-    "mcpTools": "MCP工具",
+    "tools": "工具",
     "workflows": "工作流",
     "visitors": "访客管理",
     "knowledge": "知识库",
@@ -1179,10 +1290,28 @@
   "workflow": {
     "title": "工作流",
     "management": {
-      "title": "工作流管理"
+      "title": "工作流管理",
+      "subtitle": "编排复杂的 AI 任务流程"
     },
-    "empty": "暂未关联工作流",
+    "banner": {
+      "title": "自动化工作流",
+      "description": "通过图形化界面编排 AI 节点、条件分支和自定义工具，实现从简单对话到复杂业务逻辑的自动化处理。"
+    },
+    "empty": {
+      "title": "暂无工作流",
+      "description": "点击「创建工作流」按钮开始构建您的第一个自动化流程",
+      "noResults": "未找到匹配的工作流",
+      "noResultsDesc": "请尝试调整搜索关键词或筛选条件"
+    },
+    "modal": {
+      "delete": {
+        "title": "删除工作流",
+        "message": "确定要删除工作流 \"{{name}}\" 吗？此操作不可撤销。"
+      }
+    },
     "addWorkflow": "添加工作流",
+    "viewWorkflow": "查看工作流",
+    "listTitle": "工作流列表",
     "noDescription": "暂无描述",
     "nodes": "节点",
     "lastUpdated": "更新于",
@@ -1232,8 +1361,8 @@
         "description": "调用其他AI员工"
       },
       "tool": {
-        "label": "MCP工具",
-        "description": "执行MCP工具"
+        "label": "工具",
+        "description": "执行工具"
       },
       "condition": {
         "label": "条件判断",
@@ -1305,7 +1434,7 @@
       "status": "状态",
       "tags": "标签",
       "selectAgent": "选择AI员工",
-      "selectTool": "选择MCP工具",
+      "selectTool": "选择工具",
       "output_variable": "输出变量名",
       "condition_type": "条件类型",
       "expression": "代码表达式",
@@ -1341,7 +1470,7 @@
     },
     "placeholders": {
       "selectAgent": "请选择AI员工",
-      "selectTool": "请选择MCP工具",
+      "selectTool": "请选择工具",
       "cron_hint": "0 * * * * (每小时)",
       "custom_path": "自定义路径",
       "event_hint": "例如：user_registered",
@@ -2674,24 +2803,35 @@
       }
     }
   },
-  "mcp": {
+  "tools": {
+    "title": "工具管理",
+    "subtitle": "配置和扩展 AI 员工的能力集",
+    "copyEndpoint": "复制端点",
+    "editTool": "编辑工具",
+    "banner": {
+      "title": "增强 AI 能力",
+      "description": "通过添加 HTTP 接口或 MCP 协议工具，您可以让 AI 员工具备搜索、查询数据库、调用外部服务等无限可能。"
+    },
+    "listTitle": "工具列表",
+    "addHttpTool": "添加 HTTP 工具",
+    "addMCPTool": "添加 MCP 工具",
     "newTool": "新工具",
     "selectModal": {
       "title": "选择工具",
       "searchPlaceholder": "搜索工具...",
-      "loading": "正在加载MCP工具...",
-      "noMatch": "未找到匹配的MCP工具",
+      "loading": "正在加载工具...",
+      "noMatch": "未找到匹配的工具",
       "configTool": "配置工具",
-      "manageTools": "管理MCP工具",
+      "manageTools": "管理工具",
       "category": {
-        "mcpServer": "MCP 服务器",
+        "toolServer": "Tool 服务器",
         "custom": "自定义工具",
         "plugin": "插件工具"
       },
       "confirmSelection": "确认选择 ({{count}})",
-      "loadFailedDesc": "无法加载MCP工具列表，请稍后重试",
+      "loadFailedDesc": "无法加载工具列表，请稍后重试",
       "retryFailedTitle": "重试失败",
-      "retryFailedDesc": "无法加载MCP工具列表，请检查网络连接"
+      "retryFailedDesc": "无法加载工具列表，请检查网络连接"
     },
     "source": {
       "marketplace": "工具市场",
@@ -2704,7 +2844,7 @@
       "unknown": "未知来源"
     },
     "search": {
-      "placeholder": "搜索 MCP 工具..."
+      "placeholder": "搜索工具..."
     },
     "categories": {
       "all": "全部",
@@ -2720,7 +2860,7 @@
       "customTool": "自定义工具"
     },
     "tools": {
-      "addMcpTool": "添加 MCP 工具",
+      "addMcpTool": "添加工具",
       "delete": {
         "successTitle": "已删除",
         "successMessage": "已删除工具\"{{name}}\""
@@ -2749,12 +2889,13 @@
       },
       "installedEmpty": {
         "title": "暂无已安装的工具",
-        "description": "点击右上角\"添加 MCP 工具\"按钮创建您的第一个工具",
+        "description": "点击右上角\"添加 工具\"按钮创建您的第一个工具",
         "action": "前往工具商店"
       },
+      "addHttpTool": "添加 HTTP 工具",
       "list": {
         "emptyTitle": "暂无工具",
-        "emptyDescriptionAll": "点击\"添加工具\"按钮开始添加您的第一个MCP工具",
+        "emptyDescriptionAll": "点击\"添加工具\"按钮开始添加您的第一个工具",
         "emptyDescriptionCategory": "在\"{{category}}\"分类下暂无工具",
         "emptyAction": "开始添加工具"
       },
@@ -2769,8 +2910,9 @@
         "notFoundMessage": "无法找到该工具的详细信息"
       }
     },
-    "addMcpToolModal": {
+    "addToolModal": {
       "title": "添加 MCP 工具",
+      "subtitle": "通过 MCP 协议连接外部能力服务器",
       "fields": {
         "name": "工具名称",
         "description": "工具描述",
@@ -2781,7 +2923,7 @@
       "placeholders": {
         "name": "例如：weather-api",
         "description": "简要描述该工具的功能",
-        "endpoint": "例如：https://api.example.com/mcp",
+        "endpoint": "例如：https://api.example.com/tool",
         "config": "{\"key\": \"value\"}"
       },
       "hints": {
@@ -2798,13 +2940,74 @@
         "title": "添加成功",
         "message": "{{name}} 已成功添加"
       },
+      "confirm": "确认创建",
       "error": {
         "title": "添加失败",
-        "message": "添加 MCP 工具失败，请稍后重试"
+        "message": "添加工具失败，请稍后重试"
       }
     },
-    "editMcpToolModal": {
-      "title": "编辑 MCP 工具",
+    "addHttpToolModal": {
+      "title": "添加 HTTP 工具",
+      "subtitle": "配置外部 API 接口作为 AI 员工的能力",
+      "sections": {
+        "basic": "基本信息",
+        "config": "接口配置"
+      },
+      "fields": {
+        "name": "工具名称",
+        "description": "工具描述",
+        "endpoint": "接口地址 (Endpoint)",
+        "method": "请求方法",
+        "headers": "请求头 (Headers)",
+        "parameters": "输入参数"
+      },
+      "placeholders": {
+        "name": "例如: search_user",
+        "description": "描述工具的功能，帮助 AI 理解调用时机",
+        "endpoint": "https://api.example.com/v1/users",
+        "paramDesc": "参数功能描述..."
+      },
+      "params": {
+        "name": "参数名",
+        "type": "类型",
+        "desc": "描述",
+        "required": "必填",
+        "empty": "定义 AI 调用接口时需要的动态参数"
+      },
+      "addHeader": "添加 Header",
+      "addParameter": "添加参数",
+      "confirm": "确认创建",
+      "errors": {
+        "nameRequired": "请输入工具名称",
+        "invalidName": "工具名称只能包含英文字母、数字、下划线和连字符",
+        "descriptionRequired": "请输入工具描述",
+        "endpointRequired": "请输入接口地址"
+      },
+      "success": {
+        "title": "添加成功",
+        "message": "HTTP 工具 {{name}} 已成功添加"
+      },
+      "error": {
+        "title": "添加失败",
+        "message": "添加 HTTP 工具失败"
+      }
+    },
+    "editHttpToolModal": {
+      "title": "编辑 HTTP 工具",
+      "subtitle": "更新外部 API 接口配置",
+      "save": "保存修改",
+      "success": {
+        "title": "更新成功",
+        "message": "HTTP 工具 {{name}} 已成功更新"
+      },
+      "error": {
+        "title": "更新失败",
+        "message": "更新 HTTP 工具失败"
+      }
+    },
+    "editToolModal": {
+      "title": "编辑工具",
+      "subtitle": "修改 MCP 工具的连接配置",
       "fields": {
         "name": "工具名称",
         "description": "工具描述",
@@ -2815,7 +3018,7 @@
       "placeholders": {
         "name": "例如：weather-api",
         "description": "简要描述该工具的功能",
-        "endpoint": "例如：https://api.example.com/mcp"
+        "endpoint": "例如：https://api.example.com/tool"
       },
       "hints": {
         "toolTypeReadonly": "工具类型不可修改"
@@ -2829,21 +3032,22 @@
         "title": "更新成功",
         "message": "{{name}} 已成功更新"
       },
+      "save": "保存修改",
       "error": {
         "title": "更新失败",
-        "message": "更新 MCP 工具失败，请稍后重试"
+        "message": "更新工具失败，请稍后重试"
       }
     },
     "selectModal": {
       "title": "选择工具",
       "searchPlaceholder": "搜索工具...",
-      "loading": "正在加载MCP工具...",
-      "loadFailedDesc": "无法加载MCP工具列表，请稍后重试",
+      "loading": "正在加载工具...",
+      "loadFailedDesc": "无法加载工具列表，请稍后重试",
       "retryFailedTitle": "重试失败",
-      "retryFailedDesc": "无法加载MCP工具列表，请检查网络连接",
-      "noMatch": "未找到匹配的MCP工具",
+      "retryFailedDesc": "无法加载工具列表，请检查网络连接",
+      "noMatch": "未找到匹配的工具",
       "configTool": "配置工具",
-      "manageTools": "管理MCP工具",
+      "manageTools": "管理工具",
       "confirmSelection": "确认选择 ({{count}})"
     },
     "config": {

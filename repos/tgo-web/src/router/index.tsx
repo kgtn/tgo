@@ -6,7 +6,7 @@ import ChatPage from '../pages/ChatPage';
 import VisitorManagement from '../pages/VisitorManagement';
 import AIInterface from '../pages/AIInterface';
 import AgentManagement from '../components/ai/AgentManagement';
-import MCPTools from '../components/ai/MCPTools';
+import Tools from '../components/ai/Tools';
 import WorkflowManagement from '../pages/WorkflowManagement';
 import WorkflowEditorPage from '../pages/WorkflowEditorPage';
 import LoginPage from '../pages/LoginPage';
@@ -118,8 +118,8 @@ export const router = createBrowserRouter([
             element: <AgentManagement />
           },
           {
-            path: 'mcp-tools',
-            element: <MCPTools />
+            path: 'tools',
+            element: <Tools />
           },
           {
             path: 'workflows',

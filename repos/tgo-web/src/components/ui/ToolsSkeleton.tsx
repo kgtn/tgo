@@ -1,6 +1,6 @@
 /**
- * MCP Tools Loading Skeleton Component
- * Provides loading states for MCP tools list
+ * Tool Tools Loading Skeleton Component
+ * Provides loading states for Tool tools list
  */
 
 import React from 'react';
@@ -8,7 +8,7 @@ import React from 'react';
 /**
  * Single tool card skeleton
  */
-export const MCPToolCardSkeleton: React.FC = () => {
+export const AiToolCardSkeleton: React.FC = () => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
       {/* Header */}
@@ -61,17 +61,17 @@ export const MCPToolCardSkeleton: React.FC = () => {
 /**
  * Tools grid skeleton
  */
-interface MCPToolsGridSkeletonProps {
+interface AiToolsGridSkeletonProps {
   count?: number;
 }
 
-export const MCPToolsGridSkeleton: React.FC<MCPToolsGridSkeletonProps> = ({ 
+export const AiToolsGridSkeleton: React.FC<AiToolsGridSkeletonProps> = ({ 
   count = 6 
 }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {Array.from({ length: count }, (_, index) => (
-        <MCPToolCardSkeleton key={index} />
+        <AiToolCardSkeleton key={index} />
       ))}
     </div>
   );
@@ -80,7 +80,7 @@ export const MCPToolsGridSkeleton: React.FC<MCPToolsGridSkeletonProps> = ({
 /**
  * Search bar skeleton
  */
-export const MCPToolsSearchSkeleton: React.FC = () => {
+export const AiToolsSearchSkeleton: React.FC = () => {
   return (
     <div className="flex flex-col lg:flex-row gap-4 animate-pulse">
       {/* Search input placeholder */}
@@ -100,7 +100,7 @@ export const MCPToolsSearchSkeleton: React.FC = () => {
 /**
  * Category filter skeleton
  */
-export const MCPToolsCategoryFilterSkeleton: React.FC = () => {
+export const AiToolsCategoryFilterSkeleton: React.FC = () => {
   return (
     <div className="flex flex-wrap gap-2 animate-pulse">
       {Array.from({ length: 6 }, (_, index) => (
@@ -116,7 +116,7 @@ export const MCPToolsCategoryFilterSkeleton: React.FC = () => {
 /**
  * Header skeleton
  */
-export const MCPToolsHeaderSkeleton: React.FC = () => {
+export const AiToolsHeaderSkeleton: React.FC = () => {
   return (
     <div className="flex items-center justify-between animate-pulse">
       <div className="flex items-center space-x-4">
@@ -138,27 +138,27 @@ export const MCPToolsHeaderSkeleton: React.FC = () => {
 /**
  * Complete page skeleton
  */
-export const MCPToolsPageSkeleton: React.FC = () => {
+export const AiToolsPageSkeleton: React.FC = () => {
   return (
     <main className="flex-grow flex flex-col bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Header skeleton */}
       <header className="px-6 py-4 border-b border-gray-200/80 bg-white/60 backdrop-blur-lg sticky top-0 z-10">
-        <MCPToolsHeaderSkeleton />
+        <AiToolsHeaderSkeleton />
       </header>
 
       {/* Search and filters skeleton */}
       <div className="px-6 py-4 bg-white/40 border-b border-gray-200/60">
-        <MCPToolsSearchSkeleton />
+        <AiToolsSearchSkeleton />
       </div>
 
       {/* Category filter skeleton */}
       <div className="px-6 py-3 bg-white/20">
-        <MCPToolsCategoryFilterSkeleton />
+        <AiToolsCategoryFilterSkeleton />
       </div>
 
       {/* Content area skeleton */}
       <div className="flex-grow overflow-y-auto p-6" style={{ height: 0 }}>
-        <MCPToolsGridSkeleton count={9} />
+        <AiToolsGridSkeleton count={9} />
       </div>
     </main>
   );
@@ -167,12 +167,12 @@ export const MCPToolsPageSkeleton: React.FC = () => {
 /**
  * Error state component
  */
-interface MCPToolsErrorStateProps {
+interface AiToolsErrorStateProps {
   error: string;
   onRetry?: () => void;
 }
 
-export const MCPToolsErrorState: React.FC<MCPToolsErrorStateProps> = ({ 
+export const AiToolsErrorState: React.FC<AiToolsErrorStateProps> = ({ 
   error, 
   onRetry 
 }) => {
@@ -202,13 +202,13 @@ export const MCPToolsErrorState: React.FC<MCPToolsErrorStateProps> = ({
 /**
  * Empty state component
  */
-interface MCPToolsEmptyStateProps {
+interface AiToolsEmptyStateProps {
   title?: string;
   description?: string;
   showSearchIcon?: boolean;
 }
 
-export const MCPToolsEmptyState: React.FC<MCPToolsEmptyStateProps> = ({ 
+export const AiToolsEmptyState: React.FC<AiToolsEmptyStateProps> = ({ 
   title = "未找到相关工具",
   description = "尝试调整搜索关键词或选择不同的分类",
   showSearchIcon = true
@@ -234,4 +234,4 @@ export const MCPToolsEmptyState: React.FC<MCPToolsEmptyStateProps> = ({
   );
 };
 
-export default MCPToolsGridSkeleton;
+export default AiToolsGridSkeleton;

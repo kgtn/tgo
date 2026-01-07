@@ -35,7 +35,7 @@ export const PROJECT_TOOLS_ENDPOINTS = {
 
 // Query parameters interface for AI tools list
 export interface AiToolsQueryParams {
-  tool_type?: ToolType; // Filter by tool type: "MCP" | "FUNCTION"
+  tool_type?: ToolType | 'ALL'; // Filter by tool type: "Tool" | "FUNCTION" | "ALL"
   include_deleted?: boolean; // Include soft-deleted tools (default: false)
 }
 
@@ -101,16 +101,16 @@ export class ProjectToolsApiService {
   }
 
   /**
-   * Get MCP tools only
+   * Get all tools (generic)
    */
-  static async getMcpTools(includeDeleted: boolean = false): Promise<AiToolResponse[]> {
+  static async getTools(includeDeleted: boolean = false): Promise<AiToolResponse[]> {
     try {
       return await this.getAiTools({
-        tool_type: 'MCP',
+        tool_type: 'ALL',
         include_deleted: includeDeleted,
       });
     } catch (error) {
-      console.error('Failed to fetch MCP tools:', error);
+      console.error('Failed to fetch tools:', error);
       throw new Error(handleApiError(error));
     }
   }

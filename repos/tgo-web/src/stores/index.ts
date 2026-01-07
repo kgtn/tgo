@@ -16,7 +16,7 @@ export { useSyncStore, syncSelectors } from './syncStore';
 
 export const aiSelectors = {
   agents: (state: any) => state.agents,
-  mcpTools: (state: any) => state.mcpTools,
+  tools: (state: any) => state.tools,
   selectedAgent: (state: any) => state.selectedAgent,
   selectedTool: (state: any) => state.selectedTool,
   agentCurrentPage: (state: any) => state.agentCurrentPage,

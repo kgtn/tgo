@@ -4,19 +4,19 @@
  * Updated to use NEW /v1/ai/tools API (AiToolResponse)
  */
 
-import type { AiToolResponse, MCPTool, MCPCategory, MCPToolStatus, ToolStatus, ToolSourceType } from '@/types';
+import type { AiToolResponse, AiTool, ToolCategory, AiToolStatus, ToolStatus, ToolSourceType } from '@/types';
 import { TransformUtils } from './base/BaseTransform';
 
 /**
- * Transform API ToolStatus to component MCPToolStatus
+ * Transform API ToolStatus to component AiToolStatus
  */
-export const transformToolStatus = (apiStatus: ToolStatus): MCPToolStatus =>
+export const transformToolStatus = (apiStatus: ToolStatus): AiToolStatus =>
   TransformUtils.transformToolStatus(apiStatus);
 
 /**
- * Transform API category to component MCPCategory
+ * Transform API category to component ToolCategory
  */
-export const transformCategory = (apiCategory: string | null): MCPCategory =>
+export const transformCategory = (apiCategory: string | null): ToolCategory =>
   TransformUtils.transformCategory(apiCategory);
 
 /**
@@ -56,10 +56,10 @@ export const generateMockAiToolData = (aiTool: AiToolResponse) => {
 };
 
 /**
- * Transform API AiToolResponse to component MCPTool
+ * Transform API AiToolResponse to component AiTool
  * Uses NEW /v1/ai/tools API response format
  */
-export const transformAiToolResponse = (aiTool: AiToolResponse): MCPTool => {
+export const transformAiToolResponse = (aiTool: AiToolResponse): AiTool => {
   const mockData = generateMockAiToolData(aiTool);
 
   // Determine tool status based on deleted_at field
@@ -70,12 +70,15 @@ export const transformAiToolResponse = (aiTool: AiToolResponse): MCPTool => {
 
   // Extract category from tool name or config if available
   // For now, default to 'integration' since new API doesn't have category field
-  let category: MCPCategory = 'integration';
+  let category: ToolCategory = 'integration';
   let author: string = mockData.author;
 
   if (aiTool.transport_type === 'plugin') {
-    category = 'integration'; // Or a dedicated category if added to MCPCategory type
+    category = 'integration'; // Or a dedicated category if added to ToolCategory type
     author = '插件';
+  } else if (aiTool.transport_type === 'http_webhook') {
+    category = 'integration';
+    author = 'HTTP 工具';
   }
 
   return {
@@ -112,16 +115,16 @@ export const transformAiToolResponse = (aiTool: AiToolResponse): MCPTool => {
 };
 
 /**
- * Transform array of API AiToolResponse to component MCPTool array
+ * Transform array of API AiToolResponse to component AiTool array
  */
-export const transformAiToolResponseList = (aiTools: AiToolResponse[]): MCPTool[] => {
+export const transformAiToolResponseList = (aiTools: AiToolResponse[]): AiTool[] => {
   return aiTools.map(transformAiToolResponse);
 };
 
 /**
  * Filter project tools by enabled status (for client-side filtering)
  */
-export const filterProjectToolsByEnabled = (tools: MCPTool[], enabledFilter: 'all' | 'enabled' | 'disabled'): MCPTool[] => {
+export const filterProjectToolsByEnabled = (tools: AiTool[], enabledFilter: 'all' | 'enabled' | 'disabled'): AiTool[] => {
   if (enabledFilter === 'all') return tools;
   
   return tools.filter(tool => {
@@ -133,7 +136,7 @@ export const filterProjectToolsByEnabled = (tools: MCPTool[], enabledFilter: 'al
 /**
  * Filter project tools by category (for client-side filtering)
  */
-export const filterProjectToolsByCategory = (tools: MCPTool[], category: MCPCategory): MCPTool[] => {
+export const filterProjectToolsByCategory = (tools: AiTool[], category: ToolCategory): AiTool[] => {
   if (category === 'all') return tools;
   return tools.filter(tool => tool.category === category);
 };
@@ -141,7 +144,7 @@ export const filterProjectToolsByCategory = (tools: MCPTool[], category: MCPCate
 /**
  * Search project tools by name, description, or tags (for client-side search)
  */
-export const searchProjectTools = (tools: MCPTool[], query: string): MCPTool[] => {
+export const searchProjectTools = (tools: AiTool[], query: string): AiTool[] => {
   if (!query.trim()) return tools;
   
   const lowerQuery = query.toLowerCase();
@@ -156,7 +159,7 @@ export const searchProjectTools = (tools: MCPTool[], query: string): MCPTool[] =
 /**
  * Sort project tools by different criteria
  */
-export const sortProjectTools = (tools: MCPTool[], sortBy: 'name' | 'recent' | 'rating' | 'usage'): MCPTool[] => {
+export const sortProjectTools = (tools: AiTool[], sortBy: 'name' | 'recent' | 'rating' | 'usage'): AiTool[] => {
   const sortedTools = [...tools];
   
   switch (sortBy) {
@@ -200,8 +203,8 @@ export const getEnabledStatusColorClass = (isEnabled: boolean): string => {
 /**
  * Get category display name in Chinese
  */
-export const getCategoryDisplayName = (category: MCPCategory): string => {
-  const categoryNames: Record<MCPCategory, string> = {
+export const getCategoryDisplayName = (category: ToolCategory): string => {
+  const categoryNames: Record<ToolCategory, string> = {
     'all': '全部',
     'productivity': '效率工具',
     'communication': '通信工具',
@@ -217,7 +220,7 @@ export const getCategoryDisplayName = (category: MCPCategory): string => {
  * Check if a project tool can be deleted
  * @deprecated - Toggle functionality removed in new API, use delete instead
  */
-export const canToggleProjectTool = (tool: MCPTool): boolean => {
+export const canToggleProjectTool = (tool: AiTool): boolean => {
   // Can delete if it's not already deleted
   return tool.status !== 'inactive';
 };
@@ -225,7 +228,7 @@ export const canToggleProjectTool = (tool: MCPTool): boolean => {
 /**
  * Check if a project tool can be deleted (soft delete)
  */
-export const canDeleteProjectTool = (tool: MCPTool): boolean => {
+export const canDeleteProjectTool = (tool: AiTool): boolean => {
   // Can delete if it's not already deleted
   return tool.status !== 'inactive';
 };
@@ -233,7 +236,7 @@ export const canDeleteProjectTool = (tool: MCPTool): boolean => {
 /**
  * Get project tool action button text
  */
-export const getProjectToolActionText = (_tool: MCPTool, action: 'delete' | 'uninstall'): string => {
+export const getProjectToolActionText = (_tool: AiTool, action: 'delete' | 'uninstall'): string => {
   switch (action) {
     case 'delete':
     case 'uninstall':

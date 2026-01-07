@@ -1,13 +1,13 @@
 /**
- * MCP Tools API Service
- * Handles MCP Tools API endpoints using base service patterns
+ * Tools API Service
+ * Handles Tools API endpoints using base service patterns
  */
 
 import BaseApiService from './base/BaseApiService';
 import type { ToolListResponse, ToolSummary, ToolResponse } from '@/types';
 
 // Query parameters interface for tools list
-export interface MCPToolsQueryParams {
+export interface ToolsQueryParams {
   page?: number;
   limit?: number;
   search?: string;
@@ -18,19 +18,19 @@ export interface MCPToolsQueryParams {
 }
 
 /**
- * MCP Tools API Service Class
+ * Tools API Service Class
  */
-export class MCPToolsApiService extends BaseApiService {
+export class ToolsApiService extends BaseApiService {
   protected readonly apiVersion = 'v1';
   protected readonly endpoints = {
-    TOOLS: `/${this.apiVersion}/mcp/tools`,
-    TOOL_BY_ID: (id: string) => `/${this.apiVersion}/mcp/tools/${id}`,
+    TOOLS: `/${this.apiVersion}/tools`,
+    TOOL_BY_ID: (id: string) => `/${this.apiVersion}/tools/${id}`,
   } as const;
   /**
-   * Get paginated list of MCP tools
+   * Get paginated list of tools
    */
-  static async getTools(params?: MCPToolsQueryParams): Promise<ToolListResponse> {
-    const service = new MCPToolsApiService();
+  static async getTools(params?: ToolsQueryParams): Promise<ToolListResponse> {
+    const service = new ToolsApiService();
     return service.get<ToolListResponse>(service.endpoints.TOOLS, params);
   }
 
@@ -38,7 +38,7 @@ export class MCPToolsApiService extends BaseApiService {
    * Get a specific tool by ID (summary version)
    */
   static async getTool(id: string): Promise<ToolSummary> {
-    const service = new MCPToolsApiService();
+    const service = new ToolsApiService();
     const endpoint = service.endpoints.TOOL_BY_ID(id);
     return service.get<ToolSummary>(endpoint);
   }
@@ -47,7 +47,7 @@ export class MCPToolsApiService extends BaseApiService {
    * Get detailed information about a specific tool by ID
    */
   static async getToolDetails(id: string): Promise<ToolResponse> {
-    const service = new MCPToolsApiService();
+    const service = new ToolsApiService();
     const endpoint = service.endpoints.TOOL_BY_ID(id);
     return service.get<ToolResponse>(endpoint);
   }
@@ -63,8 +63,8 @@ export class MCPToolsApiService extends BaseApiService {
       limit?: number;
     }
   ): Promise<ToolListResponse> {
-    const service = new MCPToolsApiService();
-    const params: MCPToolsQueryParams = {
+    const service = new ToolsApiService();
+    const params: ToolsQueryParams = {
       search: query,
       limit: filters?.limit || 20,
       ...filters,
@@ -77,7 +77,7 @@ export class MCPToolsApiService extends BaseApiService {
    */
   static async getToolsByCategory(
     category: string,
-    params?: Omit<MCPToolsQueryParams, 'category'>
+    params?: Omit<ToolsQueryParams, 'category'>
   ): Promise<ToolListResponse> {
     return this.getTools({ ...params, category });
   }
@@ -87,7 +87,7 @@ export class MCPToolsApiService extends BaseApiService {
    */
   static async getToolsByStatus(
     status: string,
-    params?: Omit<MCPToolsQueryParams, 'status'>
+    params?: Omit<ToolsQueryParams, 'status'>
   ): Promise<ToolListResponse> {
     return this.getTools({ ...params, status });
   }
@@ -98,11 +98,11 @@ export class MCPToolsApiService extends BaseApiService {
   static async getToolsPage(
     page: number,
     pageSize: number = 20,
-    filters?: Omit<MCPToolsQueryParams, 'limit' | 'page'>
+    filters?: Omit<ToolsQueryParams, 'limit' | 'page'>
   ): Promise<ToolListResponse> {
     return this.getTools({ ...filters, page, limit: pageSize });
   }
 }
 
 // Export default instance for convenience
-export default MCPToolsApiService;
+export default ToolsApiService;

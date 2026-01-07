@@ -3,7 +3,7 @@
  * Provides common transformation patterns and utilities
  */
 
-import type { ToolStatus, ToolSourceType, MCPToolStatus, MCPCategory } from '@/types';
+import type { ToolStatus, ToolSourceType, AiToolStatus, ToolCategory } from '@/types';
 import i18n from '@/i18n';
 
 
@@ -31,9 +31,9 @@ export abstract class BaseTransformerClass<TInput, TOutput> implements BaseTrans
  */
 export class TransformUtils {
   /**
-   * Transform API ToolStatus to component MCPToolStatus
+   * Transform API ToolStatus to component AiToolStatus
    */
-  static transformToolStatus(apiStatus: ToolStatus): MCPToolStatus {
+  static transformToolStatus(apiStatus: ToolStatus): AiToolStatus {
     switch (apiStatus) {
       case 'ACTIVE':
         return 'active';
@@ -49,7 +49,7 @@ export class TransformUtils {
   /**
    * Transform API category to component category
    */
-  static transformCategory(apiCategory: string | null): MCPCategory {
+  static transformCategory(apiCategory: string | null): ToolCategory {
     if (!apiCategory) return 'integration';
 
     const category = apiCategory.toLowerCase();
@@ -70,11 +70,11 @@ export class TransformUtils {
   static transformSourceType(sourceType: ToolSourceType): string {
     switch (sourceType) {
       case 'MARKETPLACE':
-        return i18n.t('mcp.source.marketplace', { defaultValue: '工具市场' });
+        return i18n.t('tools.source.marketplace', { defaultValue: '工具市场' });
       case 'CUSTOM':
-        return i18n.t('mcp.source.custom', { defaultValue: '自定义' });
+        return i18n.t('tools.source.custom', { defaultValue: '自定义' });
       default:
-        return i18n.t('mcp.source.unknown', { defaultValue: '未知' });
+        return i18n.t('tools.source.unknown', { defaultValue: '未知' });
     }
   }
 
@@ -84,11 +84,11 @@ export class TransformUtils {
   static getAuthor(sourceType: ToolSourceType): string {
     switch (sourceType) {
       case 'MARKETPLACE':
-        return i18n.t('mcp.author.marketplace', { defaultValue: '工具市场' });
+        return i18n.t('tools.author.marketplace', { defaultValue: '工具市场' });
       case 'CUSTOM':
-        return i18n.t('mcp.author.customUser', { defaultValue: '用户自定义' });
+        return i18n.t('tools.author.customUser', { defaultValue: '用户自定义' });
       default:
-        return i18n.t('mcp.author.unknown', { defaultValue: '未知来源' });
+        return i18n.t('tools.author.unknown', { defaultValue: '未知来源' });
     }
   }
 

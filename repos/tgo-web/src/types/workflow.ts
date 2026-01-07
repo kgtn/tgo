@@ -106,7 +106,7 @@ export interface AgentNodeData extends BaseNodeData {
 }
 
 /**
- * Tool node data - executes an MCP tool
+ * Tool node data - executes an Tool tool
  */
 export interface ToolNodeData extends BaseNodeData {
   type: 'tool';
@@ -144,7 +144,7 @@ export interface LLMNodeData extends BaseNodeData {
   user_prompt: string;
   temperature?: number;
   max_tokens?: number;
-  tool_ids?: string[]; // IDs of selected MCP tools
+  tool_ids?: string[]; // IDs of selected Tool tools
   collection_ids?: string[]; // IDs of selected knowledge bases
 }
 

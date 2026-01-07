@@ -1,17 +1,17 @@
 /**
- * Optimized MCP Tool Card Component
+ * Optimized Tool Tool Card Component
  * Uses BaseCard pattern to eliminate duplication and improve consistency
  */
 
 import React from 'react';
 import { BaseCard, createCardActions, type BaseCardItem } from '@/components/base/BaseCard';
-import type { MCPTool } from '@/types';
+import type { AiTool } from '@/types';
 
 /**
- * Transform MCPTool to BaseCardItem compatible format
+ * Transform AiTool to BaseCardItem compatible format
  */
-type MCPToolCardItem = BaseCardItem & {
-  // Additional MCP-specific fields
+type AiToolCardItem = BaseCardItem & {
+  // Additional Tool-specific fields
   usageCount: number;
   successRate?: number;
   avgResponseTime?: string;
@@ -20,9 +20,9 @@ type MCPToolCardItem = BaseCardItem & {
   input_schema?: Record<string, any>;
 };
 
-interface MCPToolCardOptimizedProps {
-  tool: MCPTool;
-  onAction: (actionType: string, tool: MCPTool) => void;
+interface AiToolCardOptimizedProps {
+  tool: AiTool;
+  onAction: (actionType: string, tool: AiTool) => void;
   onShowToast?: (type: 'success' | 'error' | 'warning' | 'info', title: string, message?: string) => void;
   showActions?: boolean;
   showTags?: boolean;
@@ -31,9 +31,9 @@ interface MCPToolCardOptimizedProps {
 }
 
 /**
- * Optimized MCP Tool Card Component
+ * Optimized Tool Tool Card Component
  */
-const MCPToolCardOptimized: React.FC<MCPToolCardOptimizedProps> = ({
+const AiToolCardOptimized: React.FC<AiToolCardOptimizedProps> = ({
   tool,
   onAction,
   onShowToast,
@@ -42,8 +42,8 @@ const MCPToolCardOptimized: React.FC<MCPToolCardOptimizedProps> = ({
   showRating = false,
   className = '',
 }) => {
-  // Transform MCPTool to BaseCardItem format
-  const cardItem: MCPToolCardItem = {
+  // Transform AiTool to BaseCardItem format
+  const cardItem: AiToolCardItem = {
     ...tool,
     // Ensure all required BaseCardItem fields are present
     name: tool.name,
@@ -100,4 +100,4 @@ const MCPToolCardOptimized: React.FC<MCPToolCardOptimizedProps> = ({
   );
 };
 
-export default MCPToolCardOptimized;
+export default AiToolCardOptimized;

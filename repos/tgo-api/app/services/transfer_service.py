@@ -404,10 +404,13 @@ async def assign_staff(
             
         else:
             # Multiple candidates - first check for last serving staff
-            last_session = db.query(VisitorSession).filter(
+            last_session = db.query(VisitorSession).join(
+                Staff, VisitorSession.staff_id == Staff.id
+            ).filter(
                 VisitorSession.visitor_id == visitor_id,
                 VisitorSession.project_id == project_id,
                 VisitorSession.staff_id.isnot(None),
+                Staff.deleted_at.is_(None),  # Ensure staff is not deleted
             ).order_by(VisitorSession.created_at.desc()).first()
             
             if last_session and last_session.staff_id:
@@ -881,12 +884,18 @@ async def _get_available_staff_candidates(
 async def _load_balance_assign(candidates: List[StaffCandidate]) -> Optional[UUID]:
     """
     Select staff with lowest current chat count (load balancing).
+    Prioritizes online staff over offline/busy staff.
     """
     if not candidates:
         return None
     
-    # Sort by current chat count ascending
-    sorted_candidates = sorted(candidates, key=lambda c: c.current_chat_count)
+    # Sort by status priority (online > busy > offline) and then by current chat count ascending
+    # status_priority: online(0) < busy(1) < offline(2)
+    def sort_key(c: StaffCandidate) -> tuple:
+        status_priority = {"online": 0, "busy": 1, "offline": 2}
+        return (status_priority.get(c.status, 2), c.current_chat_count)
+    
+    sorted_candidates = sorted(candidates, key=sort_key)
     return sorted_candidates[0].id
 
 

@@ -2,15 +2,15 @@ import React from 'react';
 import { XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { generateDefaultAvatar } from '@/utils/avatarUtils';
-import type { MCPTool } from '@/types';
+import type { AiTool } from '@/types';
 
-interface MCPToolRowProps {
-  tool: MCPTool;
+interface ToolRowProps {
+  tool: AiTool;
   onRemove: () => void;
   disabled?: boolean;
 }
 
-const MCPToolRow: React.FC<MCPToolRowProps> = ({
+const ToolRow: React.FC<ToolRowProps> = ({
   tool,
   onRemove,
   disabled = false,
@@ -46,4 +46,4 @@ const MCPToolRow: React.FC<MCPToolRowProps> = ({
   );
 };
 
-export default MCPToolRow;
+export default ToolRow;

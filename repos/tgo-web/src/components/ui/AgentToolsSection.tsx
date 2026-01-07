@@ -1,11 +1,11 @@
 import React from 'react';
 import { Plus, Wrench } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { MCPTool } from '@/types';
-import MCPToolRow from './MCPToolRow';
+import type { AiTool } from '@/types';
+import ToolRow from './ToolRow';
 
 interface AgentToolsSectionProps {
-  tools: MCPTool[];
+  tools: AiTool[];
   toolConfigs?: Record<string, Record<string, any>>;
   disabled?: boolean;
   onAdd?: () => void;
@@ -46,7 +46,7 @@ const AgentToolsSection: React.FC<AgentToolsSectionProps> = ({
 
       <div className="space-y-3">
         {tools.map((tool) => (
-          <MCPToolRow
+          <ToolRow
             key={tool.id}
             tool={tool}
             onRemove={() => onRemove(tool.id)}
@@ -61,7 +61,7 @@ const AgentToolsSection: React.FC<AgentToolsSectionProps> = ({
               {t('agents.toolsSection.emptyTitle', '暂未添加工具')}
             </p>
             <p className="text-xs mt-1">
-              {t('agents.toolsSection.emptyDescription', '点击「添加工具」按钮选择MCP工具')}
+              {t('agents.toolsSection.emptyDescription', '点击「添加工具」按钮选择工具')}
             </p>
           </div>
         )}
