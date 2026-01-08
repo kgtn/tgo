@@ -54,7 +54,7 @@ class ChatCompletionRequest(BaseSchema):
     )
     from_uid: str = Field(
         ...,
-        description="平台用户唯一标识，用于识别访客身份",
+        description="平台用户唯一标识，用于识别访客身份（注意：非访客ID）",
         examples=["user_12345", "wx_openid_xxx"]
     )
     extra: Optional[Dict[str, Any]] = Field(
