@@ -117,12 +117,17 @@ async def ensure_visitor_channel(
     visitor: Visitor,
     platform: Platform,
 ) -> None:
-    """Ensure WuKongIM channel exists for a visitor."""
+    """Ensure WuKongIM channel exists for a visitor.
+    
+    This function separates DB operations from external API calls to minimize
+    transaction duration and prevent deadlocks.
+    """
     channel_id = build_visitor_channel_id(visitor.id)
+    subscribers = [str(visitor.id)+"-vtr"]
+    need_create_member = False
 
+    # Phase 1: DB operations in a short transaction
     try:
-        subscribers = [str(visitor.id)+"-vtr"]
-
         existing_visitor_member = (
             db.query(ChannelMember)
             .filter(
@@ -143,14 +148,24 @@ async def ensure_visitor_channel(
                 member_type=MEMBER_TYPE_VISITOR,
             )
             db.add(visitor_member)
+            db.commit()
+            need_create_member = True
 
+    except Exception as e:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        logger.error(f"Failed to create ChannelMember for visitor: {e}")
+        raise
+
+    # Phase 2: External API call (outside transaction)
+    try:
         await wukongim_client.create_channel(
             channel_id=channel_id,
             channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
             subscribers=subscribers,
         )
-        if not existing_visitor_member:
-            db.commit()
 
         logger.info(
             "WuKongIM channel ensured for visitor",
@@ -158,14 +173,13 @@ async def ensure_visitor_channel(
                 "channel_id": channel_id,
                 "channel_type": CHANNEL_TYPE_CUSTOMER_SERVICE,
                 "visitor_id": str(visitor.id),
+                "member_created": need_create_member,
             },
         )
     except Exception as e:
-        try:
-            db.rollback()
-        except Exception:
-            pass
         logger.error(f"Failed to create WuKongIM channel for visitor: {e}")
+        # Note: We don't rollback DB changes here as the ChannelMember record
+        # is still valid even if WuKongIM sync fails - it can be retried later
 
 
 async def create_visitor_with_channel(

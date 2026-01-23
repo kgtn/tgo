@@ -1,7 +1,9 @@
 from typing import Any, List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -654,24 +656,92 @@ async def install_agent_from_store(
         )
 
 
-@router.delete("/uninstall-agent/{resource_id}")
-async def uninstall_agent_from_store(
-    resource_id: str,
-    db: Session = Depends(get_db),
-    current_user: Staff = Depends(get_current_active_user),
-) -> Any:
-    """从本地项目卸载商店招聘的员工模板（仅取消记录）"""
-    project_id = current_user.project_id
-    
-    credential = db.scalar(
-        select(StoreCredential).where(StoreCredential.project_id == project_id)
-    )
-    if credential:
-        api_key = decrypt_str(credential.api_key_encrypted)
-        if api_key:
-            try:
-                await store_client.uninstall_agent(resource_id, api_key)
-            except Exception:
-                pass
-
     return {"success": True}
+
+
+@router.api_route("/proxy/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_store_request(
+    path: str,
+    request: Request,
+    current_user: Staff = Depends(get_current_active_user),
+):
+    """
+    透明代理 Store API 请求，不解析参数，直接转发。
+    支持 GET, POST, PUT, DELETE, PATCH 等方法。
+    
+    认证处理:
+    - 如果请求头包含 X-Store-Authorization，则使用它作为商店的 Authorization 头
+    - 否则移除 TGO 的 Authorization 头（商店不认识）
+    """
+    # 1. 构建目标 URL
+    target_url = f"{settings.STORE_SERVICE_URL.rstrip('/')}/api/v1/{path}"
+    if request.query_params:
+        target_url = f"{target_url}?{request.query_params}"
+
+    # 2. 准备请求头
+    # 移除可能导致远程服务器 403 的头部
+    excluded_headers = (
+        "host", 
+        "content-length", 
+        "authorization", 
+        "origin", 
+        "referer", 
+        "connection",
+        "accept-encoding"
+    )
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in excluded_headers}
+    
+    # 伪装浏览器 User-Agent，防止被 WAF 拦截
+    headers["user-agent"] = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    
+    # 3. 处理商店认证
+    # 如果前端传了 X-Store-Authorization，转换为 Authorization 头发给商店
+    store_auth = request.headers.get("x-store-authorization")
+    if store_auth:
+        headers["authorization"] = store_auth
+    
+    # 4. 获取请求体
+    body = await request.body()
+
+    # 5. 发送请求
+    async with httpx.AsyncClient(timeout=settings.STORE_TIMEOUT) as client:
+        try:
+            # 使用流式响应以处理大文件或保持性能
+            # 注意：这里为了健壮性，不解析 body，直接转发
+            proxy_response = await client.request(
+                method=request.method,
+                url=target_url,
+                headers=headers,
+                content=body,
+                follow_redirects=True
+            )
+            
+            # 5. 返回响应
+            return Response(
+                content=proxy_response.content,
+                status_code=proxy_response.status_code,
+                headers={k: v for k, v in proxy_response.headers.items() if k.lower() not in ("content-encoding", "transfer-encoding", "content-length")}
+            )
+        except httpx.RequestError as e:
+            logger.error(f"Store proxy connection error: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Failed to connect to Store service: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"Store proxy unexpected error: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Internal error during Store proxy: {str(e)}"
+            )
+
+
+@router.get("/config")
+async def get_store_config(
+    current_user: Staff = Depends(get_current_active_user),
+):
+    """返回 Store 服务配置（Web URL 等）"""
+    return {
+        "store_web_url": settings.STORE_WEB_URL,
+        "store_api_url": settings.STORE_SERVICE_URL,
+    }

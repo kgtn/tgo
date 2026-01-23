@@ -133,12 +133,13 @@ async def transfer_to_staff(
     no_staff_reason: Optional[str] = None
     
     try:
-        # 1. Validate visitor exists
+        # 1. Validate visitor exists and lock the row to prevent deadlocks
+        # Using FOR UPDATE ensures consistent lock ordering across concurrent transactions
         visitor = db.query(Visitor).filter(
             Visitor.id == visitor_id,
             Visitor.project_id == project_id,
             Visitor.deleted_at.is_(None),
-        ).first()
+        ).with_for_update().first()
         
         if not visitor:
             return TransferResult(
@@ -571,6 +572,9 @@ async def _add_staff_to_channel(
     Add staff to visitor's channel (both DB and WuKongIM) and send notification.
     Removes any existing staff from the channel first.
     
+    This function separates DB operations from external API calls to minimize
+    transaction duration and prevent deadlocks.
+    
     Args:
         db: Database session
         project_id: Project ID
@@ -582,7 +586,13 @@ async def _add_staff_to_channel(
     visitor_channel_id = build_visitor_channel_id(visitor_id)
     staff_uid = f"{staff_id}-staff"
     
-    # 1. Remove existing staff members from the channel (both DB and WuKongIM)
+    # Collect old staff UIDs for WuKongIM removal (to be done after DB operations)
+    old_staff_uids_to_remove: list[str] = []
+    staff_display_name: str | None = None
+    
+    # Phase 1: All DB operations first (to minimize lock holding time)
+    
+    # 1.1 Remove existing staff members from the channel (DB only)
     existing_staff_members = db.query(ChannelMember).filter(
         ChannelMember.channel_id == visitor_channel_id,
         ChannelMember.channel_type == CHANNEL_TYPE_CUSTOMER_SERVICE,
@@ -593,27 +603,13 @@ async def _add_staff_to_channel(
     
     for old_member in existing_staff_members:
         old_member.deleted_at = datetime.utcnow()
-        old_staff_uid = f"{old_member.member_id}-staff"
-        
-        # Remove from WuKongIM
-        try:
-            await wukongim_client.remove_channel_subscribers(
-                channel_id=visitor_channel_id,
-                channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-                subscribers=[old_staff_uid],
-            )
-        except Exception as e:
-            logger.warning(f"Failed to remove old staff {old_member.member_id} from WuKongIM: {e}")
-        
+        old_staff_uids_to_remove.append(f"{old_member.member_id}-staff")
         logger.info(
-            f"Removed old staff {old_member.member_id} from channel",
+            f"Marked old staff {old_member.member_id} for removal from channel",
             extra={"visitor_id": str(visitor_id), "old_staff_id": str(old_member.member_id)},
         )
     
-    if existing_staff_members:
-        db.flush()
-    
-    # 2. Add new staff to ChannelMember table if not exists
+    # 1.2 Add new staff to ChannelMember table if not exists
     existing_member = db.query(ChannelMember).filter(
         ChannelMember.channel_id == visitor_channel_id,
         ChannelMember.member_id == staff_id,
@@ -629,42 +625,63 @@ async def _add_staff_to_channel(
             member_type=MEMBER_TYPE_STAFF,
         )
         db.add(channel_member)
-        db.flush()
-        
         logger.info(
             f"Added staff {staff_id} to ChannelMember table",
             extra={"visitor_id": str(visitor_id), "staff_id": str(staff_id)},
         )
     
-    # 3. Add to WuKongIM channel
-    await wukongim_client.add_channel_subscribers(
-        channel_id=visitor_channel_id,
-        channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-        subscribers=[staff_uid],
-    )
-    
-    logger.info(
-        f"Added staff {staff_id} to WuKongIM channel {visitor_channel_id}",
-        extra={"visitor_id": str(visitor_id), "staff_id": str(staff_id)},
-    )
-    
-    # Send staff assigned system message only when AI is disabled and notification is enabled
+    # 1.3 Get staff display name for notification (if needed)
     if ai_disabled and send_notification:
         assigned_staff = db.query(Staff).filter(Staff.id == staff_id).first()
         staff_display_name = assigned_staff.name or assigned_staff.username if assigned_staff else str(staff_id)
-        
-        await wukongim_client.send_staff_assigned_message(
-            from_uid=staff_uid,
+    
+    # Flush all DB changes
+    db.flush()
+    
+    # Phase 2: External API calls (after DB operations are flushed)
+    # These are best-effort and won't cause transaction rollback on failure
+    
+    # 2.1 Remove old staff from WuKongIM
+    for old_staff_uid in old_staff_uids_to_remove:
+        try:
+            await wukongim_client.remove_channel_subscribers(
+                channel_id=visitor_channel_id,
+                channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
+                subscribers=[old_staff_uid],
+            )
+        except Exception as e:
+            logger.warning(f"Failed to remove old staff {old_staff_uid} from WuKongIM: {e}")
+    
+    # 2.2 Add new staff to WuKongIM channel
+    try:
+        await wukongim_client.add_channel_subscribers(
             channel_id=visitor_channel_id,
             channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
-            staff_uid=staff_uid,
-            staff_name=staff_display_name,
+            subscribers=[staff_uid],
         )
-        
         logger.info(
-            f"Sent staff assigned message",
-            extra={"visitor_id": str(visitor_id), "staff_id": str(staff_id), "staff_name": staff_display_name},
+            f"Added staff {staff_id} to WuKongIM channel {visitor_channel_id}",
+            extra={"visitor_id": str(visitor_id), "staff_id": str(staff_id)},
         )
+    except Exception as e:
+        logger.error(f"Failed to add staff {staff_id} to WuKongIM channel: {e}")
+    
+    # 2.3 Send staff assigned system message (only when AI is disabled and notification is enabled)
+    if staff_display_name:
+        try:
+            await wukongim_client.send_staff_assigned_message(
+                from_uid=staff_uid,
+                channel_id=visitor_channel_id,
+                channel_type=CHANNEL_TYPE_CUSTOMER_SERVICE,
+                staff_uid=staff_uid,
+                staff_name=staff_display_name,
+            )
+            logger.info(
+                f"Sent staff assigned message",
+                extra={"visitor_id": str(visitor_id), "staff_id": str(staff_id), "staff_name": staff_display_name},
+            )
+        except Exception as e:
+            logger.error(f"Failed to send staff assigned message: {e}")
 
 
 def _create_assignment_history(

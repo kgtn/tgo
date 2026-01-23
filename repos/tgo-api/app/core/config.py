@@ -309,6 +309,11 @@ class Settings(BaseSettings):
         description="Timeout for Store service requests in seconds"
     )
 
+    STORE_WEB_URL: str = Field(
+        default="http://localhost:3002",
+        description="URL of the Store Web frontend (for OAuth redirect)"
+    )
+
     # WuKongIM Service settings
     WUKONGIM_SERVICE_URL: str = Field(
         default="http://localhost:5001",
