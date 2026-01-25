@@ -96,7 +96,7 @@ const ModelStoreDetail: React.FC<ModelStoreDetailProps> = ({
               {t('tools.store.model.priceInput')}
             </p>
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black text-gray-900 dark:text-gray-100">${Number(model.input_price).toFixed(2)}</span>
+              <span className="text-3xl font-black text-gray-900 dark:text-gray-100">¥{Number(model.input_price).toFixed(2)}</span>
               <span className="text-xs font-bold text-gray-400">/{t('tools.store.model.perMillionTokens')}</span>
             </div>
           </div>
@@ -105,7 +105,7 @@ const ModelStoreDetail: React.FC<ModelStoreDetailProps> = ({
               {t('tools.store.model.priceOutput')}
             </p>
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black text-gray-900 dark:text-gray-100">${Number(model.output_price).toFixed(2)}</span>
+              <span className="text-3xl font-black text-gray-900 dark:text-gray-100">¥{Number(model.output_price).toFixed(2)}</span>
               <span className="text-xs font-bold text-gray-400">/{t('tools.store.model.perMillionTokens')}</span>
             </div>
           </div>

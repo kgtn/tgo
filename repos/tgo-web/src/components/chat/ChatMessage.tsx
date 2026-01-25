@@ -198,7 +198,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick, o
   // Visitor/AI message (left side)
   if (!isOwnMessage) {
     return (
-      <div className="flex flex-col items-start max-w-xl">
+      <div className="flex flex-col items-start max-w-[85%]">
         <div className="text-xs text-gray-600 dark:text-gray-400 mb-1 ml-1">
           {displayName} {getPlatformIcon()}
         </div>
@@ -230,7 +230,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSuggestionClick, o
 
   // Own message (right side)
   return (
-    <div className="flex flex-col items-end ml-auto max-w-xl">
+    <div className="flex flex-col items-end ml-auto max-w-[85%]">
       <div className="flex items-start flex-row-reverse mt-1">
         <MessageContent
           message={message}

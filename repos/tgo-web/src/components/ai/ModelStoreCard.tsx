@@ -66,7 +66,7 @@ const ModelStoreCard: React.FC<ModelStoreCardProps> = ({
               {t('tools.store.model.priceInput')}
             </p>
             <p className="text-lg font-black text-gray-900 dark:text-gray-100">
-              ${Number(model.input_price).toFixed(2)}
+              ¥{Number(model.input_price).toFixed(2)}
               <span className="text-[10px] text-gray-400 ml-1">/1M</span>
             </p>
           </div>

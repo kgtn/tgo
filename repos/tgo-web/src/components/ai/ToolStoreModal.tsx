@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Search, Filter, Loader2, Sparkles, Brain, Wrench, Bot, Puzzle, Package, Grid3X3, LogOut, CreditCard } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { X, Search, Loader2, Sparkles, LogOut, CreditCard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ToolStoreCard from './ToolStoreCard';
 import ToolStoreDetail from './ToolStoreDetail';
@@ -158,8 +159,6 @@ const ToolStoreModal: React.FC<ToolStoreModalProps> = ({ isOpen, onClose }) => {
       // 2. 在工具商店安装
       await storeApi.installTool(tool.id);
       
-      showToast('success', t('tools.store.installSuccess', '安装成功'), t('tools.store.installSuccessMessage', { name: tool.name }));
-      
       // Refresh installed tools list
       await loadTools(false);
     } catch (error) {
@@ -210,14 +209,7 @@ const ToolStoreModal: React.FC<ToolStoreModalProps> = ({ isOpen, onClose }) => {
 
               <nav className="space-y-1">
                 {categories.map((cat: ToolStoreCategory) => {
-                  const IconComponent = ({
-                    Grid3X3,
-                    Brain,
-                    Wrench,
-                    Bot,
-                    Puzzle,
-                    Package
-                  } as any)[cat.icon] || Filter;
+                  const IconComponent = (LucideIcons[cat.icon as keyof typeof LucideIcons] as LucideIcons.LucideIcon) || LucideIcons.Package;
 
                   const displayName = currentLang === 'zh' ? cat.name_zh : (cat.name_en || cat.name_zh);
 
@@ -279,7 +271,7 @@ const ToolStoreModal: React.FC<ToolStoreModalProps> = ({ isOpen, onClose }) => {
                         {user?.name || user?.email}
                       </div>
                       <div className="text-[10px] text-blue-600 font-bold uppercase tracking-tighter">
-                        Balance: ${user?.credits?.toFixed(2)}
+                        Balance: ¥{user?.credits?.toFixed(2)}
                       </div>
                     </div>
                     <div className="relative group">

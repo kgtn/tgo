@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid3X3, Brain, Wrench, Bot, Puzzle, Package } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import type { ToolStoreCategory } from '@/types';
 
 interface ToolStoreCategoryFilterProps {
@@ -12,18 +12,8 @@ interface ToolStoreCategoryFilterProps {
 /**
  * Icon mapping for categories
  */
-const getIconComponent = (iconName: string) => {
-  const iconMap = {
-    Grid3X3,
-    Brain,
-    Wrench,
-    Bot,
-    Puzzle,
-    Package,
-  };
-  
-  const IconComponent = iconMap[iconName as keyof typeof iconMap];
-  return IconComponent || Grid3X3;
+const getIconComponent = (iconName: string): LucideIcons.LucideIcon => {
+  return (LucideIcons[iconName as keyof typeof LucideIcons] as LucideIcons.LucideIcon) || LucideIcons.Grid3X3;
 };
 
 /**

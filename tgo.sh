@@ -648,18 +648,8 @@ ENVEOF
     fi
   fi
 
-  if [ ! -d "envs" ] && [ -d "envs.docker" ]; then
-    cp -R "envs.docker" "envs"
-    echo "[INFO] Created envs/ from envs.docker."
-  elif [ -d "envs" ] && [ -d "envs.docker" ]; then
-    # Sync env files and variables from envs.docker to envs
-    for src_file in envs.docker/*.env; do
-      [ -f "$src_file" ] || continue
-      local filename
-      filename=$(basename "$src_file")
-      sync_env_file "$src_file" "envs/$filename"
-    done
-  fi
+  # Note: envs/ directory is no longer needed - all configuration is in root .env
+  # Service-specific environment variables are now defined directly in docker-compose.yml
   
   # Source .env file to make variables available to the script
   if [ -f "$ENV_FILE" ]; then
@@ -701,18 +691,6 @@ PY
   else
     echo "[INFO] SECRET_KEY already set and valid in root .env file."
   fi
-
-  # Cleanup SECRET_KEY from service env files if they exist (to avoid confusion)
-  local api_file="envs/tgo-api.env"
-  local plugin_file="envs/tgo-plugin-runtime.env"
-  
-  for file in "$api_file" "$plugin_file"; do
-    if [ -f "$file" ] && grep -qE '^SECRET_KEY=' "$file"; then
-      local tmp="${file}.tmp"
-      grep -vE '^SECRET_KEY=' "$file" > "$tmp" && mv "$tmp" "$file"
-      echo "[INFO] Removed local SECRET_KEY from $file (using root .env instead)."
-    fi
-  done
 }
 
 # Get server's public IP address
@@ -1559,18 +1537,6 @@ cmd_upgrade() {
   echo "[INFO] Checking for new environment variables..."
   if [ -f ".env.example" ] && [ -f "$ENV_FILE" ]; then
     sync_env_file ".env.example" "$ENV_FILE"
-  fi
-  
-  # Also sync envs.docker/*.env if present
-  if [ -d "envs.docker" ]; then
-    for example_file in envs.docker/*.env.example; do
-      if [ -f "$example_file" ]; then
-        local target_file="${example_file%.example}"
-        if [ -f "$target_file" ]; then
-          sync_env_file "$example_file" "$target_file"
-        fi
-      fi
-    done
   fi
 
   # Ensure SECRET_KEY is set (generate if missing)

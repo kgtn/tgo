@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Filter, Loader2, Sparkles, Brain, Grid3X3, LogOut, Cpu, Database, Image, Mic, CreditCard } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import { X, Search, Loader2, Sparkles, LogOut, CreditCard } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ModelStoreCard from './ModelStoreCard';
 import ModelStoreDetail from './ModelStoreDetail';
@@ -174,11 +175,9 @@ const ModelStoreModal: React.FC<ModelStoreModalProps> = ({ isOpen, onClose }) =>
       if (model.is_installed) {
         // Uninstall
         await storeApi.uninstallModel(model.id);
-        showToast('success', t('tools.store.model.uninstallSuccess'), t('tools.store.model.uninstallSuccessMessage', { name: model.title_zh || model.name }));
       } else {
         // Install
         await storeApi.installModel(model.id);
-        showToast('success', t('tools.store.model.installSuccess'), t('tools.store.model.installSuccessMessage', { name: model.title_zh || model.name }));
       }
       
       setInstallStep('done');
@@ -252,14 +251,7 @@ const ModelStoreModal: React.FC<ModelStoreModalProps> = ({ isOpen, onClose }) =>
 
               <nav className="space-y-1">
                 {categories.map((cat: ModelStoreCategory) => {
-                  const IconComponent = cat.icon ? ({
-                    Grid3X3,
-                    Brain,
-                    Cpu,
-                    Database,
-                    Image,
-                    Mic
-                  } as any)[cat.icon] || Filter : Filter;
+                  const IconComponent = (cat.icon ? LucideIcons[cat.icon as keyof typeof LucideIcons] as LucideIcons.LucideIcon : null) || LucideIcons.Cpu;
 
                   const displayName = currentLang === 'zh' ? cat.name_zh : (cat.name_en || cat.name_zh);
 
@@ -321,7 +313,7 @@ const ModelStoreModal: React.FC<ModelStoreModalProps> = ({ isOpen, onClose }) =>
                         {user?.name || user?.email}
                       </div>
                       <div className="text-[10px] text-blue-600 font-bold uppercase tracking-tighter">
-                        {t('tools.store.balance')}: ${user?.credits?.toFixed(2)}
+                        {t('tools.store.balance')}: ¥{user?.credits?.toFixed(2)}
                       </div>
                     </div>
                     <div className="relative group">

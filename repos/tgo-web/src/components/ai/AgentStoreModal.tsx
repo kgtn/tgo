@@ -3,6 +3,8 @@ import { X, Search, Loader2, Bot, Package, LogOut, CreditCard } from 'lucide-rea
 import { useTranslation } from 'react-i18next';
 import AgentStoreCard from './AgentStoreCard';
 import AgentStoreDetail from './AgentStoreDetail';
+import ModelStoreDetail from './ModelStoreDetail';
+import ToolStoreDetail from './ToolStoreDetail';
 import StoreLoginModal from './StoreLoginModal';
 import AgentDependencyModal from './AgentDependencyModal';
 import { storeApi } from '@/services/storeApi';
@@ -23,7 +25,11 @@ const AgentStoreModal: React.FC<AgentStoreModalProps> = ({ isOpen, onClose, onIn
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedAgent, setSelectedAgent] = useState<AgentStoreItem | null>(null);
+  const [selectedModel, setSelectedModel] = useState<any | null>(null);
+  const [selectedTool, setSelectedTool] = useState<any | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isModelDetailOpen, setIsModelDetailOpen] = useState(false);
+  const [isToolDetailOpen, setIsToolDetailOpen] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showDependencyModal, setShowDependencyModal] = useState(false);
   const [dependencyData, setDependencyData] = useState<AgentDependencyCheckResponse | null>(null);
@@ -110,6 +116,26 @@ const AgentStoreModal: React.FC<AgentStoreModalProps> = ({ isOpen, onClose, onIn
     setIsDetailOpen(true);
   };
 
+  const handleModelClick = async (modelId: string) => {
+    try {
+      const model = await storeApi.getModel(modelId);
+      setSelectedModel(model);
+      setIsModelDetailOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch model detail:', error);
+    }
+  };
+
+  const handleToolClick = async (toolId: string) => {
+    try {
+      const tool = await storeApi.getTool(toolId);
+      setSelectedTool(tool);
+      setIsToolDetailOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch tool detail:', error);
+    }
+  };
+
   const handleInstall = async (e: React.MouseEvent | AgentStoreItem, agentInput?: AgentStoreItem) => {
     const agent = agentInput || (e as AgentStoreItem);
     if (e && (e as React.MouseEvent).stopPropagation) {
@@ -145,8 +171,6 @@ const AgentStoreModal: React.FC<AgentStoreModalProps> = ({ isOpen, onClose, onIn
       // 3. 无缺失依赖，直接安装
       await storeApi.installAgent(agent.id);
       
-      showSuccess(t('common.success'), t('agents.store.installSuccess', '成功招聘到一名新员工'));
-      
       await loadAgents();
       if (onInstalled) onInstalled();
     } catch (error) {
@@ -165,8 +189,6 @@ const AgentStoreModal: React.FC<AgentStoreModalProps> = ({ isOpen, onClose, onIn
         install_tool_ids: selectedToolIds,
         install_model: installModel
       });
-      
-      showSuccess(t('common.success'), t('agents.store.installSuccess', '成功招聘到一名新员工'));
       
       setShowDependencyModal(false);
       await loadAgents();
@@ -270,7 +292,7 @@ const AgentStoreModal: React.FC<AgentStoreModalProps> = ({ isOpen, onClose, onIn
                         {user?.name || user?.email}
                       </div>
                       <div className="text-[10px] text-indigo-600 font-bold uppercase tracking-tighter">
-                        Balance: ${user?.credits?.toFixed(2)}
+                        Balance: ¥{user?.credits?.toFixed(2)}
                       </div>
                     </div>
                     <div className="relative group">
@@ -349,6 +371,49 @@ const AgentStoreModal: React.FC<AgentStoreModalProps> = ({ isOpen, onClose, onIn
         onInstall={(agent) => handleInstall(agent)}
         isInstalled={selectedAgent ? installedAgentNames.has(selectedAgent.title_zh?.toLowerCase() || selectedAgent.name.toLowerCase()) : false}
         installingId={installingId}
+        onModelClick={handleModelClick}
+        onToolClick={handleToolClick}
+      />
+
+      <ModelStoreDetail 
+        model={selectedModel}
+        isOpen={isModelDetailOpen}
+        onClose={() => setIsModelDetailOpen(false)}
+        onInstall={async (model) => {
+          if (!isAuthenticated) {
+            setShowLoginModal(true);
+            return;
+          }
+          try {
+            await bindToProject();
+            await storeApi.installModel(model.id);
+          } catch (error) {
+            showError(t('common.error'), t('common.saveFailed'));
+          }
+        }}
+        isInstalled={false} // 在 Agent 商店里暂时不处理模型的安装状态同步，仅查看
+        installingId={null}
+        installStep="idle"
+      />
+
+      <ToolStoreDetail 
+        tool={selectedTool}
+        isOpen={isToolDetailOpen}
+        onClose={() => setIsToolDetailOpen(false)}
+        onInstall={async (tool) => {
+          if (!isAuthenticated) {
+            setShowLoginModal(true);
+            return;
+          }
+          try {
+            await bindToProject();
+            await storeApi.installTool(tool.id);
+          } catch (error) {
+            showError(t('common.error'), t('common.saveFailed'));
+          }
+        }}
+        isInstalled={false}
+        installingId={null}
       />
 
       <StoreLoginModal 

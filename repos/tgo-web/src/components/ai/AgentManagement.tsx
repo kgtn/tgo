@@ -110,13 +110,17 @@ const AgentManagement: React.FC = () => {
     loadDefaultTeam();
   }, [loadDefaultTeam]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = async (silent = false) => {
     setIsRefreshing(true);
     try {
       await loadAgents();
-      showSuccess(t('agents.messages.refreshSuccess', '刷新成功'), t('agents.messages.refreshSuccessDesc', 'AI员工列表已更新'));
+      if (!silent) {
+        showSuccess(t('agents.messages.refreshSuccess', '刷新成功'), t('agents.messages.refreshSuccessDesc', 'AI员工列表已更新'));
+      }
     } catch (error) {
-      showError(t('agents.messages.refreshFailed', '刷新失败'), t('agents.messages.refreshFailedDesc', '无法刷新AI员工列表'));
+      if (!silent) {
+        showError(t('agents.messages.refreshFailed', '刷新失败'), t('agents.messages.refreshFailedDesc', '无法刷新AI员工列表'));
+      }
     } finally {
       setIsRefreshing(false);
     }
@@ -320,7 +324,7 @@ const AgentManagement: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all"
-              onClick={handleRefresh}
+              onClick={() => handleRefresh()}
               disabled={isRefreshing}
               title={t('common.refresh', '刷新')}
             >
@@ -464,7 +468,7 @@ const AgentManagement: React.FC = () => {
         <AgentStoreModal 
           isOpen={showAgentStore} 
           onClose={() => setShowAgentStore(false)}
-          onInstalled={() => handleRefresh()}
+          onInstalled={() => handleRefresh(true)}
         />
       </ToolToastProvider>
 

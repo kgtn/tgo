@@ -140,9 +140,16 @@ const AgentDependencyModal: React.FC<AgentDependencyModalProps> = ({
                         <p className="text-sm font-bold text-gray-900 dark:text-gray-100 truncate">
                           {missing_model.title_zh || missing_model.name}
                         </p>
-                        <p className="text-[10px] text-gray-500 font-medium">
-                          提供商: {missing_model.provider.name}
-                        </p>
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] text-gray-500 font-medium">
+                            提供商: {missing_model.provider.name}
+                          </p>
+                          {(missing_model.input_price > 0 || missing_model.output_price > 0) && (
+                            <p className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold">
+                              ¥{missing_model.input_price.toFixed(2)} / ¥{missing_model.output_price.toFixed(2)} (1M tokens)
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

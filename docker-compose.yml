@@ -5,12 +5,12 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     container_name: tgo-postgres
+    env_file:
+      - .env
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-tgo}
       POSTGRES_USER: ${POSTGRES_USER:-tgo}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tgo}
-    # ports:
-      # - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
@@ -39,21 +39,22 @@ services:
     image: registry.cn-shanghai.aliyuncs.com/wukongim/wukongim:v2.2.3-dev
     container_name: tgo-wukongim
     env_file:
-      - ./.env
-      - ./envs/wukongim.env
+      - .env
     environment:
+      # WuKongIM cluster configuration (internal, fixed)
+      WK_CLUSTER_NODEID: 1001
+      WK_CLUSTER_SERVERADDR: wukongim:11110
+      WK_CLUSTER_APIURL: http://wukongim:5001
+      WK_INTRANET_TCPADDR: wukongim:5100
+      WK_MODE: release
       WK_EXTERNAL_IP: ${SERVER_HOST:-127.0.0.1}
-      WK_EXTERNAL_TCPADDR: ${WK_EXTERNAL_TCPADDR:-}
-      WK_EXTERNAL_WSADDR: ${WK_EXTERNAL_WSADDR:-}
-      WK_EXTERNAL_WSSADDR: ${WK_EXTERNAL_WSSADDR:-}
-      WK_TOKENAUTHON: ${WK_TOKENAUTHON:-false}
+      WK_WEBHOOK_HTTPADDR: http://tgo-api:8000/v1/integrations/wukongim/webhook
     volumes:
       - ./data/wukongim:/root/wukongim
     ports:
       - "5100:5100"   # tcp
       - "5200:5200"   # websocket
       - "5300:5300"   # admin
-      # - "11110:11110" # cluster
     healthcheck:
       test: ["CMD-SHELL", "wget -q -Y off -O /dev/null http://localhost:5001/health > /dev/null 2>&1 || exit 1"]
       interval: 10s
@@ -66,11 +67,12 @@ services:
     image: mher/flower:2.0
     container_name: tgo-celery-flower
     env_file:
-      - ./.env
-      - ./envs/tgo-celery.env
+      - .env
     environment:
-      - CELERY_BROKER_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
-      - CELERY_RESULT_BACKEND=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
+      # Celery uses Redis DB 2
+      CELERY_BROKER_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
+      CELERY_RESULT_BACKEND: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
+      FLOWER_PORT: 5555
     ports:
       - "5555:5555"
     depends_on:
@@ -86,11 +88,12 @@ services:
     container_name: tgo-rag-worker
     hostname: tgo-rag-worker
     env_file:
-      - ./.env
-      - ./envs/tgo-rag.env
+      - .env
     environment:
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      # Service-specific: port and Redis DB
+      PORT: 8082
+      REDIS_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
     volumes:
       - ./data/tgo-rag/uploads:/app/uploads
     depends_on:
@@ -115,11 +118,12 @@ services:
     image: ghcr.io/tgoai/tgo/tgo-rag:latest
     container_name: tgo-rag-beat
     env_file:
-      - ./.env
-      - ./envs/tgo-rag.env
+      - .env
     environment:
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      # Service-specific: port and Redis DB
+      PORT: 8082
+      REDIS_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
     depends_on:
       postgres:
         condition: service_healthy
@@ -142,11 +146,12 @@ services:
     image: ghcr.io/tgoai/tgo/tgo-rag:latest
     container_name: tgo-rag
     env_file:
-      - ./.env
-      - ./envs/tgo-rag.env
+      - .env
     environment:
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      # Service-specific: port and Redis DB
+      PORT: 8082
+      REDIS_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
     depends_on:
       - postgres
       - redis
@@ -165,11 +170,17 @@ services:
     image: ghcr.io/tgoai/tgo/tgo-ai:latest
     container_name: tgo-ai
     env_file:
-      - ./.env
-      - ./envs/tgo-ai.env
+      - .env
     environment:
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/1
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      # Service-specific: port and Redis DB
+      PORT: 8081
+      REDIS_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/1
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      # Internal service URLs (fixed, not user-configurable)
+      API_SERVICE_URL: http://tgo-api:8000
+      RAG_SERVICE_URL: http://tgo-rag:8082
+      WORKFLOW_SERVICE_URL: http://tgo-workflow:8000
+      PLUGIN_RUNTIME_URL: http://tgo-plugin-runtime:8090
     depends_on:
       postgres:
         condition: service_healthy
@@ -192,19 +203,22 @@ services:
     image: ghcr.io/tgoai/tgo/tgo-plugin-runtime:latest
     container_name: tgo-plugin-runtime
     env_file:
-      - ./.env
-      - ./envs/tgo-plugin-runtime.env
+      - .env
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
-      - SECRET_KEY=${SECRET_KEY}
+      # Service-specific: port
+      PORT: 8090
+      PLUGIN_TCP_PORT: 8005
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      # Internal service URL
+      AI_SERVICE_URL: http://tgo-ai:8081
     depends_on:
       - tgo-ai
       - postgres
     ports:
       - "8005:8005" # TCP port for local plugin debugging
     volumes:
-      - ./data/plugins:/var/lib/tgo/plugins # Plugin installation directory
-      - plugin-socket:/var/run/tgo           # Shared socket directory
+      - ./data/plugins:/var/lib/tgo/plugins
+      - plugin-socket:/var/run/tgo
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:8090/health || exit 1"]
       interval: 30s
@@ -218,8 +232,7 @@ services:
     image: ghcr.io/tgoai/tgo/tgo-api:latest
     container_name: tgo-api
     env_file:
-      - ./envs/tgo-api.env
-      - ./.env
+      - .env
     depends_on:
       - tgo-ai
       - tgo-workflow
@@ -227,12 +240,27 @@ services:
       - postgres
       - redis
     environment:
-      API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost/api}
+      # Service-specific: port and Redis DB
+      PORT: 8000
       REDIS_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/0
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
-      SECRET_KEY: ${SECRET_KEY}
+      API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost/api}
+      # Internal service URLs (fixed, not user-configurable)
+      PLATFORM_SERVICE_URL: http://tgo-platform:8003
+      PLATFORM_SERVICE_TIMEOUT: 30
+      AI_SERVICE_URL: http://tgo-ai:8081
+      AI_SERVICE_TIMEOUT: 30
+      RAG_SERVICE_URL: http://tgo-rag:8082
+      RAG_SERVICE_TIMEOUT: 30
+      PLUGIN_RUNTIME_URL: http://tgo-plugin-runtime:8090
+      WORKFLOW_SERVICE_URL: http://tgo-workflow:8000
+      WORKFLOW_SERVICE_TIMEOUT: 60
+      WUKONGIM_SERVICE_URL: http://wukongim:5001
+      WUKONGIM_SERVICE_TIMEOUT: 10
+      WUKONGIM_ENABLED: "true"
+      WUKONGIM_DEVICE_FLAG: 1
+      WUKONGIM_DEVICE_LEVEL: 1
     volumes:
-      # Persist API uploads (chat files, platform logos, etc.) under unified data directory
       - ./data/tgo-api/uploads:/app/uploads
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://127.0.0.1:8000/health || exit 1"]
@@ -247,11 +275,15 @@ services:
     image: ghcr.io/tgoai/tgo/tgo-platform:latest
     container_name: tgo-platform
     env_file:
-      - ./.env
-      - ./envs/tgo-platform.env
+      - .env
     environment:
-      - TGO_REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/0
-      - TGO_DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      # Service-specific: port (uses TGO_ prefix to avoid conflicts)
+      PORT: 8003
+      TGO_REDIS_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/0
+      TGO_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      TGO_API_BASE_URL: http://tgo-api:8000
+      TGO_SSE_BACKPRESSURE_LIMIT: 1000
+      TGO_REQUEST_TIMEOUT_SECONDS: 120
     depends_on:
       - tgo-api
       - postgres
@@ -270,11 +302,13 @@ services:
     image: ghcr.io/tgoai/tgo/tgo-workflow:latest
     container_name: tgo-workflow
     env_file:
-      - ./.env
-      - ./envs/tgo-workflow.env
+      - .env
     environment:
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      # Service-specific: Redis DB (port 8000 same as API but different service)
+      REDIS_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      AI_SERVICE_URL: http://tgo-ai:8081
+      ALLOWED_ORIGINS: '["*"]'
     depends_on:
       postgres:
         condition: service_healthy
@@ -293,11 +327,13 @@ services:
     image: ghcr.io/tgoai/tgo/tgo-workflow:latest
     container_name: tgo-workflow-worker
     env_file:
-      - ./.env
-      - ./envs/tgo-workflow.env
+      - .env
     environment:
-      - REDIS_URL=redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      # Service-specific: Redis DB
+      REDIS_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}/2
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-tgo}:${POSTGRES_PASSWORD:-tgo}@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/${POSTGRES_DB:-tgo}
+      AI_SERVICE_URL: http://tgo-ai:8081
+      ALLOWED_ORIGINS: '["*"]'
     depends_on:
       postgres:
         condition: service_healthy
@@ -319,15 +355,8 @@ services:
   tgo-web:
     image: ghcr.io/tgoai/tgo/tgo-web:latest
     container_name: tgo-web
-    environment:
-      # Runtime environment variables (injected by docker-entrypoint.sh into env-config.js)
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://tgo-api:8000}
-      VITE_DEBUG_MODE: ${VITE_DEBUG_MODE:-false}
-      VITE_WIDGET_PREVIEW_URL: ${VITE_WIDGET_PREVIEW_URL:-/widget}
-      VITE_WIDGET_SCRIPT_BASE: ${VITE_WIDGET_SCRIPT_BASE:-/widget/tgo-widget-sdk.js}
-      VITE_WIDGET_DEMO_URL: ${VITE_WIDGET_DEMO_URL:-/widget/demo.html}
     env_file:
-      - ./envs/tgo-web.env
+      - .env
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/ || exit 1"]
       interval: 30s
@@ -340,11 +369,8 @@ services:
   tgo-widget-app:
     image: ghcr.io/tgoai/tgo/tgo-widget-app:latest
     container_name: tgo-widget-app
-    environment:
-      # Runtime environment variables (injected by docker-entrypoint.sh)
-      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://tgo-api:8000}
     env_file:
-      - ./envs/tgo-widget-app.env
+      - .env
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:80/ || exit 1"]
       interval: 30s
@@ -357,16 +383,15 @@ services:
   nginx:
     image: nginx:alpine
     container_name: tgo-nginx
+    env_file:
+      - .env
     ports:
       - "${NGINX_PORT:-80}:80"
       - "${NGINX_SSL_PORT:-443}:443"
     volumes:
-      # Nginx configuration
       - ./data/nginx/conf.d:/etc/nginx/conf.d:ro
       - ./data/nginx/ssl:/etc/nginx/ssl:ro
-      # Certbot challenge directory
       - ./data/certbot/www:/var/www/certbot:ro
-      # Certbot configuration
       - ./data/certbot/conf:/etc/letsencrypt:ro
     depends_on:
       - tgo-web
@@ -395,4 +420,3 @@ services:
 
 volumes:
   plugin-socket:
-

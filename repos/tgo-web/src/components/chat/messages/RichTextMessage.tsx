@@ -241,7 +241,7 @@ const RichTextMessage: React.FC<MessageComponentProps> = ({ message, isStaff, on
 
   return (
     <>
-      <div style={{ width: rtWidth ? `${rtWidth}px` : undefined }} className={isStaff ? 'space-y-2 flex flex-col items-end' : 'flex flex-col'}>
+      <div style={rtWidth ? { width: `${rtWidth}px` } : undefined} className={isStaff ? 'space-y-2 flex flex-col items-end' : 'flex flex-col'}>
         {textBubble}
         {richImages.length > 0 && (
           <div ref={rtGridRef} className={gridBoxClass}>
