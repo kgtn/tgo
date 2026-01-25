@@ -1,7 +1,8 @@
 import React from 'react';
-import { Brain, Zap, ShieldCheck, Check, Loader2 } from 'lucide-react';
+import { Brain, Zap, Check, Loader2, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ModelStoreItem } from '@/types';
+import { StoreCardBase } from './store';
 
 interface ModelStoreCardProps {
   model: ModelStoreItem;
@@ -24,11 +25,11 @@ const ModelStoreCard: React.FC<ModelStoreCardProps> = ({
   const isInstalling = installingId === model.id;
 
   return (
-    <div 
+    <StoreCardBase
       onClick={() => onClick(model)}
-      className="group relative bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-8 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-500 cursor-pointer overflow-hidden"
+      themeColor="blue"
+      className="p-8 rounded-[2rem]"
     >
-      {/* Background Glow */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/5 blur-3xl group-hover:bg-blue-500/10 transition-all duration-500 rounded-full" />
       
       <div className="relative z-10">
@@ -95,7 +96,7 @@ const ModelStoreCard: React.FC<ModelStoreCardProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </StoreCardBase>
   );
 };
 

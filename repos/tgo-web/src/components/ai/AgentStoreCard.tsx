@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck, Bot } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { AgentStoreItem } from '@/types';
+import { StoreCardBase } from './store';
 
 interface AgentStoreCardProps {
   agent: AgentStoreItem;
@@ -23,9 +24,9 @@ const AgentStoreCard: React.FC<AgentStoreCardProps> = ({ agent, onClick, onInsta
     : (agent.description_en || agent.description_zh);
 
   return (
-    <div 
+    <StoreCardBase
       onClick={() => onClick(agent)}
-      className="group relative bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
+      themeColor="indigo"
     >
       <div className="flex items-start gap-4 mb-4">
         {/* Avatar */}
@@ -80,7 +81,7 @@ const AgentStoreCard: React.FC<AgentStoreCardProps> = ({ agent, onClick, onInsta
           {isInstalled ? t('common.installed', '已安装') : t('agents.store.hire', '招聘')}
         </button>
       </div>
-    </div>
+    </StoreCardBase>
   );
 };
 

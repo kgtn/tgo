@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ToolStoreItem } from '@/types';
+import { StoreCardBase } from './store';
 
 interface ToolStoreCardProps {
   tool: ToolStoreItem;
@@ -23,19 +24,11 @@ const ToolStoreCard: React.FC<ToolStoreCardProps> = ({ tool, onClick, onInstall,
     : (tool.description_en || tool.description_zh || tool.description);
 
   return (
-    <div 
+    <StoreCardBase
       onClick={() => onClick(tool)}
-      className="group relative bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden"
+      featured={tool.featured}
+      themeColor="blue"
     >
-      {/* Featured Badge */}
-      {tool.featured && (
-        <div className="absolute top-0 right-0">
-          <div className="bg-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl shadow-sm">
-            {t('tools.store.featured', '精选')}
-          </div>
-        </div>
-      )}
-
       <div className="flex items-start gap-4 mb-4">
         {/* Icon */}
         <div className="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-gray-900 flex items-center justify-center text-3xl border border-gray-100 dark:border-gray-700 group-hover:scale-110 transition-transform duration-300">
@@ -80,9 +73,6 @@ const ToolStoreCard: React.FC<ToolStoreCardProps> = ({ tool, onClick, onInstall,
               {tag}
             </span>
           ))}
-          {tool.tags && tool.tags.length > 2 && (
-            <span className="text-[10px] text-gray-400 font-medium">+{tool.tags.length - 2}</span>
-          )}
         </div>
 
         <button
@@ -97,7 +87,7 @@ const ToolStoreCard: React.FC<ToolStoreCardProps> = ({ tool, onClick, onInstall,
           {isInstalled ? t('tools.store.installed', '已安装') : t('tools.store.install', '安装')}
         </button>
       </div>
-    </div>
+    </StoreCardBase>
   );
 };
 
