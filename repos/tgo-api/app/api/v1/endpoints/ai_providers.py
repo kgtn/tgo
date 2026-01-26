@@ -422,7 +422,22 @@ async def update_ai_provider(
 
     # Validate default_model within available_models if both provided
     current_available = [m.model_id for m in item.models if m.deleted_at is None]
-    new_available = data.get("available_models", current_available)
+    new_available_input = data.get("available_models")
+    
+    if new_available_input is not None:
+        # Extract model IDs from input (which can be list[str | AIModelInput])
+        new_available_ids = []
+        for m in new_available_input:
+            if isinstance(m, str):
+                new_available_ids.append(m)
+            else:
+                # It's an AIModelInput object/dict
+                m_id = m.model_id if hasattr(m, "model_id") else m["model_id"]
+                new_available_ids.append(m_id)
+        new_available = new_available_ids
+    else:
+        new_available = current_available
+
     new_default = data.get("default_model", item.default_model)
     if new_default and new_available and new_default not in new_available:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="default_model must be in available_models")
@@ -435,7 +450,21 @@ async def update_ai_provider(
 
     # Handle available_models update
     if "available_models" in data:
-        new_model_ids = data.pop("available_models") or []
+        new_models_input = data.pop("available_models") or []
+        new_model_ids = []
+        model_type_map = {}
+        
+        for m in new_models_input:
+            if isinstance(m, str):
+                new_model_ids.append(m)
+                model_type_map[m] = "embedding" if "embedding" in m.lower() else "chat"
+            else:
+                # It's an AIModelInput object/dict
+                m_id = m.model_id if hasattr(m, "model_id") else m["model_id"]
+                m_type = m.model_type if hasattr(m, "model_type") else m["model_type"]
+                new_model_ids.append(m_id)
+                model_type_map[m_id] = m_type
+
         existing_models = {m.model_id: m for m in item.models if m.deleted_at is None}
         
         # Deactivate models not in new list
@@ -444,18 +473,25 @@ async def update_ai_provider(
                 m_obj.deleted_at = datetime.utcnow()
                 db.add(m_obj)
         
-        # Add new models
+        # Add new models or update existing ones' types if needed
         for m_id in new_model_ids:
+            m_type = model_type_map[m_id]
             if m_id not in existing_models:
                 new_model = AIModel(
                     provider_id=item.id,
                     provider=item.provider,
                     model_id=m_id,
                     model_name=m_id,
-                    model_type="embedding" if "embedding" in m_id.lower() else "chat",
+                    model_type=m_type,
                     is_active=True
                 )
                 db.add(new_model)
+            else:
+                # Update type if it changed
+                existing_model = existing_models[m_id]
+                if existing_model.model_type != m_type:
+                    existing_model.model_type = m_type
+                    db.add(existing_model)
 
     for field, value in data.items():
         setattr(item, field, value)
@@ -525,6 +561,46 @@ async def delete_ai_provider(
         logger.warning("AIProvider sync after delete failed", extra={"id": str(item.id), "error": str(e)})
 
     logger.info("Deleted AIProvider", extra={"id": str(provider_id)})
+    return None
+
+
+@router.delete("/{provider_id}/models/{model_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_provider_model(
+    provider_id: UUID,
+    model_id: str,
+    db: Session = Depends(get_db),
+    current_user: Staff = Depends(get_current_active_user),
+) -> None:
+    """Delete a single model from provider."""
+    item = (
+        db.query(AIProvider)
+        .filter(
+            AIProvider.id == provider_id,
+            AIProvider.project_id == current_user.project_id,
+            AIProvider.deleted_at.is_(None),
+        )
+        .first()
+    )
+    if not item:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AI provider not found")
+
+    model = (
+        db.query(AIModel)
+        .filter(
+            AIModel.provider_id == provider_id,
+            AIModel.model_id == model_id,
+            AIModel.deleted_at.is_(None),
+        )
+        .first()
+    )
+    if not model:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Model not found")
+
+    model.deleted_at = datetime.utcnow()
+    db.add(model)
+    db.commit()
+
+    logger.info("Deleted model from provider", extra={"provider_id": str(provider_id), "model_id": model_id})
     return None
 
 

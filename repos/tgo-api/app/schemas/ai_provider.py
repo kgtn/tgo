@@ -59,6 +59,12 @@ class AIProviderCreate(AIProviderConfigBase):
     )
 
 
+class AIModelInput(BaseSchema):
+    """Model input with type information."""
+    model_id: str = Field(..., min_length=1, max_length=100)
+    model_type: str = Field(default="chat", pattern="^(chat|embedding)$")
+
+
 class AIProviderUpdate(BaseSchema):
     """Schema for updating an AI provider."""
 
@@ -66,7 +72,7 @@ class AIProviderUpdate(BaseSchema):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     api_key: Optional[str] = Field(None, min_length=1, max_length=255)
     api_base_url: Optional[str] = Field(None, max_length=255)
-    available_models: Optional[list[str]] = Field(None)
+    available_models: Optional[list[str | AIModelInput]] = Field(None)
     default_model: Optional[str] = Field(None, max_length=100)
     config: Optional[Dict[str, Any]] = Field(None)
     is_active: Optional[bool] = Field(None)

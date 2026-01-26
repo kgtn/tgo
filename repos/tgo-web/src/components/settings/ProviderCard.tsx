@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FiEdit2, FiTrash2, FiLoader, FiZap, FiBox, FiCheckCircle, FiPlus } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiLoader, FiZap, FiBox, FiCheckCircle, FiPlus, FiX } from 'react-icons/fi';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import { type ModelProviderConfig } from '@/stores/providersStore';
+import { useProvidersStore, type ModelProviderConfig } from '@/stores/providersStore';
+import { ToastContext } from '@/components/ui/ToastContainer';
 
 interface ProviderCardProps {
   provider: ModelProviderConfig;
@@ -23,8 +24,21 @@ const ProviderCard: React.FC<ProviderCardProps> = ({
   isTesting 
 }) => {
   const { t } = useTranslation();
+  const toast = useContext(ToastContext);
+  const { removeModelFromProvider } = useProvidersStore();
   const isStore = !!provider.isFromStore;
   const displayName = provider.name;
+
+  const handleDeleteModel = async (modelId: string) => {
+    if (window.confirm(t('settings.providers.confirmDeleteModel', { model: modelId }))) {
+      try {
+        await removeModelFromProvider(provider.id, modelId);
+        toast?.showToast('success', t('settings.providers.toast.modelDeleted'));
+      } catch (e: any) {
+        toast?.showToast('error', t('common.deleteFailed'), e?.message);
+      }
+    }
+  };
 
   return (
     <div className="group relative bg-white dark:bg-gray-900 rounded-[2rem] border border-gray-100 dark:border-gray-800 p-8 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-500 overflow-hidden">
@@ -67,8 +81,15 @@ const ProviderCard: React.FC<ProviderCardProps> = ({
         <div className="space-y-4 mb-8">
           <div className="flex flex-wrap gap-1.5">
             {(provider.models || []).slice(0, 5).map((m) => (
-              <span key={m} className={`px-3 py-1 text-[10px] font-black rounded-lg border uppercase tracking-tighter ${provider.defaultModel === m ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700' : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-700'}`}>
+              <span key={m} className={`group/model relative px-3 py-1 text-[10px] font-black rounded-lg border uppercase tracking-tighter transition-all ${provider.defaultModel === m ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700' : 'bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-100 dark:border-gray-700'}`}>
                 {m}{provider.defaultModel === m ? ` (${t('settings.providers.badges.default')})` : ''}
+                <button 
+                  onClick={(e) => { e.stopPropagation(); handleDeleteModel(m); }}
+                  className="ml-1.5 opacity-0 group-hover/model:opacity-100 hover:text-red-500 transition-all"
+                  title={t('common.delete')}
+                >
+                  <FiX className="w-2.5 h-2.5 inline-block -mt-0.5" />
+                </button>
               </span>
             ))}
             {(provider.models?.length || 0) > 5 && (

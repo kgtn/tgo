@@ -14,11 +14,16 @@ export interface ProviderParams {
 }
 
 // Backend DTOs (from docs/api.json)
+export interface AIModelInputDTO {
+  model_id: string;
+  model_type: 'chat' | 'embedding';
+}
+
 export interface AIProviderCreateDTO {
   provider: string;
   name: string;
   api_base_url?: string | null;
-  available_models?: string[] | null;
+  available_models?: (string | AIModelInputDTO)[] | null;
   default_model?: string | null;
   config?: Record<string, any> | null;
   is_active?: boolean;
@@ -30,7 +35,7 @@ export interface AIProviderUpdateDTO {
   name?: string | null;
   api_key?: string | null; // only include when changing
   api_base_url?: string | null;
-  available_models?: string[] | null;
+  available_models?: (string | AIModelInputDTO)[] | null;
   default_model?: string | null;
   config?: Record<string, any> | null;
   is_active?: boolean | null;
@@ -123,6 +128,7 @@ export class AIProvidersApiService extends BaseApiService {
     PROVIDER_DISABLE: (id: string) => `/${this.apiVersion}/ai/providers/${id}/disable`,
     PROVIDER_TEST: (id: string) => `/${this.apiVersion}/ai/providers/${id}/test`,
     PROVIDER_REMOTE_MODELS: (id: string) => `/${this.apiVersion}/ai/providers/${id}/remote-models`,
+    PROVIDER_MODEL_DELETE: (providerId: string, modelId: string) => `/${this.apiVersion}/ai/providers/${providerId}/models/${encodeURIComponent(modelId)}`,
     MODELS: `/${this.apiVersion}/ai/models`,
     PROJECT_MODELS: `/${this.apiVersion}/ai-models`,
   } as const;
@@ -155,6 +161,11 @@ export class AIProvidersApiService extends BaseApiService {
   // Delete provider
   async deleteProvider(id: string): Promise<void> {
     await this.delete<void>(this.endpoints.PROVIDER_BY_ID(id));
+  }
+
+  // Delete model from provider
+  async deleteModel(providerId: string, modelId: string): Promise<void> {
+    await this.delete<void>(this.endpoints.PROVIDER_MODEL_DELETE(providerId, modelId));
   }
 
   // Enable/Disable (optional helpers)

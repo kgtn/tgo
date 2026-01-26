@@ -562,12 +562,9 @@
         "defaultModel": "默认模型",
         "modelType": "模型类型",
         "embeddingModel": "嵌入模型",
-        "azure": {
-          "deployment": "部署名称",
-          "resource": "资源名",
-          "apiVersion": "API 版本"
-        }
+        "modelId": "模型 ID"
       },
+      "suggestedModels": "推荐模型",
       "modelType": {
         "chat": "聊天模型",
         "embedding": "嵌入模型"
@@ -575,6 +572,11 @@
       "modelTypes": {
         "chat": "对话 (Chat)",
         "embedding": "嵌入 (Embedding)"
+      },
+      "azure": {
+        "deployment": "部署名称",
+        "resource": "资源名",
+        "apiVersion": "API 版本"
       },
       "help": {
         "azure": {
@@ -613,8 +615,11 @@
       "toast": {
         "added": "已添加提供商",
         "saved": "已保存修改",
-        "deleted": "已删除提供商"
+        "deleted": "已删除提供商",
+        "modelAdded": "模型已添加",
+        "modelDeleted": "模型已删除"
       },
+      "confirmDeleteModel": "确定要删除模型 {{model}} 吗？",
       "validate": {
         "apiKey": "请输入 API Key",
         "azureDeployment": "请输入 Azure 部署名称"

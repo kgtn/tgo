@@ -562,12 +562,9 @@
         "defaultModel": "Default Model",
         "modelType": "Model Type",
         "embeddingModel": "Embedding Model",
-        "azure": {
-          "deployment": "Deployment Name",
-          "resource": "Resource",
-          "apiVersion": "API Version"
-        }
+        "modelId": "Model ID"
       },
+      "suggestedModels": "Suggested Models",
       "modelType": {
         "chat": "Chat Model",
         "embedding": "Embedding Model"
@@ -575,6 +572,11 @@
       "modelTypes": {
         "chat": "Chat",
         "embedding": "Embedding"
+      },
+      "azure": {
+        "deployment": "Deployment Name",
+        "resource": "Resource",
+        "apiVersion": "API Version"
       },
       "help": {
         "azure": {
@@ -613,8 +615,11 @@
       "toast": {
         "added": "Provider added",
         "saved": "Changes saved",
-        "deleted": "Provider deleted"
+        "deleted": "Provider deleted",
+        "modelAdded": "Model added",
+        "modelDeleted": "Model deleted"
       },
+      "confirmDeleteModel": "Are you sure you want to delete model {{model}}?",
       "validate": {
         "apiKey": "Please enter API Key",
         "azureDeployment": "Please enter Azure deployment name"

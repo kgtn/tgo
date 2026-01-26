@@ -45,6 +45,7 @@ export interface ProvidersState {
   updateProvider: (id: string, patch: Partial<ModelProviderConfig>) => Promise<void>;
   removeProvider: (id: string) => Promise<void>;
   addModelToProvider: (providerId: string, models: Array<{ model_id: string; model_type: string }>) => Promise<void>;
+  removeModelFromProvider: (providerId: string, modelId: string) => Promise<void>;
   clearAll: () => void;
 }
 
@@ -154,16 +155,35 @@ export const useProvidersStore = create<ProvidersState>()(
         const current = get().providers.find(p => p.id === providerId);
         if (!current) return;
         
-        // Fetch current model IDs (excluding deleted ones handled by backend)
-        const existingModels = current.models || [];
-        const newModelIds = models.map(m => m.model_id);
+        // Fetch current model IDs
+        const existingModelIds = current.models || [];
         
-        // Merge without duplicates
-        const updatedModels = Array.from(new Set([...existingModels, ...newModelIds]));
+        // Merge with type info for new models, and assume 'chat' for existing ones if type unknown
+        // Backend update_ai_provider will handle this
+        const available_models = [
+          ...existingModelIds.map(id => ({ model_id: id, model_type: 'chat' as const })),
+          ...models.filter(m => !existingModelIds.includes(m.model_id))
+        ];
         
-        await get().updateProvider(providerId, {
-          models: updatedModels
+        const updated = await svc.updateProvider(providerId, {
+          available_models
         });
+        
+        const mapped = mapDtoToConfig(updated);
+        set((state) => ({
+          providers: state.providers.map(p => p.id === providerId ? mapped : p)
+        }));
+      },
+
+      removeModelFromProvider: async (providerId, modelId) => {
+        await svc.deleteModel(providerId, modelId);
+        const current = get().providers.find(p => p.id === providerId);
+        if (current) {
+          const updatedModels = (current.models || []).filter(m => m !== modelId);
+          set((state) => ({
+            providers: state.providers.map(p => p.id === providerId ? { ...p, models: updatedModels } : p)
+          }));
+        }
       },
 
       clearAll: () => set({ providers: [] }),
