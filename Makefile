@@ -375,7 +375,7 @@ stop-all:
 dev-web: check-env
 	@echo "$(CYAN)Starting tgo-web on port $(WEB_PORT)...$(RESET)"
 	@cd $(WEB_DIR) && \
-		VITE_API_BASE_URL=http://localhost:$(API_PORT) \
+		VITE_API_BASE_URL=https://api.tgo-ai.com \
 		VITE_DEBUG_MODE=true \
 		npm run dev -- --port $(WEB_PORT)
 

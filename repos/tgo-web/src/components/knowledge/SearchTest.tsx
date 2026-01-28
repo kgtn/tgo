@@ -14,6 +14,21 @@ interface SearchTestProps {
 
 type SearchMode = 'hybrid' | 'embedding' | 'fulltext';
 
+type ContentType = 'qa_pair' | 'paragraph' | 'heading' | 'table' | 'list' | 'code';
+
+const CONTENT_TYPES: {
+    value: ContentType;
+    name: string;
+    description: string;
+}[] = [
+        { value: 'qa_pair', name: 'QA 问答对', description: '来自 QA 知识库的问答数据' },
+        { value: 'paragraph', name: '文档段落', description: '文档中的正文段落' },
+        { value: 'heading', name: '标题', description: '文档中的章节标题' },
+        { value: 'table', name: '表格', description: '文档中的表格内容' },
+        { value: 'list', name: '列表', description: '文档中的列表项' },
+        { value: 'code', name: '代码块', description: '文档中的代码片段' },
+    ];
+
 const SEARCH_MODES: {
     value: SearchMode;
     name: string;
@@ -49,6 +64,9 @@ export const SearchTest: React.FC<SearchTestProps> = ({ collectionId }) => {
     const [query, setQuery] = useState('');
     const [limit, setLimit] = useState(10);
     const [searchMode, setSearchMode] = useState<SearchMode>('hybrid');
+    const [contentTypes, setContentTypes] = useState<ContentType[]>(
+        CONTENT_TYPES.map(t => t.value)
+    );
 
     // States
     const [isLoading, setIsLoading] = useState(false);
@@ -65,13 +83,15 @@ export const SearchTest: React.FC<SearchTestProps> = ({ collectionId }) => {
 
         setIsLoading(true);
         try {
+            const isAllSelected = contentTypes.length === CONTENT_TYPES.length;
+
             const response = await KnowledgeBaseApiService.searchDocuments(
                 collectionId,
                 {
                     query: query.trim(),
                     limit,
                     search_mode: searchMode,
-                    filters: { content_type: 'qa_pair' }  // 与AI回复链路一致
+                    filters: isAllSelected ? undefined : { content_type: contentTypes }
                 },
                 projectId
             );
@@ -213,6 +233,59 @@ export const SearchTest: React.FC<SearchTestProps> = ({ collectionId }) => {
                                         {mode.description}
                                     </p>
                                 </div>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Content Type Card */}
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                        <h3 className="font-semibold text-gray-900 dark:text-white text-sm">
+                            内容类型
+                        </h3>
+                        <button
+                            onClick={() => {
+                                if (contentTypes.length === CONTENT_TYPES.length) {
+                                    setContentTypes(['qa_pair']); // 至少保留一个
+                                } else {
+                                    setContentTypes(CONTENT_TYPES.map(t => t.value));
+                                }
+                            }}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                            {contentTypes.length === CONTENT_TYPES.length ? '取消全选' : '全选'}
+                        </button>
+                    </div>
+
+                    <div className="p-3 grid grid-cols-2 gap-2">
+                        {CONTENT_TYPES.map((type) => (
+                            <label
+                                key={type.value}
+                                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${contentTypes.includes(type.value)
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+                                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 border-transparent text-gray-600 dark:text-gray-400'
+                                    }`}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={contentTypes.includes(type.value)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setContentTypes([...contentTypes, type.value]);
+                                        } else {
+                                            if (contentTypes.length > 1) {
+                                                setContentTypes(contentTypes.filter(t => t !== type.value));
+                                            } else {
+                                                showToast('warning', '请至少选择一种内容类型');
+                                            }
+                                        }
+                                    }}
+                                    className="w-3.5 h-3.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800"
+                                />
+                                <span className="text-xs font-medium truncate">
+                                    {type.name}
+                                </span>
                             </label>
                         ))}
                     </div>

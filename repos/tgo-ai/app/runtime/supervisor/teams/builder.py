@@ -487,7 +487,7 @@ class AgnoTeamBuilder:
                 collections=[b.collection_id for b in internal_agent.collections if b.enabled],
                 api_key=context.rag_api_key,
                 project_id=str(context.project_id) if context.project_id else None,
-                filters={"content_type": "qa_pair"}
+                # filters={"content_type": "qa_pair"} # TODO: 这里暂时去掉过滤条件，目前问题：加了过滤条件后，旧数据搜索结果为空
             )
 
         workflow_config = None
