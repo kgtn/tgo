@@ -227,6 +227,8 @@ async def _handle_msg_notify_batch(messages: Any, db: Session) -> None:
     
     # Use individual UPDATE statements to minimize lock duration and avoid deadlocks
     # Each UPDATE is a short transaction that releases the lock immediately
+    # Uses SKIP LOCKED to avoid waiting for rows locked by other transactions
+    skipped_count = 0
     for visitor_id, stats in visitor_stats.items():
         try:
             # Build dynamic UPDATE statement based on which fields need updating
@@ -253,11 +255,19 @@ async def _handle_msg_notify_batch(messages: Any, db: Session) -> None:
                 update_parts.append("visitor_send_count = visitor_send_count + :send_count")
                 params["send_count"] = stats["send_count"]
             
+            # Use SKIP LOCKED to avoid waiting for rows locked by other transactions
+            # (e.g., transfer_to_staff with FOR UPDATE). If the row is locked, the
+            # subquery returns empty and the UPDATE is skipped. This prevents deadlocks
+            # while the next message will trigger another update attempt.
             update_sql = text(f"""
                 UPDATE api_visitors 
                 SET {", ".join(update_parts)}
-                WHERE id = :visitor_id 
-                  AND deleted_at IS NULL
+                WHERE id IN (
+                    SELECT id FROM api_visitors 
+                    WHERE id = :visitor_id 
+                      AND deleted_at IS NULL
+                    FOR UPDATE SKIP LOCKED
+                )
             """)
             
             # visitor_id is already a UUID object from stats grouping, 
@@ -267,6 +277,9 @@ async def _handle_msg_notify_batch(messages: Any, db: Session) -> None:
             
             if result.rowcount > 0:
                 updated_count += 1
+            else:
+                # Row was either not found or locked by another transaction
+                skipped_count += 1
                 
         except Exception as e:
             # Rollback and log error for this visitor, continue with others
@@ -276,10 +289,14 @@ async def _handle_msg_notify_batch(messages: Any, db: Session) -> None:
                 extra={"visitor_id": str(visitor_id), "error": str(e)}
             )
     
-    if updated_count > 0:
+    if updated_count > 0 or skipped_count > 0:
         logger.info(
             f"Updated {updated_count} visitors message stats",
-            extra={"total_visitors": len(visitor_stats), "updated_count": updated_count}
+            extra={
+                "total_visitors": len(visitor_stats),
+                "updated_count": updated_count,
+                "skipped_count": skipped_count,
+            }
         )
 
 

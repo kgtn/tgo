@@ -254,10 +254,20 @@ async def transfer_to_staff(
             candidate_scores=candidate_scores,
         )
         
-        # 9. Flush first to validate data and get IDs
+        # 9. Flush and commit to release the FOR UPDATE lock on visitor
+        # This minimizes lock holding time and prevents deadlocks with concurrent
+        # UPDATE operations on api_visitors (e.g., from message stats updates)
         db.flush()
+        if auto_commit:
+            db.commit()
+            db.refresh(session)
+            db.refresh(assignment_history)
+            db.refresh(visitor)
+            if waiting_queue_entry:
+                db.refresh(waiting_queue_entry)
         
         # 10. Add staff to visitor's channel and send notification
+        # This runs in a new transaction after the visitor lock is released
         if assigned_staff_id:
             await _add_staff_to_channel(
                 db=db,
@@ -267,14 +277,9 @@ async def transfer_to_staff(
                 ai_disabled=visitor.ai_disabled or False,
                 send_notification=send_notification,
             )
-        
-        # 11. Commit changes (if auto_commit enabled)
-        if auto_commit:
-            db.commit()
-            db.refresh(session)
-            db.refresh(assignment_history)
-            if waiting_queue_entry:
-                db.refresh(waiting_queue_entry)
+            # Commit channel member changes
+            if auto_commit:
+                db.commit()
         
         logger.info(
             f"Transferred visitor {visitor_id} to human service. "
