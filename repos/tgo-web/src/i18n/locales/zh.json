@@ -84,7 +84,9 @@
       "addDatetime": "添加日期时间",
       "addDatetimeDesc": "在上下文中包含当前日期时间",
       "numHistoryRuns": "历史会话轮数",
-    "toolCallLimit": "工具调用限制"
+    "toolCallLimit": "工具调用限制",
+    "skillsEnabled": "启用技能",
+    "skillsEnabledDesc": "允许 AI 员工自动发现并使用项目中的专业技能"
   },
   "tagInput": {
     "placeholder": "输入标签并按回车键添加",
@@ -1121,6 +1123,7 @@
         "modelConfig": "模型配置",
         "description": "能力描述",
         "tools": "工具",
+        "skills": "技能",
         "resources": "资源关联"
       },
       "placeholders": {
@@ -1183,6 +1186,15 @@
       "addButton": "添加工具",
       "emptyTitle": "暂未添加工具",
       "emptyDescription": "点击「添加工具」按钮选择工具"
+    },
+    "skillsSection": {
+      "selectedTitle": "已选择技能",
+      "selectedCount": "{{count}} 已选择",
+      "addButton": "添加技能",
+      "selectTitle": "选择技能",
+      "selectSubtitle": "为 AI 员工添加专业技能",
+      "emptyTitle": "暂未添加技能",
+      "emptyDescription": "点击「添加技能」按钮选择技能"
     },
     "knowledge_basesSection": {
       "selectedTitle": "已选择知识库",
@@ -1382,6 +1394,7 @@
     "tools": "工具",
     "deviceControl": "设备控制",
     "workflows": "工作流",
+    "skills": "技能",
     "visitors": "访客管理",
     "knowledge": "知识库",
     "channels": "渠道管理",
@@ -3777,15 +3790,6 @@
       "step2": "打开软件并输入上方绑定码",
       "step3": "连接成功后设备将出现在列表中"
     },
-    "settings": {
-      "title": "设备控制设置",
-      "subtitle": "配置 AI 控制设备时使用的模型",
-      "globalModel": "全局控制模型",
-      "selectModel": "选择模型",
-      "globalModelHint": "未配置专属模型的设备将使用此模型进行 AI 控制",
-      "saveSuccess": "模型配置已保存",
-      "saveError": "保存模型配置失败"
-    },
     "edit": {
       "title": "编辑设备",
       "deviceName": "设备名称",
@@ -3793,10 +3797,7 @@
       "nameRequired": "请输入设备名称",
       "os": "操作系统",
       "resolution": "屏幕分辨率",
-      "status": "状态",
-      "model": "控制模型",
-      "useGlobalModel": "使用全局设置",
-      "modelHint": "留空则使用全局设备控制模型设置"
+      "status": "状态"
     },
     "delete": {
       "title": "确认删除",
@@ -3836,6 +3837,85 @@
       "disband": "频道已解散",
       "sendBan": "发送被禁止",
       "sendFailed": "发送消息失败 (错误码: {{code}})"
+    }
+  },
+  "skills": {
+    "title": "技能管理",
+    "subtitle": "为 AI 员工定义可复用的专业指令集",
+    "search": {
+      "placeholder": "搜索技能..."
+    },
+    "createSkill": "创建技能",
+    "banner": {
+      "title": "打造专业技能",
+      "description": "通过创建技能，您可以将复杂的任务拆解为标准化的指令模板。让 AI 员工像专家一样，遵循最佳实践来完成代码审查、文案创作、数据分析等特定任务。"
+    },
+    "listTitle": "技能列表",
+    "empty": {
+      "title": "暂无技能",
+      "description": "创建您的第一个技能，让 AI 员工更专业"
+    },
+    "card": {
+      "author": "作者",
+      "updated": "更新于"
+    },
+    "toggle": {
+      "enabled": "已启用",
+      "disabled": "已禁用"
+    },
+    "fetchFailed": "获取技能列表失败",
+    "fetchDetailFailed": "获取技能详情失败",
+    "deleteConfirm": "确定要删除技能 \"{{name}}\" 吗？此操作不可撤销。",
+    "deleteSuccess": "技能已删除",
+    "deleteFailed": "删除技能失败",
+    "form": {
+      "createTitle": "创建技能",
+      "editTitle": "编辑技能",
+      "name": "技能名称",
+      "nameHint": "小写字母、数字和连字符，例如 my-skill",
+      "description": "描述",
+      "descriptionPlaceholder": "简述这个技能的用途和适用场景",
+      "instructions": "技能指令 (Markdown)",
+      "instructionsPlaceholder": "使用 Markdown 编写详细的技能指令内容...",
+      "author": "作者",
+      "license": "许可证",
+      "tags": "标签",
+      "tagPlaceholder": "输入标签后按回车",
+      "createSuccess": "技能已创建",
+      "updateSuccess": "技能已更新",
+      "createFailed": "创建技能失败",
+      "updateFailed": "更新技能失败",
+      "errors": {
+        "nameRequired": "请输入技能名称",
+        "nameFormat": "名称只能包含小写字母、数字和连字符，且必须以字母开头",
+        "nameMinLength": "名称至少2个字符",
+        "descRequired": "请输入技能描述"
+      }
+    },
+    "detail": {
+      "title": "技能详情",
+      "instructions": "技能指令",
+      "scripts": "脚本文件",
+      "references": "参考文件"
+    },
+    "import": {
+      "title": "从 GitHub 导入技能",
+      "urlLabel": "GitHub 技能目录地址",
+      "urlHint": "粘贴 GitHub 技能目录或文件地址（支持 /tree/ 和 /blob/ 链接），系统将自动下载整个目录",
+      "tokenLabel": "GitHub Token",
+      "tokenHint": "用于访问私有仓库或提高 GitHub API 请求频率（匿名 60 次/小时，认证 5000 次/小时）",
+      "addToken": "添加 GitHub Token（用于私有仓库或提高请求频率）",
+      "submit": "导入技能",
+      "success": "技能导入成功",
+      "failed": "导入技能失败",
+      "infoTitle": "技能目录规范",
+      "infoItem1": "目录中必须包含 SKILL.md 文件（含 YAML frontmatter）",
+      "infoItem2": "SKILL.md 的 frontmatter 中必须有 name 和 description 字段",
+      "infoItem3": "可选包含 scripts/、references/、assets/ 子目录",
+      "errors": {
+        "urlRequired": "请输入 GitHub 目录地址",
+        "urlFormat": "请输入有效的 GitHub 地址，支持目录或文件链接，如：https://github.com/owner/repo/tree/branch/path"
+      }
     }
   }
 }

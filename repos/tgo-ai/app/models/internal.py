@@ -99,6 +99,7 @@ class Agent(BaseModel):
     store_agent_id: Optional[str] = Field(None, description="Agent ID in the remote store")
     agent_category: str = Field(default="normal", description="Agent category: normal or computer_use")
     bound_device_id: Optional[str] = Field(None, description="Bound device ID for device control MCP connection")
+    skills_enabled: bool = Field(default=True, description="Whether skill discovery is enabled")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 

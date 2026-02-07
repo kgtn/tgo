@@ -562,6 +562,18 @@ const CreateAgentModal: React.FC = () => {
                           />
                         </div>
 
+                        {/* Skills Enabled */}
+                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-50 dark:border-gray-700">
+                          <div>
+                            <p className="text-sm font-bold text-gray-700 dark:text-gray-200">{t('config.skillsEnabled', '启用技能')}</p>
+                            <p className="text-xs text-gray-500">{t('config.skillsEnabledDesc', '允许 AI 员工自动发现并使用项目中的专业技能')}</p>
+                          </div>
+                          <Toggle
+                            checked={!!createAgentFormData.skills_enabled}
+                            onChange={(checked) => handleInputChange('skills_enabled', checked)}
+                          />
+                        </div>
+
                         {/* History Runs */}
                         <div className="space-y-2">
                           <label className="text-xs font-bold text-gray-500 dark:text-gray-400 ml-1 uppercase">

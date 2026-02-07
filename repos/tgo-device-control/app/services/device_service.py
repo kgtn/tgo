@@ -146,10 +146,6 @@ class DeviceService:
         # Update fields
         if update_data.device_name is not None:
             device.device_name = update_data.device_name
-        if update_data.ai_provider_id is not None:
-            device.ai_provider_id = update_data.ai_provider_id if update_data.ai_provider_id else None
-        if update_data.model is not None:
-            device.model = update_data.model if update_data.model else None
 
         await self.db.commit()
         await self.db.refresh(device)

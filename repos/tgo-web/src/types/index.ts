@@ -142,6 +142,7 @@ export interface Agent {
   agentTools?: AgentToolResponse[]; // Full tool objects from API
   workflows?: any[]; // Full workflow objects from API
   config?: AgentAdvancedConfig; // 高级配置
+  skills_enabled?: boolean; // 是否启用技能发现（独立字段，默认 true）
   boundDeviceId?: string; // 绑定的设备ID
   boundDevice?: import('./deviceControl').Device | null; // 绑定的设备完整对象
 }
@@ -163,6 +164,7 @@ export interface CreateAgentFormData {
   // 高级配置
   markdown?: boolean;
   add_datetime_to_context?: boolean;
+  skills_enabled?: boolean;
   show_tool_calls?: boolean;
   tool_call_limit?: number;
   num_history_runs?: number;
@@ -267,6 +269,7 @@ export interface AgentWithDetailsResponse {
   workflows?: any[];
   bound_device_id?: string | null; // 绑定的设备ID
   bound_device?: import('./deviceControl').Device | null; // 绑定的设备完整对象（由 tgo-api 聚合）
+  skills_enabled?: boolean; // 是否启用技能发现（默认 true）
 }
 
 // Agent Tool Create Request Type (based on API spec)
@@ -290,6 +293,7 @@ export interface AgentCreateRequest {
   collections?: string[] | null; // Collection IDs (UUID strings)
   workflows?: string[] | null; // Workflow IDs
   bound_device_id?: string | null; // 绑定的设备ID
+  skills_enabled?: boolean; // 是否启用技能发现（默认 true）
 }
 
 // Agent Update Request Type (based on API spec - all fields optional)
@@ -305,6 +309,7 @@ export interface AgentUpdateRequest {
   collections?: string[] | null; // Collection IDs (UUID strings)
   workflows?: string[] | null; // Workflow IDs
   bound_device_id?: string | null; // 绑定的设备ID
+  skills_enabled?: boolean; // 是否启用技能发现
 }
 
 // Agent List Response Type (now returns detailed agents with tools and collections)

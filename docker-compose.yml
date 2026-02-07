@@ -182,6 +182,7 @@ services:
       WORKFLOW_SERVICE_URL: http://tgo-workflow:8000
       PLUGIN_RUNTIME_URL: http://tgo-plugin-runtime:8090
       DEVICE_CONTROL_SERVICE_URL: http://tgo-device-control:8085
+      SKILLS_BASE_DIR: /data/skills
     depends_on:
       postgres:
         condition: service_healthy
@@ -189,6 +190,8 @@ services:
         condition: service_started
       tgo-rag:
         condition: service_started
+    volumes:
+      - ./data/skills:/data/skills
     command: >
       sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8081"
     healthcheck:

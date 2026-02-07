@@ -66,6 +66,8 @@ class AIServiceClient:
         endpoint: str,
         json_data: Optional[Dict[str, Any]] = None,
         params: Optional[Dict[str, Any]] = None,
+        extra_headers: Optional[Dict[str, str]] = None,
+        content: Optional[str] = None,
     ) -> httpx.Response:
         """Make HTTP request to AI service."""
         url = f"{self.base_url}{endpoint}"
@@ -73,6 +75,8 @@ class AIServiceClient:
 
         headers = self._get_headers()
         headers["X-Request-ID"] = request_id
+        if extra_headers:
+            headers.update(extra_headers)
 
         logger.info(
             f"AI service request: {method} {url}",
@@ -86,12 +90,17 @@ class AIServiceClient:
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
-                response = await client.request(
-                    method=method,
-                    url=url,
-                    headers=headers,
-                    json=self._to_jsonable(json_data),
-                    params=params,
+                kwargs: Dict[str, Any] = {
+                    "method": method,
+                    "url": url,
+                    "headers": headers,
+                    "params": params,
+                }
+                if json_data is not None:
+                    kwargs["json"] = self._to_jsonable(json_data)
+                if content is not None:
+                    kwargs["content"] = content
+                response = await client.request(**kwargs
                 )
 
                 logger.info(
@@ -725,6 +734,131 @@ class AIServiceClient:
             params={"project_id": project_id},
         )
         return await self._handle_response(response)
+
+
+    # ------------------------------------------------------------------
+    # Skill management (proxy to tgo-ai /api/v1/skills)
+    # ------------------------------------------------------------------
+
+    def _skill_headers(self, project_id: str) -> Dict[str, str]:
+        """Build extra headers for skill requests."""
+        return {"X-Project-Id": project_id}
+
+    async def import_skill(self, project_id: str, import_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Import a skill from GitHub (proxy to tgo-ai)."""
+        response = await self._make_request(
+            "POST",
+            "/api/v1/skills/import",
+            json_data=import_data,
+            extra_headers=self._skill_headers(project_id),
+        )
+        return await self._handle_response(response)
+
+    async def list_skills(self, project_id: str) -> List[Dict[str, Any]]:
+        """List all skills visible to a project (private + official)."""
+        response = await self._make_request(
+            "GET",
+            "/api/v1/skills",
+            extra_headers=self._skill_headers(project_id),
+        )
+        return await self._handle_response(response)
+
+    async def create_skill(self, project_id: str, skill_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Create a new project-private skill."""
+        response = await self._make_request(
+            "POST",
+            "/api/v1/skills",
+            json_data=skill_data,
+            extra_headers=self._skill_headers(project_id),
+        )
+        return await self._handle_response(response)
+
+    async def get_skill(self, project_id: str, skill_name: str) -> Dict[str, Any]:
+        """Get skill details."""
+        response = await self._make_request(
+            "GET",
+            f"/api/v1/skills/{skill_name}",
+            extra_headers=self._skill_headers(project_id),
+        )
+        return await self._handle_response(response)
+
+    async def update_skill(
+        self, project_id: str, skill_name: str, skill_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Update a project-private skill."""
+        response = await self._make_request(
+            "PATCH",
+            f"/api/v1/skills/{skill_name}",
+            json_data=skill_data,
+            extra_headers=self._skill_headers(project_id),
+        )
+        return await self._handle_response(response)
+
+    async def toggle_skill(
+        self, project_id: str, skill_name: str, toggle_data: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Toggle a skill's enabled/disabled state."""
+        response = await self._make_request(
+            "PUT",
+            f"/api/v1/skills/{skill_name}/toggle",
+            json_data=toggle_data,
+            extra_headers=self._skill_headers(project_id),
+        )
+        return await self._handle_response(response)
+
+    async def delete_skill(self, project_id: str, skill_name: str) -> None:
+        """Delete a project-private skill."""
+        response = await self._make_request(
+            "DELETE",
+            f"/api/v1/skills/{skill_name}",
+            extra_headers=self._skill_headers(project_id),
+        )
+        if response.status_code not in (200, 204):
+            await self._handle_response(response)
+
+    async def get_skill_file(
+        self, project_id: str, skill_name: str, file_path: str
+    ) -> str:
+        """Read a sub-file from a skill."""
+        response = await self._make_request(
+            "GET",
+            f"/api/v1/skills/{skill_name}/files/{file_path}",
+            extra_headers=self._skill_headers(project_id),
+        )
+        if response.status_code != 200:
+            await self._handle_response(response)
+        return response.text
+
+    async def put_skill_file(
+        self,
+        project_id: str,
+        skill_name: str,
+        file_path: str,
+        file_content: str,
+    ) -> None:
+        """Create or update a sub-file inside a skill."""
+        headers = self._skill_headers(project_id)
+        headers["Content-Type"] = "text/plain; charset=utf-8"
+        response = await self._make_request(
+            "PUT",
+            f"/api/v1/skills/{skill_name}/files/{file_path}",
+            content=file_content,
+            extra_headers=headers,
+        )
+        if response.status_code not in (200, 201):
+            await self._handle_response(response)
+
+    async def delete_skill_file(
+        self, project_id: str, skill_name: str, file_path: str
+    ) -> None:
+        """Delete a sub-file from a skill."""
+        response = await self._make_request(
+            "DELETE",
+            f"/api/v1/skills/{skill_name}/files/{file_path}",
+            extra_headers=self._skill_headers(project_id),
+        )
+        if response.status_code not in (200, 204):
+            await self._handle_response(response)
 
 
 # Global AI client instance

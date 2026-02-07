@@ -459,6 +459,10 @@ class AgentCreateRequest(BaseSchema):
         description="Device ID to bind for device control MCP connection",
         examples=["device-uuid-1"]
     )
+    skills_enabled: bool = Field(
+        default=True,
+        description="Whether to enable skill discovery for this agent"
+    )
 
 
 class AgentUpdateRequest(BaseSchema):
@@ -539,6 +543,10 @@ class AgentUpdateRequest(BaseSchema):
         description="Updated device ID to bind for device control. Set to empty string to unbind.",
         examples=["device-uuid-1"]
     )
+    skills_enabled: Optional[bool] = Field(
+        None,
+        description="Updated skill discovery toggle"
+    )
 
 
 class AgentResponse(BaseSchema):
@@ -592,6 +600,10 @@ class AgentResponse(BaseSchema):
         description="Agent category: normal or computer_use"
     )
     team_id: Optional[UUID] = Field(None, description="Associated team ID")
+    skills_enabled: bool = Field(
+        default=True,
+        description="Whether skill discovery is enabled for this agent"
+    )
     created_at: datetime = Field(..., description="Record creation timestamp")
     updated_at: datetime = Field(..., description="Record last update timestamp")
     deleted_at: Optional[datetime] = Field(None, description="Soft delete timestamp")

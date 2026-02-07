@@ -3,6 +3,7 @@
 import uuid
 from typing import TYPE_CHECKING, List, Optional
 
+import sqlalchemy as sa
 from sqlalchemy import Boolean, ForeignKey, JSON, String, Text, Index
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship, foreign
@@ -109,6 +110,14 @@ class Agent(BaseModel):
         String(100),
         nullable=True,
         comment="Bound device ID for device control MCP connection",
+    )
+
+    skills_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default=sa.text("true"),
+        comment="Whether to enable skill discovery for this agent",
     )
 
     # Relationships

@@ -1328,6 +1328,8 @@ cmd_install() {
     "./data/tgo-workflow/uploads"
     "./data/tgo-device-control/screenshots"
     "./data/nginx"
+    "./data/skills"
+    "./data/skills/_official"
   )
 
   # Create directories and set permissions

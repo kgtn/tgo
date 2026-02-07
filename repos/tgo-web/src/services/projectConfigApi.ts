@@ -10,8 +10,6 @@ export interface ProjectAIConfigResponse {
   default_chat_model: string | null;
   default_embedding_provider_id: string | null;
   default_embedding_model: string | null;
-  device_control_provider_id: string | null;
-  device_control_model: string | null;
 }
 
 export interface ProjectAIConfigUpdate {
@@ -19,8 +17,6 @@ export interface ProjectAIConfigUpdate {
   default_chat_model?: string | null;
   default_embedding_provider_id?: string | null;
   default_embedding_model?: string | null;
-  device_control_provider_id?: string | null;
-  device_control_model?: string | null;
 }
 
 export default class ProjectConfigApiService extends BaseApiService {

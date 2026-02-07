@@ -212,6 +212,18 @@ export abstract class BaseApiService {
   }
 
   /**
+   * Generic GET request for raw Response with error handling
+   */
+  protected async getResponse(endpoint: string): Promise<Response> {
+    try {
+      return await apiClient.getResponse(endpoint);
+    } catch (error) {
+      console.error(`GET ${endpoint} (raw) failed:`, error);
+      throw new Error(this.handleApiError(error));
+    }
+  }
+
+  /**
    * Get list with pagination
    */
   protected async getList<T>(

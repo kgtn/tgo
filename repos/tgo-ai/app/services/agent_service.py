@@ -424,22 +424,24 @@ class AgentService:
         """
         try:
             # Delete from agno_memories (user/agent memories)
-            # The user noted that agno_memories uses user_id, not session_id
+            # The table may not exist if Agno hasn't created it yet
             if user_id:
-                await self.db.execute(
-                    text("DELETE FROM ai.agno_memories WHERE user_id = :user_id"),
-                    {"user_id": user_id}
-                )
+                try:
+                    await self.db.execute(
+                        text("DELETE FROM ai.agno_memories WHERE user_id = :user_id"),
+                        {"user_id": user_id}
+                    )
+                except Exception:
+                    pass
             
             # Delete from agno_sessions (session history)
-            # We use try/except as the table might not exist yet
+            # The table may not exist if Agno hasn't created it yet
             try:
                 await self.db.execute(
                     text("DELETE FROM ai.agno_sessions WHERE session_id = :session_id"),
                     {"session_id": session_id}
                 )
             except Exception:
-                # Table might not exist yet, which is fine
                 pass
             
             await self.db.commit()

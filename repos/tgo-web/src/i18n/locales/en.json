@@ -84,7 +84,9 @@
     "addDatetime": "Add Datetime",
     "addDatetimeDesc": "Include current date and time in the context",
     "numHistoryRuns": "History Session Runs",
-    "toolCallLimit": "Tool Call Limit"
+    "toolCallLimit": "Tool Call Limit",
+    "skillsEnabled": "Enable Skills",
+    "skillsEnabledDesc": "Allow AI agents to discover and use project skills"
   },
   "tagInput": {
     "placeholder": "Enter tag and press Enter to add",
@@ -794,6 +796,7 @@
         "modelConfig": "Model Configuration",
         "description": "Capability Description",
         "tools": "Tools",
+        "skills": "Skills",
         "resources": "Resource Association"
       },
       "placeholders": {
@@ -856,6 +859,15 @@
       "addButton": "Add Tool",
       "emptyTitle": "No tools added",
       "emptyDescription": "Click \"Add Tool\" to select tools"
+    },
+    "skillsSection": {
+      "selectedTitle": "Selected Skills",
+      "selectedCount": "{{count}} Selected",
+      "addButton": "Add Skill",
+      "selectTitle": "Select Skills",
+      "selectSubtitle": "Add professional skills to AI agents",
+      "emptyTitle": "No skills added",
+      "emptyDescription": "Click \"Add Skill\" to select skills"
     },
     "knowledge_basesSection": {
       "selectedTitle": "Selected Knowledge Bases",
@@ -1055,6 +1067,7 @@
     "tools": "Tools",
     "deviceControl": "Device Control",
     "workflows": "Workflows",
+    "skills": "Skills",
     "visitors": "Visitors",
     "knowledge": "Knowledge Base",
     "channels": "Platform Management",
@@ -3766,15 +3779,6 @@
       "step2": "Open the software and enter the bind code above",
       "step3": "Once connected, the device will appear in the list"
     },
-    "settings": {
-      "title": "Device Control Settings",
-      "subtitle": "Configure the model used when AI controls devices",
-      "globalModel": "Global Control Model",
-      "selectModel": "Select model",
-      "globalModelHint": "Devices without a specific model configured will use this model for AI control",
-      "saveSuccess": "Model configuration saved",
-      "saveError": "Failed to save model configuration"
-    },
     "edit": {
       "title": "Edit Device",
       "deviceName": "Device Name",
@@ -3782,10 +3786,7 @@
       "nameRequired": "Please enter a device name",
       "os": "Operating System",
       "resolution": "Screen Resolution",
-      "status": "Status",
-      "model": "Control Model",
-      "useGlobalModel": "Use global settings",
-      "modelHint": "Leave empty to use global device control model settings"
+      "status": "Status"
     },
     "delete": {
       "title": "Confirm Delete",
@@ -3825,6 +3826,85 @@
       "disband": "Channel disbanded",
       "sendBan": "Sending is banned",
       "sendFailed": "Failed to send message (error code: {{code}})"
+    }
+  },
+  "skills": {
+    "title": "Skills Management",
+    "subtitle": "Define reusable professional instruction sets for AI agents",
+    "search": {
+      "placeholder": "Search skills..."
+    },
+    "createSkill": "Create Skill",
+    "banner": {
+      "title": "Build Professional Skills",
+      "description": "By creating skills, you can break down complex tasks into standardized instruction templates. Enable AI agents to complete specific tasks like code review, copywriting, and data analysis like experts following best practices."
+    },
+    "listTitle": "Skills List",
+    "empty": {
+      "title": "No skills yet",
+      "description": "Create your first skill to make AI agents more professional"
+    },
+    "card": {
+      "author": "Author",
+      "updated": "Updated"
+    },
+    "toggle": {
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "fetchFailed": "Failed to fetch skills",
+    "fetchDetailFailed": "Failed to fetch skill details",
+    "deleteConfirm": "Are you sure you want to delete skill \"{{name}}\"? This action cannot be undone.",
+    "deleteSuccess": "Skill deleted",
+    "deleteFailed": "Failed to delete skill",
+    "form": {
+      "createTitle": "Create Skill",
+      "editTitle": "Edit Skill",
+      "name": "Skill Name",
+      "nameHint": "Lowercase letters, numbers and hyphens, e.g. my-skill",
+      "description": "Description",
+      "descriptionPlaceholder": "Briefly describe the purpose and use cases of this skill",
+      "instructions": "Skill Instructions (Markdown)",
+      "instructionsPlaceholder": "Write detailed skill instructions in Markdown...",
+      "author": "Author",
+      "license": "License",
+      "tags": "Tags",
+      "tagPlaceholder": "Type a tag and press Enter",
+      "createSuccess": "Skill created",
+      "updateSuccess": "Skill updated",
+      "createFailed": "Failed to create skill",
+      "updateFailed": "Failed to update skill",
+      "errors": {
+        "nameRequired": "Please enter a skill name",
+        "nameFormat": "Name can only contain lowercase letters, numbers and hyphens, and must start with a letter",
+        "nameMinLength": "Name must be at least 2 characters",
+        "descRequired": "Please enter a description"
+      }
+    },
+    "detail": {
+      "title": "Skill Details",
+      "instructions": "Skill Instructions",
+      "scripts": "Script Files",
+      "references": "Reference Files"
+    },
+    "import": {
+      "title": "Import Skill from GitHub",
+      "urlLabel": "GitHub Skill Directory URL",
+      "urlHint": "Paste a GitHub directory or file URL (supports /tree/ and /blob/ links), the system will automatically download the entire directory",
+      "tokenLabel": "GitHub Token",
+      "tokenHint": "For accessing private repos or increasing GitHub API rate limits (anonymous: 60/hr, authenticated: 5000/hr)",
+      "addToken": "Add GitHub Token (for private repos or higher rate limits)",
+      "submit": "Import Skill",
+      "success": "Skill imported successfully",
+      "failed": "Failed to import skill",
+      "infoTitle": "Skill Directory Specification",
+      "infoItem1": "Directory must contain a SKILL.md file with YAML frontmatter",
+      "infoItem2": "SKILL.md frontmatter must include name and description fields",
+      "infoItem3": "May optionally include scripts/, references/, assets/ subdirectories",
+      "errors": {
+        "urlRequired": "Please enter a GitHub directory URL",
+        "urlFormat": "Please enter a valid GitHub URL, supports directory or file links, e.g.: https://github.com/owner/repo/tree/branch/path"
+      }
     }
   }
 }

@@ -280,7 +280,10 @@ async def update_agent(
         }
     )
 
-    payload = agent_data.model_dump(exclude_none=True)
+    # Use exclude_unset so that fields explicitly set to None (e.g.
+    # bound_device_id=null for unbinding a device) are preserved in the
+    # payload, while fields the client did not provide are omitted.
+    payload = agent_data.model_dump(exclude_unset=True)
     # Normalize model to pure name (strip provider prefix if present)
     model_val = payload.get("model")
     if isinstance(model_val, str) and ":" in model_val:

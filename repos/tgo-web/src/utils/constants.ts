@@ -56,6 +56,12 @@ export const AI_MENU_ITEMS: NavigationItem[] = [
     path: '/ai/tools'
   },
   {
+    id: 'skills',
+    title: 'navigation.skills',
+    icon: 'Zap',
+    path: '/ai/skills'
+  },
+  {
     id: 'device-control',
     title: 'navigation.deviceControl',
     icon: 'Monitor',

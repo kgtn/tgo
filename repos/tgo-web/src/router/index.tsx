@@ -7,6 +7,7 @@ import VisitorManagement from '../pages/VisitorManagement';
 import AIInterface from '../pages/AIInterface';
 import AgentManagement from '../components/ai/AgentManagement';
 import Tools from '../components/ai/Tools';
+import Skills from '../components/ai/Skills';
 import { DeviceManagement } from '../components/ai/device-control';
 import WorkflowManagement from '../pages/WorkflowManagement';
 import WorkflowEditorPage from '../pages/WorkflowEditorPage';
@@ -132,6 +133,10 @@ export const router = createBrowserRouter([
           {
             path: 'tools',
             element: <Tools />
+          },
+          {
+            path: 'skills',
+            element: <Skills />
           },
           {
             path: 'device-control',

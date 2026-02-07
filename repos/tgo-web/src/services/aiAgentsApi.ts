@@ -205,6 +205,7 @@ export class AIAgentsTransformUtils {
       collections: collections,
       workflows: workflowIds,
       bound_device_id: formData.boundDeviceId || null,
+      skills_enabled: formData.skills_enabled ?? true,
     };
   }
 
@@ -249,6 +250,7 @@ export class AIAgentsTransformUtils {
       workflows: (apiAgent as any).workflows || [],
       boundDeviceId: apiAgent.bound_device_id || undefined,
       boundDevice: apiAgent.bound_device || null,
+      skills_enabled: (apiAgent as any).skills_enabled ?? true,
       config: {
         profession: apiAgent.config?.profession,
         markdown: apiAgent.config?.markdown,
@@ -362,6 +364,7 @@ export class AIAgentsTransformUtils {
       collections: collections,
       workflows: agent.workflows || [],
       bound_device_id: agent.boundDeviceId || null,
+      skills_enabled: agent.skills_enabled,
     } as AgentUpdateRequest;
   }
 

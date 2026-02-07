@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import agents, chat, teams, llm_providers, project_ai_configs, tools, llm_models
+from app.api.v1 import agents, chat, teams, llm_providers, project_ai_configs, tools, llm_models, skills
 
 api_router = APIRouter(prefix="/api/v1")
 
@@ -15,3 +15,4 @@ api_router.include_router(chat.router, prefix="/chat", tags=["Chat"])
 api_router.include_router(llm_providers.router, prefix="/llm-providers", tags=["LLM Providers"])
 api_router.include_router(llm_models.router, prefix="/llm-models", tags=["LLM Models"])
 api_router.include_router(project_ai_configs.router, prefix="/project-ai-configs", tags=["Project AI Configs"])
+api_router.include_router(skills.router, prefix="/skills", tags=["Skills"])

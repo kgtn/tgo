@@ -5,14 +5,12 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
 import httpx
 
 from app.core.logging import get_logger
 from app.core.security import get_current_active_user
-from app.core.database import get_db
 from app.services.device_control_client import device_control_client
-from app.models import Staff, ProjectAIConfig
+from app.models import Staff
 
 logger = get_logger("api.device_control")
 router = APIRouter()
@@ -177,7 +175,6 @@ async def disconnect_device(
 @router.post("/chat")
 async def device_debug_chat(
     request: DeviceDebugChatRequest,
-    db: Session = Depends(get_db),
     current_user: Staff = Depends(get_current_active_user),
 ):
     """Start a device debug chat session with streaming response.
@@ -210,35 +207,9 @@ async def device_debug_chat(
     except Exception as e:
         _handle_service_error(e, "device_debug_chat_verify")
 
-    # Determine model configuration
-    # Priority: 1. Device-specific model, 2. Global device control model
+    # Use model from request (required)
+    model: Optional[str] = request.model
     provider_id: Optional[str] = None
-    model: Optional[str] = request.model  # Allow override from request
-
-    # Check device-specific model
-    if device.get("ai_provider_id") and device.get("model"):
-        provider_id = device.get("ai_provider_id")
-        model = model or device.get("model")
-    else:
-        # Query global device control model config
-        config = (
-            db.query(ProjectAIConfig)
-            .filter(
-                ProjectAIConfig.project_id == current_user.project_id,
-                ProjectAIConfig.deleted_at.is_(None),
-            )
-            .first()
-        )
-        if config and config.device_control_provider_id and config.device_control_model:
-            provider_id = str(config.device_control_provider_id)
-            model = model or config.device_control_model
-
-    # Validate that we have model configuration
-    if not provider_id or not model:
-        raise HTTPException(
-            status_code=400,
-            detail="Device control model not configured. Please configure a model in AI → Device Control settings.",
-        )
 
     async def event_generator():
         """Generate SSE events from device control agent."""

@@ -101,6 +101,10 @@ class AgentBase(BaseSchema):
         default=None,
         description="Bound device ID for automatic device control MCP connection",
     )
+    skills_enabled: bool = Field(
+        default=True,
+        description="Whether to enable skill discovery for this agent",
+    )
 
 
 class AgentCreate(AgentBase):
@@ -207,6 +211,10 @@ class AgentUpdate(BaseSchema):
     bound_device_id: Optional[str] = Field(
         default=None,
         description="Updated bound device ID for device control. Set to empty string to unbind.",
+    )
+    skills_enabled: Optional[bool] = Field(
+        default=None,
+        description="Updated skill discovery toggle",
     )
 
     @field_validator("collections", "workflows")

@@ -95,6 +95,7 @@ class AgentRunRequest(BaseModel):
     session_id: Optional[str] = Field(default=None, description="会话ID")
     user_id: Optional[str] = Field(default=None, description="用户ID")
     project_id: Optional[str] = Field(default=None, description="项目ID")
+    skills_enabled: bool = Field(default=True, description="是否启用技能发现")
     stream: bool = Field(default=False, description="是否开启流式输出")
     stream_intermediate_steps: bool = Field(
         default=False,

@@ -615,6 +615,26 @@ class AgentBuilder:
         if enable_ui_templates:
             tools.extend(self._build_ui_template_tools())
 
+        # Build Agno Skills object if skills_enabled
+        skills_obj = None
+        skills_enabled = request.skills_enabled if request.skills_enabled is not None else True
+        print("skills_enabled-->", skills_enabled)
+        if skills_enabled and request.project_id:
+            try:
+                skills_obj = self._build_skills(request.project_id)
+                if skills_obj:
+                    self._logger.debug(
+                        "Skills object built for agent",
+                        project_id=request.project_id,
+                    )
+            except Exception as exc:  # noqa: BLE001
+                self._logger.warning(
+                    "Skill loading failed, continuing without skills",
+                    project_id=request.project_id,
+                    error=str(exc),
+                    error_type=type(exc).__name__,
+                )
+
         model = self._initialize_model(config)
         instructions = self._compose_system_prompt(config.system_prompt, enable_ui_templates)
         enable_memory = request.enable_memory or bool(config.enable_memory)
@@ -642,6 +662,10 @@ class AgentBuilder:
                 "debug_mode": True,
                 "debug_level": 2
             }
+
+            # Inject Agno Skills object (auto system-prompt + tool registration)
+            if skills_obj is not None:
+                agent_kwargs["skills"] = skills_obj
 
             if request.session_id:
                 agent_kwargs["session_id"] = request.session_id
@@ -847,6 +871,84 @@ class AgentBuilder:
                 error_type=type(exc).__name__,
             )
             return []
+
+    def _build_skills(self, project_id: str) -> Optional[Any]:
+        """Build an Agno Skills object that loads project + official skills.
+
+        Uses ``agno.skills.LocalSkills`` to scan skill directories.  The
+        returned ``Skills`` object is passed directly to ``Agent(skills=...)``,
+        which automatically:
+        - Injects skill summaries into the system prompt
+        - Registers ``get_skill_instructions`` / ``get_skill_reference`` /
+          ``get_skill_script`` tools
+
+        Disabled skills (tracked in ``.disabled_skills.json``) are excluded
+        by loading each enabled skill individually via ``LocalSkills`` pointed
+        at the specific skill folder (single-skill mode).
+
+        Args:
+            project_id: Project ID whose skill directory to load.
+
+        Returns:
+            An Agno ``Skills`` instance, or ``None`` if no skill directories
+            contain any skills.
+        """
+        try:
+            from agno.skills import Skills, LocalSkills
+        except ImportError:
+            self._logger.warning(
+                "agno.skills not available; skipping skill loading"
+            )
+            return None
+
+        from pathlib import Path
+        from app.config import settings
+        from app.services.skill_file_service import SkillFileService
+
+        base_dir = Path(settings.skills_base_dir)
+        loaders: list[LocalSkills] = []
+
+        # Load the set of disabled skill names for this project
+        skill_service = SkillFileService(settings.skills_base_dir)
+        disabled_skills = skill_service.get_disabled_skills(project_id)
+
+        def _collect_enabled_loaders(directory: Path) -> None:
+            """Add a LocalSkills loader for each enabled skill in *directory*."""
+            if not directory.exists() or not directory.is_dir():
+                return
+            try:
+                for child in sorted(directory.iterdir()):
+                    if (
+                        child.is_dir()
+                        and not child.name.startswith(".")
+                        and child.name not in disabled_skills
+                        and (child / "SKILL.md").exists()
+                    ):
+                        loaders.append(LocalSkills(str(child)))
+            except OSError:
+                pass
+
+        # 1. Project-private skills
+        _collect_enabled_loaders(base_dir / project_id)
+
+        # 2. Official (shared) skills
+        _collect_enabled_loaders(base_dir / "_official")
+
+        if not loaders:
+            self._logger.debug(
+                "No enabled skill directories found",
+                project_id=project_id,
+                base_dir=str(base_dir),
+            )
+            return None
+
+        self._logger.debug(
+            "Building Skills object",
+            project_id=project_id,
+            loader_count=len(loaders),
+            disabled_count=len(disabled_skills),
+        )
+        return Skills(loaders=loaders)
 
     async def _build_rag_tools(self, rag_config: Optional[RagConfig]) -> List[Any]:
         if not rag_config or not rag_config.rag_url or not rag_config.collections:

@@ -13,6 +13,7 @@ export interface AgentFormState {
   // 高级配置
   markdown?: boolean;
   add_datetime_to_context?: boolean;
+  skills_enabled?: boolean;
   tool_call_limit?: number;
   num_history_runs?: number;
 }
@@ -53,6 +54,7 @@ const defaultForm: AgentFormState = {
   boundDeviceId: '',
   markdown: true,
   add_datetime_to_context: true,
+  skills_enabled: true,
   tool_call_limit: 10,
   num_history_runs: 5,
 };

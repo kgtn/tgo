@@ -208,6 +208,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
         // 高级配置
         markdown: agent.config?.markdown ?? true,
         add_datetime_to_context: agent.config?.add_datetime_to_context ?? true,
+        skills_enabled: agent.skills_enabled ?? true,
         tool_call_limit: agent.config?.tool_call_limit ?? 10,
         num_history_runs: agent.config?.num_history_runs ?? 5,
       });
@@ -449,6 +450,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
         knowledgeBases: formData.knowledgeBases,
         workflows: formData.workflows,
         boundDeviceId: formData.boundDeviceId || undefined,
+        skills_enabled: formData.skills_enabled,
         config: configForUpdate,
       }, mergedAvailable);
       // 强制刷新列表，确保卡片立即展示最新 tools/collections
@@ -488,6 +490,7 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
         // 高级配置
         markdown: agent.config?.markdown ?? true,
         add_datetime_to_context: agent.config?.add_datetime_to_context ?? true,
+        skills_enabled: agent.skills_enabled ?? true,
         tool_call_limit: agent.config?.tool_call_limit ?? 10,
         num_history_runs: agent.config?.num_history_runs ?? 5,
       });
@@ -732,6 +735,18 @@ const EditAgentModal: React.FC<EditAgentModalProps> = ({
                           <Toggle
                             checked={!!formData.add_datetime_to_context}
                             onChange={(checked) => handleInputChange('add_datetime_to_context', checked)}
+                          />
+                        </div>
+
+                        {/* Skills Enabled */}
+                        <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-50 dark:border-gray-700">
+                          <div>
+                            <p className="text-sm font-bold text-gray-700 dark:text-gray-200">{t('config.skillsEnabled', '启用技能')}</p>
+                            <p className="text-xs text-gray-500">{t('config.skillsEnabledDesc', '允许 AI 员工自动发现并使用项目中的专业技能')}</p>
+                          </div>
+                          <Toggle
+                            checked={!!formData.skills_enabled}
+                            onChange={(checked) => handleInputChange('skills_enabled', checked)}
                           />
                         </div>
 

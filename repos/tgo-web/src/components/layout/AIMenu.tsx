@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LuBot, LuWrench, LuGitBranch, LuSparkles,LuMonitorSmartphone } from 'react-icons/lu';
+import { LuBot, LuWrench, LuGitBranch, LuSparkles,LuMonitorSmartphone, LuZap } from 'react-icons/lu';
 import { AI_MENU_ITEMS } from '@/utils/constants';
 import type { NavigationItem } from '@/types';
 import OnboardingSidebarPanel from '@/components/onboarding/OnboardingSidebarPanel';
@@ -14,6 +14,7 @@ interface AIMenuItemProps {
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   'Bot': LuBot,
   'Wrench': LuWrench,
+  'Zap': LuZap,
   'GitBranch': LuGitBranch,
   'Monitor': LuMonitorSmartphone
 };

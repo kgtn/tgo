@@ -539,6 +539,7 @@ class AgnoTeamBuilder:
             session_id=context.session_id,
             user_id=context.user_id,
             project_id=context.project_id,
+            skills_enabled=internal_agent.skills_enabled,
             enable_memory=context.enable_memory,
         )
 

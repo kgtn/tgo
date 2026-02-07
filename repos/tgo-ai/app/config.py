@@ -104,6 +104,16 @@ class Settings(BaseSettings):
         description="Device Control MCP endpoint URL template. {device_id} is replaced at runtime."
     )
 
+    # Skills File Storage Configuration
+    skills_base_dir: str = Field(
+        default="/data/skills",
+        description="Base directory for skill files storage"
+    )
+    github_token: Optional[str] = Field(
+        default=None,
+        description="Default GitHub token for skill import (optional, increases rate limit)"
+    )
+
     # Server Configuration
     host: str = Field(default="0.0.0.0", description="Server host")
     port: int = Field(default=8081, description="Server port")

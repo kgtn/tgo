@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     ai_agents,
     ai_models,
+    ai_skills,
     ai_teams,
     ai_tools,
     ai_workflows,
@@ -162,6 +163,13 @@ api_router.include_router(
     ai_tools.router,
     prefix="/ai/tools",
     tags=["AI Tools"]
+)
+
+# AI Skills endpoints
+api_router.include_router(
+    ai_skills.router,
+    prefix="/ai/skills",
+    tags=["AI Skills"]
 )
 
 # AI Workflows endpoints
