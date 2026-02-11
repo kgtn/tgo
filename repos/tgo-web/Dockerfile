@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7
 # TGO Web (React + Vite) - build and serve via Nginx
 #
 # Runtime Configuration:
@@ -14,13 +15,14 @@
 #   docker run -e VITE_API_BASE_URL=https://api.example.com -p 80:80 tgo-web
 
 # --- Build stage ---
-FROM node:20-alpine AS builder
+ARG BUILDPLATFORM
+FROM --platform=$BUILDPLATFORM node:20-alpine AS builder
 WORKDIR /app
 ENV CI=true
 
 # Install deps
 COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+RUN yarn install --frozen-lockfile --non-interactive --network-timeout 600000
 
 # Build (no VITE_* variables needed at build time - they're configured at runtime)
 COPY . .
