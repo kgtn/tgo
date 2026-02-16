@@ -6,6 +6,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 
 import enTranslations from './locales/en.json';
 import zhTranslations from './locales/zh.json';
+import ruTranslations from './locales/ru.json';
 
 
 /**
@@ -18,16 +19,20 @@ const resources = {
   },
   en: {
     translation: enTranslations
+  },
+  ru: {
+    translation: ruTranslations
   }
 };
 
 // Determine initial language with support for 'system'/'auto' preference
-const SUPPORTED_LANGS = ['zh', 'en'] as const;
+const SUPPORTED_LANGS = ['zh', 'en', 'ru'] as const;
 type SupportedLang = typeof SUPPORTED_LANGS[number];
 
 const mapToSupportedLang = (lng?: string | null): SupportedLang => {
   const code = (lng || '').toLowerCase();
   if (code.startsWith('zh')) return 'zh';
+  if (code.startsWith('ru')) return 'ru';
   return 'en';
 };
 

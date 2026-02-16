@@ -67,6 +67,34 @@ The `action` field in buttons uses URI format: `{protocol}://{content}`
 """
 
 
+ACTION_URI_SPEC_RU = """### Спецификация Action URI
+
+Поле `action` в кнопках использует формат URI: `{протокол}://{содержимое}`
+
+**Поддерживаемые протоколы:**
+
+| Протокол | Назначение | Пример |
+|----------|------------|--------|
+| `url://` | Открыть внешнюю ссылку | `url://https://example.com/product/123` |
+| `msg://` | Отправить сообщение | `msg://Помогите проверить заказ` |
+| `copy://` | Скопировать в буфер | `copy://SF1234567890` |
+
+**Поля кнопки:**
+- `label`: Текст кнопки (обязательно)
+- `action`: Action URI (обязательно)
+- `style`: Стиль, варианты: default/primary/danger/link/ghost
+
+**Пример:**
+```json
+[
+  {"label": "Подробнее", "action": "url://https://example.com/order/123", "style": "primary"},
+  {"label": "Связаться с поддержкой", "action": "msg://Помогите проверить заказ ORD-001", "style": "default"},
+  {"label": "Копировать трек-номер", "action": "copy://SF1234567890", "style": "link"}
+]
+```
+"""
+
+
 def generate_template_catalog(
     include_types: Optional[List[str]] = None,
     language: str = "en",
@@ -99,6 +127,12 @@ def generate_template_catalog(
 当需要展示结构化数据（订单、产品、物流等）时，请先调用 `get_ui_template` 工具获取模板格式，然后按格式输出数据。
 
 可用模板:"""
+    elif language == "ru":
+        header = """## Доступные UI шаблоны
+
+Когда нужно отобразить структурированные данные (заказы, товары, логистика и т.д.), сначала вызовите инструмент `get_ui_template` для получения формата шаблона, затем выведите данные в этом формате.
+
+Доступные шаблоны:"""
     else:
         header = """## Available Rich UI Templates
 
@@ -228,6 +262,30 @@ def generate_usage_instructions(language: str = "zh") -> str:
    - 必填字段不能为空
    - 保持数据格式正确（如价格为数字，不是字符串）
 """
+    elif language == "ru":
+        return """### Руководство по использованию UI шаблонов
+
+1. **Когда использовать**: Используйте UI шаблоны, когда пользователи спрашивают о структурированных данных (заказы, товары, логистика), для лучшего отображения.
+
+2. **Как использовать**:
+   - Сначала вызовите `get_ui_template(template_name)` для получения формата шаблона
+   - Получив данные из бизнес-систем, организуйте их в соответствии с шаблоном
+   - Используйте `render_ui(template_name, data)` или выведите отформатированный блок кода напрямую
+
+3. **Формат вывода**:
+```tgo-ui-widget
+{
+  "type": "тип_шаблона",
+  "поле1": "значение1",
+  "поле2": "значение2"
+}
+```
+
+4. **Примечания**:
+   - Убедитесь, что поле `type` соответствует типу шаблона
+   - Обязательные поля не могут быть пустыми
+   - Соблюдайте правильные форматы данных (например, цены как числа, а не строки)
+"""
     else:
         return """### UI Template Usage Guide
 
@@ -269,6 +327,8 @@ def generate_action_uri_spec(language: str = "zh") -> str:
     """
     if language == "zh":
         return ACTION_URI_SPEC_ZH
+    elif language == "ru":
+        return ACTION_URI_SPEC_RU
     else:
         return ACTION_URI_SPEC_EN
 
@@ -302,6 +362,27 @@ def generate_action_examples(language: str = "zh") -> str:
 ```json
 {"label": "复制单号", "action": "copy://SF1234567890", "style": "link"}
 {"label": "复制订单号", "action": "copy://ORD-2024-001234", "style": "ghost"}
+```
+"""
+    elif language == "ru":
+        return """### Примеры Action
+
+**Открыть ссылку (url://):**
+```json
+{"label": "Подробнее", "action": "url://https://example.com/product/123", "style": "primary"}
+{"label": "Купить", "action": "url://https://item.jd.com/123.html", "style": "link"}
+```
+
+**Отправить сообщение (msg://):**
+```json
+{"label": "Связаться с поддержкой", "action": "msg://Я хочу узнать больше о товаре", "style": "default"}
+{"label": "Отследить заказ", "action": "msg://Помогите отследить заказ ORD-001", "style": "link"}
+```
+
+**Копировать (copy://):**
+```json
+{"label": "Копировать трек-номер", "action": "copy://SF1234567890", "style": "link"}
+{"label": "Копировать номер заказа", "action": "copy://ORD-2024-001234", "style": "ghost"}
 ```
 """
     else:
