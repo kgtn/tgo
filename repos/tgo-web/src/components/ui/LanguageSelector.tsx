@@ -13,7 +13,8 @@ interface Language {
 const languages: Language[] = [
   { code: 'system', name: 'Auto', nativeName: 'Auto', flag: '🌐' },
   { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
-  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' }
+  { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
+  { code: 'ru', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺' }
 ];
 
 type Placement = 'bottom' | 'right';
@@ -39,13 +40,14 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ variant = 'icon', p
     try { return localStorage.getItem('tgo-language') || 'system'; } catch { return 'system'; }
   });
 
-  const mapToSupportedLang = (lng?: string | null): 'zh' | 'en' => {
+  const mapToSupportedLang = (lng?: string | null): 'zh' | 'en' | 'ru' => {
     const code = (lng || '').toLowerCase();
     if (code.startsWith('zh')) return 'zh';
+    if (code.startsWith('ru')) return 'ru';
     return 'en';
   };
 
-  const detectSystemLanguage = (): 'zh' | 'en' => {
+  const detectSystemLanguage = (): 'zh' | 'en' | 'ru' => {
     if (typeof navigator !== 'undefined') {
       const cand = (Array.isArray((navigator as any).languages) && (navigator as any).languages[0]) || (navigator as any).language;
       return mapToSupportedLang(cand);
@@ -54,7 +56,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ variant = 'icon', p
   };
 
   const normalizedCode = useMemo(() => (i18n.language || 'zh').split('-')[0], [i18n.language]);
-  const selectedCode = (pref === 'system' || pref === 'auto') ? 'system' : (normalizedCode as 'zh' | 'en');
+  const selectedCode = (pref === 'system' || pref === 'auto') ? 'system' : (normalizedCode as 'zh' | 'en' | 'ru');
   const currentLanguage = languages.find(lang => lang.code === selectedCode) || languages[0];
 
   const currentNativeName = selectedCode === 'system'
@@ -65,13 +67,13 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ variant = 'icon', p
     if (languageCode === 'system' || languageCode === 'auto') {
       const resolved = detectSystemLanguage();
       i18n.changeLanguage(resolved);
-      try { localStorage.setItem('tgo-language', 'system'); } catch {}
-      try { document.documentElement.setAttribute('lang', resolved); } catch {}
+      try { localStorage.setItem('tgo-language', 'system'); } catch { }
+      try { document.documentElement.setAttribute('lang', resolved); } catch { }
       setPref('system');
     } else {
       i18n.changeLanguage(languageCode);
-      try { localStorage.setItem('tgo-language', languageCode); } catch {}
-      try { document.documentElement.setAttribute('lang', languageCode); } catch {}
+      try { localStorage.setItem('tgo-language', languageCode); } catch { }
+      try { document.documentElement.setAttribute('lang', languageCode); } catch { }
       setPref(languageCode);
     }
     setIsOpen(false);
@@ -150,54 +152,22 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ variant = 'icon', p
       {isOpen && (
         usePortal
           ? (
-              <>
-                {createPortal(
-                  <div className="fixed inset-0 z-[999]" onClick={() => setIsOpen(false)} />, document.body
-                )}
-                {createPortal(
-                  <div
-                    className="fixed w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-[1000]"
-                    style={{ top: menuPos.top, left: menuPos.left }}
-                  >
-                    <div className="py-1">
-                      {languages.map((language) => (
-                        <button
-                          key={language.code}
-                          onClick={() => handleLanguageChange(language.code)}
-                          className={`w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                            selectedCode === language.code ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <span className="text-lg" role="img" aria-label={language.name}>{language.flag}</span>
-                            <div className="text-left min-w-0">
-                              <div className="font-medium truncate">{language.code === 'system' ? t('settings.language.followSystem', 'Auto') : language.nativeName}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{language.name}</div>
-                            </div>
-                          </div>
-                          {selectedCode === language.code && (
-                            <Check className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>,
-                  document.body
-                )}
-              </>
-            )
-          : (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
-                <div className={`absolute ${dropdownPosition} w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-20`}>
+            <>
+              {createPortal(
+                <div className="fixed inset-0 z-[999]" onClick={() => setIsOpen(false)} />, document.body
+              )}
+              {createPortal(
+                <div
+                  className="fixed w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-[1000]"
+                  style={{ top: menuPos.top, left: menuPos.left }}
+                >
                   <div className="py-1">
                     {languages.map((language) => (
                       <button
                         key={language.code}
                         onClick={() => handleLanguageChange(language.code)}
-                        className={`w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
-                          selectedCode === language.code ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-700 dark:text-gray-300'
-                        }`}
+                        className={`w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedCode === language.code ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-700 dark:text-gray-300'
+                          }`}
                       >
                         <div className="flex items-center gap-3 min-w-0">
                           <span className="text-lg" role="img" aria-label={language.name}>{language.flag}</span>
@@ -212,9 +182,39 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ variant = 'icon', p
                       </button>
                     ))}
                   </div>
+                </div>,
+                document.body
+              )}
+            </>
+          )
+          : (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setIsOpen(false)} />
+              <div className={`absolute ${dropdownPosition} w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg border border-gray-200 dark:border-gray-700 z-20`}>
+                <div className="py-1">
+                  {languages.map((language) => (
+                    <button
+                      key={language.code}
+                      onClick={() => handleLanguageChange(language.code)}
+                      className={`w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${selectedCode === language.code ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' : 'text-gray-700 dark:text-gray-300'
+                        }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-lg" role="img" aria-label={language.name}>{language.flag}</span>
+                        <div className="text-left min-w-0">
+                          <div className="font-medium truncate">{language.code === 'system' ? t('settings.language.followSystem', 'Auto') : language.nativeName}</div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">{language.name}</div>
+                        </div>
+                      </div>
+                      {selectedCode === language.code && (
+                        <Check className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      )}
+                    </button>
+                  ))}
                 </div>
-              </>
-            )
+              </div>
+            </>
+          )
       )}
     </div>
   );
