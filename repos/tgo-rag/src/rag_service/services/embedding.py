@@ -103,12 +103,34 @@ class OpenAIEmbeddingClient(BaseEmbeddingClient):
         try:
             if not self._compat_client:
                 raise RuntimeError("Compatibility client not initialized")
+
+            # First attempt: with dimensions parameter
             response = self._compat_client.embeddings.create(
                 model=self.model,
                 input=texts,
                 dimensions=self.dimensions,
                 encoding_format="float",
             )
+
+            # Some providers (e.g. OpenRouter) return HTTP 200 but data=None
+            # when they don't support the 'dimensions' parameter.
+            if response.data is None:
+                logger.warning(
+                    "Embeddings response.data is None (provider may not support 'dimensions' param). "
+                    "Retrying without 'dimensions'..."
+                )
+                response = self._compat_client.embeddings.create(
+                    model=self.model,
+                    input=texts,
+                    encoding_format="float",
+                )
+
+            if response.data is None:
+                raise ValueError(
+                    f"Embeddings API returned empty data for model '{self.model}'. "
+                    "Please verify that the model supports embeddings and the API key is valid."
+                )
+
             return [item.embedding for item in response.data]
         except Exception as e:
             logger.error(f"OpenAI-compatible embeddings request failed: {str(e)}")
