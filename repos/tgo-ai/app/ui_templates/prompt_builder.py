@@ -69,7 +69,7 @@ The `action` field in buttons uses URI format: `{protocol}://{content}`
 
 def generate_template_catalog(
     include_types: Optional[List[str]] = None,
-    language: str = "zh",
+    language: str = "en",
 ) -> str:
     """
     Generate a lightweight template catalog for system prompt injection.
